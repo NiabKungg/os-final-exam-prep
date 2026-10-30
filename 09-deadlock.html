@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 9 — Deadlock & Banker's Algorithm | เว็บติว OS Final</title>
+<meta name="description" content="Deadlock เงื่อนไข 4 ข้อ Resource-Allocation Graph Prevention Avoidance Banker's Algorithm ไล่ Safety Algorithm หา Safe Sequence ทีละขั้น Detection Recovery">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="ch09">
+<div id="sidebar-root"></div>
+<div class="sidebar-backdrop"></div>
+
+<header class="topbar">
+  <button class="icon-btn" id="menuBtn" aria-label="เปิดเมนู">☰</button>
+  <a class="brand" href="index.html"><span class="brand-logo">OS</span><span>เว็บติว OS Final<span class="brand-sub">บทที่ 9 · Deadlock</span></span></a>
+  <span class="spacer"></span>
+  <span class="progress-pill" id="quizPill"></span>
+  <button class="icon-btn" id="themeBtn">🌙</button>
+</header>
+
+<div class="layout">
+<main class="content">
+
+<div class="chip-row">
+  <span class="chip final">หัวใจของ Final</span>
+  <span class="chip hot">Banker's = แนวคำนวณที่ควรฝึก 🔥</span>
+  <span class="chip">วิดีโอ 11.3–11.6 · Handout No.7</span>
+</div>
+<h1>บทที่ 9 — Deadlock: จากสะพานตัน สู่ Banker's Algorithm</h1>
+<p class="lead">Deadlock คือสถานการณ์ที่ process ตั้งแต่ 2 ตัวขึ้นไป<strong>รอกันเป็นวงกลมไม่รู้จบ</strong> — ในวิดีโออาจารย์ใช้ตัวอย่างสะพานแคบเลนเดียว และ<em>ได้บอกในคลิป 11.5 ว่าขอข้าม Banker's Algorithm เพราะนอกสโคป</em> (แต่มีเต็ม ๆ ใน handout และเป็นแนวโจทย์คำนวณสวย ๆ เราจึงสอนครบไว้ให้)</p>
+
+<div class="toc">
+  <div class="toc-title">สารบัญบทนี้</div>
+  <ol>
+    <li><a href="#cond">เงื่อนไข 4 ข้อที่ต้องครบ</a></li>
+    <li><a href="#rag">Resource-Allocation Graph</a></li>
+    <li><a href="#cycle">Cycle ต้องไม่เท่ากับ Deadlock เสมอ</a></li>
+    <li><a href="#handle">4 กลยุทธ์จัดการ Deadlock</a></li>
+    <li><a href="#banker">Banker's Algorithm — ไล่ทีละขั้น 🔥</a></li>
+    <li><a href="#detect">Detection & Recovery</a></li>
+    <li><a href="#quiz">แบบฝึกหัดท้ายบท</a></li>
+  </ol>
+</div>
+
+<h2 id="cond">1. เงื่อนไข 4 ข้อ — ต้องเกิด "พร้อมกัน" จึงเกิด Deadlock</h2>
+<p>ตัวอย่างรากฐานจากวิดีโอ: โค้ดนี้เกิด deadlock ได้ (S, Q เป็น binary semaphore เริ่ม 1 ทั้งคู่):</p>
+<div class="codewrap"><pre class="code"><code><span class="c">/* P0 */</span>              <span class="c">/* P1 */</span>
+<span class="f">wait</span>(S);              <span class="f">wait</span>(Q);
+<span class="f">wait</span>(Q);              <span class="f">wait</span>(S);
+...                   ...
+<span class="f">signal</span>(S);            <span class="f">signal</span>(Q);
+<span class="f">signal</span>(Q);            <span class="f">signal</span>(S);</code></pre></div>
+<p>ถ้า P0 ยึด S แล้วถูกสลับออก → P1 ยึด Q → P0 รอ Q (ที่ P1 ถือ) / P1 รอ S (ที่ P0 ถือ) — ตายล็อก! นี่คือ <strong>Circular Wait</strong> และเพื่อให้เกิดได้ต้องมีครบทั้ง 4 เงื่อนไข:</p>
+<ol class="steps">
+  <li><span class="st-title">Mutual Exclusion (ใช้ร่วมกันไม่ได้)</span>ทรัพยากร 1 ชิ้น มีได้ 1 เจ้าของในแต่ละเวลา (เช่น S, Q ที่เป็น binary semaphore)</li>
+  <li><span class="st-title">Hold and Wait (ถือเก่า รอใหม่)</span>process ถือทรัพยากรอย่างน้อย 1 ชิ้นไว้ แล้วรอชิ้นอื่นที่คนอื่นถืออยู่ (P0 ถือ S รอ Q)</li>
+  <li><span class="st-title">No Preemption (ยึดกลางคันไม่ได้)</span>ทรัพยากรจะปล่อยได้เมื่อเจ้าของใจดีปล่อยเองเท่านั้น — ไม่มีใครมาแย่งได้</li>
+  <li><span class="st-title">Circular Wait (รอเป็นวง)</span>มีชุด {P₀, P₁, …, Pₙ} ที่ P₀ รอของ P₁, P₁ รอของ P₂, …, Pₙ วนกลับมารอของ P₀</li>
+</ol>
+<div class="callout exam">
+  <div class="co-title">🎯 จำแน่น ๆ</div>
+  <p>เงื่อนไขต้องเกิด <strong>ครบทั้ง 4 พร้อมกัน</strong> จึงเกิด deadlock — ตัดได้เพียง<strong>ข้อเดียว</strong>ก็ไม่เกิด (หลักการของ Deadlock Prevention) และเชื่อมจากบท 8: Dining Philosophers หยิบซ้ายพร้อมกัน = ครบ 4 ข้อพอดี</p>
+</div>
+
+<h2 id="rag">2. Resource-Allocation Graph (RAG)</h2>
+<ul>
+  <li><strong>วงกลม</strong> = Process (P<sub>i</sub>) · <strong>สี่เหลี่ยม</strong> = Resource type (R<sub>j</sub>) โดยจุดในสี่เหลี่ยม = จำนวนชิ้น (instances)</li>
+  <li><strong>Request edge</strong> P<sub>i</sub> → R<sub>j</sub> : P<sub>i</sub> กำลังขอใช้</li>
+  <li><strong>Assignment edge</strong> R<sub>j</sub> → P<sub>i</sub> : ทรัพยากรถูกให้ P<sub>i</sub> ถืออยู่</li>
+</ul>
+
+<figure class="fig">
+<svg viewBox="0 0 760 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="RAG deadlock vs no deadlock">
+  <defs><marker id="ar9" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0,0 L7,3.2 L0,6.4 z" fill="#dc2626"/></marker></defs>
+  <text x="190" y="24" text-anchor="middle" font-size="14" font-weight="800" fill="#dc2626">มี Cycle + ทรัพยากรชิ้นเดียว → DEADLOCK</text>
+  <g font-size="13" font-weight="800">
+    <circle cx="90" cy="90" r="24" fill="#eef0ff" stroke="#4f46e5" stroke-width="2"/><text x="90" y="95" text-anchor="middle" fill="#3730a3">P1</text>
+    <rect x="250" y="66" width="52" height="48" rx="8" fill="#fff" stroke="#0ea5e9" stroke-width="2"/><text x="276" y="96" text-anchor="middle" fill="#0369a1">R1</text>
+    <circle cx="290" cy="200" r="24" fill="#eef0ff" stroke="#4f46e5" stroke-width="2"/><text x="290" y="205" text-anchor="middle" fill="#3730a3">P2</text>
+    <rect x="60" y="176" width="52" height="48" rx="8" fill="#fff" stroke="#0ea5e9" stroke-width="2"/><text x="86" y="206" text-anchor="middle" fill="#0369a1">R2</text>
+    <path d="M114 80 L248 86" stroke="#dc2626" stroke-width="2.5" marker-end="url(#ar9)"/>
+    <path d="M276 114 L292 174" stroke="#059669" stroke-width="2.5" marker-end="url(#ar9)"/>
+    <path d="M286 174 Q 180 240 112 214" stroke="#dc2626" stroke-width="2.5" marker-end="url(#ar9)"/>
+    <path d="M86 174 Q 60 130 74 116" stroke="#059669" stroke-width="2.5" marker-end="url(#ar9)"/>
+  </g>
+  <g font-size="10.5" fill="#64748b" font-weight="700">
+    <text x="175" y="72">P1 ขอ R1 (แดง=request)</text>
+    <text x="315" y="145">R1 ให้ P2 (เขียว=assigned)</text>
+    <text x="150" y="248">P2 ขอ R2</text>
+    <text x="20" y="145">R2 ให้ P1</text>
+  </g>
+  <g font-size="14" font-weight="800">
+    <text x="575" y="24" text-anchor="middle" fill="#059669">มี Cycle + ทรัพยากรหลายชิ้น → อาจไม่เกิด!</text>
+    <circle cx="475" cy="90" r="24" fill="#eef0ff" stroke="#4f46e5" stroke-width="2"/><text x="475" y="95" text-anchor="middle" fill="#3730a3">P1</text>
+    <rect x="635" y="52" width="52" height="48" rx="8" fill="#fff" stroke="#0ea5e9" stroke-width="2"/><text x="661" y="74" text-anchor="middle" fill="#0369a1">R2</text>
+    <circle cx="655" cy="86" r="3" fill="#0ea5e9"/><circle cx="669" cy="102" r="3" fill="#0ea5e9"/>
+    <circle cx="655" cy="200" r="24" fill="#eef0ff" stroke="#4f46e5" stroke-width="2"/><text x="655" y="205" text-anchor="middle" fill="#3730a3">P2</text>
+    <path d="M499 82 L632 72" stroke="#dc2626" stroke-width="2.5" marker-end="url(#ar9)"/>
+    <path d="M655 100 L677 176" stroke="#059669" stroke-width="2.5" marker-end="url(#ar9)"/>
+    <path d="M650 176 Q 520 235 480 116" stroke="#dc2626" stroke-width="2.5" marker-end="url(#ar9)"/>
+  </g>
+  <text x="575" y="245" text-anchor="middle" font-size="11" fill="#64748b" font-weight="700">R2 มี 2 ชิ้น — ชิ้นที่เหลืออาจถูก process นอกวงคืนมาช่วยแก้วงได้</text>
+</svg>
+<figcaption>ซ้าย: วง P1→R1→P2→R2→P1 กับทรัพยากรชิ้นเดียว = deadlock แน่ · ขวา: วงเดิมแต่ R2 มี 2 ชิ้น = มีแค่ "โอกาส" เกิด</figcaption>
+</figure>
+
+<div class="formula">ไม่มี cycle → ไม่เกิด deadlock แน่นอน (100%)<br>มี cycle → ทรัพยากรชิ้นเดียวต่อประเภท = deadlock แน่ · หลายชิ้น = "อาจเกิด"<small>สองบรรทัดนี้คือข้อสอบถูก/ผิดยอดนิยม</small></div>
+
+<h2 id="handle">3. 4 กลยุทธ์จัดการ Deadlock</h2>
+<ol class="steps">
+  <li><span class="st-title">Prevention (ป้องกันเด็ดขาด)</span>ออกแบบให้<strong>เงื่อนไขใดเงื่อนไขหนึ่งเกิดไม่ได้เลย</strong> — ดูรายละเอียดด้านล่าง</li>
+  <li><span class="st-title">Avoidance (หลีกเลี่ยง)</span>ยอมให้มีเงื่อนไข แต่ให้ process<strong>แจ้ง Max ที่จะใช้ล่วงหน้า</strong> OS ตรวจทุกครั้งก่อนจัดสรรว่ายังเป็น safe state ไหม (Banker's)</li>
+  <li><span class="st-title">Detection + Recovery (ยอมให้เกิด แล้วตามจับ)</span>ปล่อยเกิด สแกนหา deadlock ระยะ ๆ แล้วจัดการแก้</li>
+  <li><span class="st-title">เมิน (Ostrich)</span><strong>OS ส่วนใหญ่รวมถึง UNIX เลือกวิธีนี้!</strong> — ทำเหมือนไม่มีอะไรเกิดขึ้น ให้โปรแกรมเมอร์จัดการเอง</li>
+</ol>
+<h3>Prevention — ตัดทีละเงื่อนไข</h3>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>เงื่อนไขที่ตัด</th><th>วิธี</th><th>ผลข้างเคียง</th></tr>
+  <tr><td>Mutual Exclusion</td><td>ทำให้ทรัพยากรแชร์กันได้</td><td>ทำไม่ได้กับทุกชนิด (บางอย่างธรรมชาติต้องใช้ทีละตัว)</td></tr>
+  <tr><td>Hold and Wait</td><td>ขอและได้<strong>ครบทุกชิ้นก่อนเริ่มรัน</strong> หรือ อนุญาตให้ขอเมื่อไม่ถืออะไรเลย</td><td>ใช้ทรัพยากรไม่คุ้ม (จอง printer ค้างไว้ทั้งที่ยังไม่พิมพ์) + starvation ได้</td></tr>
+  <tr><td>No Preemption</td><td>ขอเพิ่มไม่ได้ = ถูกยึดทรัพยากรที่ถืออยู่ทั้งหมดคืน เอาไปให้คนที่รออยู่ แล้วค่อยเริ่มใหม่เมื่อได้ครบ</td><td>ยุ่งยาก สถานะงานค้าง starvation ได้</td></tr>
+  <tr><td>Circular Wait</td><td>ให้ทุกทรัพยากรมีเลขประจำตัว และ<strong>ขอเรียงจากเลขน้อยไปมากเท่านั้น</strong> เช่น Disk = 4, Printer = 11 → ต้องได้ 4 ก่อน 11 ห้ามถือ 11 แล้วขอ 4</td><td>ลำดับเลขไม่อาจเหมาะกับทุกโปรแกรม</td></tr>
+</table></div>
+<div class="callout note">
+  <div class="co-title">📌 ข้อสรุปของอาจารย์</div>
+  <p>Prevention ทำได้ในทฤษฎีทุกข้อ แต่ทางปฏิบัติเสียประสิทธิภาพหนักมาก OS จึงไม่ค่อยเลือกใช้ — ข้อนี้เคยถามเป็นถูก/ผิด</p>
+</div>
+
+<h2 id="banker">4. Banker's Algorithm — ไล่ตารางจาก Handout ทีละขั้น 🔥</h2>
+<div class="callout warn">
+  <div class="co-title">📌 หมายเหตุจากวิดีโอ</div>
+  <p>ในคลิป 11.5 อาจารย์กล่าวถึง Banker's สั้น ๆ แล้วบอกว่า<strong>ขอข้าม (นอกสโคปวิชา)</strong> แต่เนื้อหาเต็มอยู่ใน <strong>Handout No.7</strong> และมันคือแนวคำนวณแบบข้อสอบพอดี — แนะนำให้ทำได้ ไม่เสียหาย</p>
+</div>
+<p>ใช้กับทรัพยากร<strong>หลายชิ้นต่อประเภท</strong> ข้อมูลที่ OS ถือ (n = จำนวน process, m = จำนวน resource type):</p>
+<ul>
+  <li><code>Available[m]</code> — ของว่างแต่ละชนิด</li>
+  <li><code>Max[n×m]</code> — ขอสูงสุดที่ประกาศไว้ · <code>Allocation[n×m]</code> — ที่ถืออยู่ตอนนี้</li>
+  <li><code>Need[n×m] = Max − Allocation</code> — ที่อาจยังขออีก</li>
+</ul>
+
+<h3>โจทย์ตัวอย่าง (ตัวเดียวกับ handout)</h3>
+<p>5 process (P0–P4), 3 resource types: <strong>A มี 10, B มี 5, C มี 7</strong> — snapshot ตอน T₀ มี Available = (3, 3, 2):</p>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th rowspan="2">Process</th><th colspan="3" class="c">Allocation</th><th colspan="3" class="c">Max</th><th colspan="3" class="c">Need = Max − Allocation</th></tr>
+  <tr><th class="c">A</th><th class="c">B</th><th class="c">C</th><th class="c">A</th><th class="c">B</th><th class="c">C</th><th class="c">A</th><th class="c">B</th><th class="c">C</th></tr>
+  <tr><td>P0</td><td class="c">0</td><td class="c">1</td><td class="c">0</td><td class="c">7</td><td class="c">5</td><td class="c">3</td><td class="c"><strong>7</strong></td><td class="c"><strong>4</strong></td><td class="c"><strong>3</strong></td></tr>
+  <tr><td>P1</td><td class="c">2</td><td class="c">0</td><td class="c">0</td><td class="c">3</td><td class="c">2</td><td class="c">2</td><td class="c"><strong>1</strong></td><td class="c"><strong>2</strong></td><td class="c"><strong>2</strong></td></tr>
+  <tr><td>P2</td><td class="c">3</td><td class="c">0</td><td class="c">2</td><td class="c">9</td><td class="c">0</td><td class="c">2</td><td class="c"><strong>6</strong></td><td class="c"><strong>0</strong></td><td class="c"><strong>0</strong></td></tr>
+  <tr><td>P3</td><td class="c">2</td><td class="c">1</td><td class="c">1</td><td class="c">2</td><td class="c">2</td><td class="c">2</td><td class="c"><strong>0</strong></td><td class="c"><strong>1</strong></td><td class="c"><strong>1</strong></td></tr>
+  <tr><td>P4</td><td class="c">0</td><td class="c">0</td><td class="c">2</td><td class="c">4</td><td class="c">3</td><td class="c">3</td><td class="c"><strong>4</strong></td><td class="c"><strong>3</strong></td><td class="c"><strong>1</strong></td></tr>
+</table></div>
+
+<h3>ไล่ Safety Algorithm (เริ่ม Work = Available = (3,3,2))</h3>
+<p>หา process ที่ <code>Finish[i] = false</code> และ <code>Needᵢ ≤ Work</code> → ถ้าเจอ: สมมติให้รันจนเสร็จแล้วคืนของ <code>Work = Work + Allocationᵢ</code> ทำซ้ำจนหมด = <strong>SAFE</strong> (ถ้าตันกลางทาง = UNSAFE)</p>
+<ol class="steps">
+  <li><span class="st-title">เลือก P1 (Need 1,2,2 ≤ Work 3,3,2 ✓)</span>P1 รันจบคืนของ → <strong>Work = (3,3,2)+(2,0,0) = (5,3,2)</strong></li>
+  <li><span class="st-title">เลือก P3 (Need 0,1,1 ≤ 5,3,2 ✓)</span>คืนของ → <strong>Work = (5,3,2)+(2,1,1) = (7,4,3)</strong></li>
+  <li><span class="st-title">เลือก P4 (Need 4,3,1 ≤ 7,4,3 ✓)</span>คืนของ → <strong>Work = (7,4,3)+(0,0,2) = (7,4,5)</strong></li>
+  <li><span class="st-title">เลือก P2 (Need 6,0,0 ≤ 7,4,5 ✓)</span>คืนของ → <strong>Work = (7,4,5)+(3,0,2) = (10,4,7)</strong></li>
+  <li><span class="st-title">เลือก P0 (Need 7,4,3 ≤ 10,4,7 ✓)</span>คืนของ → Work = (10,5,7) — Finish ครบทุกตัว ✅</li>
+</ol>
+<div class="formula">Safe sequence หนึ่งคือ &lt;P1, P3, P4, P2, P0&gt; → ระบบอยู่ใน SAFE STATE<small>safe sequence อาจมีหลายคำตอบ — ตอบคำใดที่ตรวจแล้วผ่านก็ถูก แต่ต้องเขียนเหตุผล Work ที่เปลี่ยนไปทีละขั้น</small></div>
+
+<h3>ถ้า P1 ขอเพิ่ม (1,0,2) — ให้ได้ไหม? (Resource-Request Algorithm)</h3>
+<ol class="steps">
+  <li><span class="st-title">ตรวจ Request ≤ Need</span>(1,0,2) ≤ (1,2,2) ✓ ผ่าน (ไม่ใช่การขอเกินที่ประกาศไว้)</li>
+  <li><span class="st-title">ตรวจ Request ≤ Available</span>(1,0,2) ≤ (3,3,2) ✓ ผ่าน (ของพอ)</li>
+  <li><span class="st-title">สมมติจัดให้ (pretend)</span>Available = (2,3,0) · P1 Allocation = (3,0,2) · P1 Need = (0,2,0)</li>
+  <li><span class="st-title">รัน Safety Algorithm ใหม่</span>ไล่ได้ sequence &lt;P1, P3, P4, P0, P2&gt; → ยัง safe ✅</li>
+  <li><span class="st-title">สรุป</span>ให้ไปได้! (ถ้าไล่แล้ว unsafe → ไม่ให้ ให้ P รอ และคืนสถานะเดิม)</li>
+</ol>
+<p class="small">แบบฝึกหัดเดียวกันใน handout ยังถามต่อ: P4 ขอ (3,3,0)? → ตอบ "ไม่ได้" เพราะของว่าง (ตอนนั้น = 2,3,0) ไม่พอ · P0 ขอ (0,2,0)? → ผ่านสองเช็คแรก แต่ไล่ safety แล้ว<strong>unsafe</strong> → ไม่ให้</p>
+
+<div class="callout note">
+  <div class="co-title">📌 ปัญหาของ Banker's (เคยถาม)</div>
+  <p>งานต้องประกาศ Max ล่วงหน้า / จำนวนทรัพยากรคงที่ / จำนวนงานคงที่ / overhead สูง / ใช้ทรัพยากรสิ้นเปลืองเพราะคิด "แย่สุด" เสมอ</p>
+</div>
+
+<h2 id="detect">5. Detection (ตรวจจับ) & Recovery (กู้)</h2>
+<h3>Detection</h3>
+<ul>
+  <li><strong>ทรัพยากรชิ้นเดียวต่อประเภท</strong> — ยุบ RAG เป็น <strong>Wait-For Graph</strong>: ตัดโหนดทรัพยากรออกหมด เหลือเส้น P<sub>i</sub> → P<sub>j</sub> ตรง ๆ ("Pi รอ Pj") แล้วสแกนหา cycle (เรียกทุก ๆ ระยะ, แพงระดับ O(n²))</li>
+  <li><strong>หลายชิ้นต่อประเภท</strong> — Detection Algorithm ทำงานเหมือน Safety แต่เทียบด้วย <code>Request</code> (ของที่ร้องขอค้างอยู่จริง) แทน Need</li>
+</ul>
+<h3>Recovery</h3>
+<ul>
+  <li><strong>Process Termination</strong> — จบทุกตัวที่ติด (แน่แต่เสียงานหมด) หรือจบทีละตัวจนวงแตก (เลือกจาก: priority, รันไปแล้วนานแค่ไหน, ใช้ทรัพยากรอะไรไปแล้ว, ต้องการอีกเท่าไร, จบกี่ตัวถึงพอ, เป็น interactive/batch?)</li>
+  <li><strong>Resource Preemption</strong> — เลือกเหยื่อ (victim), rollback ไป safe state แล้วเริ่มใหม่ · ระวัง <strong>starvation</strong> ถ้าตัวเดิมถูกเลือกเป็นเหยื่อซ้ำ ๆ → ใส่ "จำนวนครั้งที่โดน rollback" ไว้ในตัวแปรต้นทุนด้วย</li>
+</ul>
+
+<h2 id="quiz">📝 แบบฝึกหัดท้ายบท</h2>
+
+<div class="quiz" data-q data-type="tf" data-answer="false" id="ch09q1">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 1</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">ถ้า Resource-Allocation Graph มี cycle แปลว่าระบบเกิด deadlock แน่นอนเสมอ</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ผิด</span>มี cycle = deadlock "แน่" เฉพาะเมื่อทรัพยากรแต่ละประเภทมีชิ้นเดียว ถ้ามีหลายชิ้น cycle แค่ "มีโอกาส" เกิด — ส่วน "ไม่มี cycle" การันตีว่าไม่เกิด deadlock จริง</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="true" id="ch09q2">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 2</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">ระบบที่อยู่ใน unsafe state มีโอกาสเกิด deadlock (ไม่ได้แปลว่าเกิดแล้ว) ส่วนระบบที่เป็น safe state จะไม่เกิด deadlock แน่นอน</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ถูก</span>safe = มี safe sequence → จัดสรรต่อได้โดยไม่ตัน การันตีไม่เกิด deadlock · unsafe = "เสี่ยง" เกิดได้ ไม่ได้แปลว่าตันแล้ว จุดนี้หลอกเยอะในข้อถูกผิด</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="2" data-tolerance="0" id="ch09q3">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 3</span><span class="q-tag safe">เติมตัวเลข — ไล่ Banker's จาก handout</span></div>
+  <div class="q-ctx">ตารางของบทนี้: Available = (3,3,2) · Need: P0=(7,4,3), P1=(1,2,2), P2=(6,0,0), P3=(0,1,1), P4=(4,3,1)</div>
+  <div class="q-text">ในการไล่ Safety Algorithm เริ่มที่ Work = (3,3,2) — ตามเฉลยของบทนี้เลือก P1 ก่อน หลังจาก P1 รันจบและคืนทรัพยากร Work จะมีค่า A (ทรัพยากรชนิด A) เท่ากับเท่าไร</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 5</span>Work = (3,3,2) + Allocation ของ P1 (2,0,0) = (5,3,2) → ค่า A เท่ากับ 5 (ถ้าไล่ต่อ: P3 → (7,4,3), P4 → (7,4,5), P2 → (10,4,7), P0 → (10,5,7) = safe sequence &lt;P1,P3,P4,P2,P0&gt;)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="mc" data-answer="a" id="ch09q4">
+  <div class="quiz-head"><span class="q-ico">🔤</span><span class="q-title">ข้อ 4</span><span class="q-tag safe">ปรนัย</span></div>
+  <div class="q-text">วิธี Prevention ข้อใดใช้กับเงื่อนไข Circular Wait</div>
+  <div class="choices">
+    <div class="choice" data-val="a"><span class="mark">ก</span><span>ให้ทุกทรัพยากรมีหมายเลข และบังคับขอทรัพยากรเรียงจากเลขน้อยไปมากเท่านั้น</span></div>
+    <div class="choice" data-val="b"><span class="mark">ข</span><span>บังคับให้ process ขอทรัพยากรครบทุกชิ้นก่อนเริ่มทำงาน</span></div>
+    <div class="choice" data-val="c"><span class="mark">ค</span><span>ให้ process แจ้ง Max demand ล่วงหน้าแล้ว OS ตรวจ safe state ก่อนจัดสรร</span></div>
+    <div class="choice" data-val="d"><span class="mark">ง</span><span>ยึดทรัพยากรคืนจาก process ที่ถืออยู่เมื่อขอเพิ่มไม่ได้</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ก</span>เลขเรียงลำดับ (เช่น Disk=4, Printer=11 — ต้องได้ 4 ก่อน 11 ห้ามถือ 11 แล้วขอ 4) ตัดความเป็นไปได้ของวงจรรอทิ้ง · ข = แก้ Hold and Wait · ค = Avoidance (ไม่ใช่ prevention) · ง = แก้ No Preemption</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="true" id="ch09q5">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 5</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">OS ส่วนใหญ่รวมถึง UNIX ไม่มีกลไกป้องกันหรือแก้ไข deadlock โดยอัตโนมัติสำหรับ process ของผู้ใช้</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ถูก</span>OS ส่วนใหญ่ใช้แนวทาง "เมิน" (เหมือนนกกระจอกออสทริชหมกหัว) — เกิด deadlock แล้วเป็นหน้าที่ของโปรแกรมเมอร์/แอดมิน หรือไม่ก็รีสตาร์ทเครื่อง</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="true" id="ch09q6">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 6</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">Wait-For Graph ใช้ในการตรวจจับ deadlock โดยตัดโหนดทรัพยากร (resource) ออกทั้งหมด เหลือเฉพาะโหนด process และเส้นชี้จากผู้รอไปยังผู้ถือทรัพยากรโดยตรง</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ถูก</span>Wait-for graph มีแต่ process เท่านั้น — Pi → Pj แปลว่า Pi รอทรัพยากรที่ Pj ถือ · มี cycle = มี deadlock (ใช้ได้กับทรัพยากรชิ้นเดียวต่อประเภท)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="pager">
+  <a href="08-semaphore.html"><span class="dir">← บทก่อนหน้า</span><span class="name">บทที่ 8: Semaphore & Monitor</span></a>
+  <a href="10-realmem.html" class="next"><span class="dir">บทถัดไป →</span><span class="name">บทที่ 10: Real Memory Management</span></a>
+</div>
+
+<div class="center"><button class="btn ghost" id="doneBtn"></button></div>
+
+</main>
+</div>
+<button id="toTop" aria-label="กลับขึ้นด้านบน">↑</button>
+<script src="js/app.js"></script>
+</body>
+</html>

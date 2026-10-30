@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 8 — Semaphore & Monitor | เว็บติว OS Final</title>
+<meta name="description" content="Semaphore wait signal counting binary Bounded Buffer Readers-Writers Dining Philosophers Monitor condition variables Java synchronized wait notify notifyAll พร้อมโค้ดและแบบฝึกหัด">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="ch08">
+<div id="sidebar-root"></div>
+<div class="sidebar-backdrop"></div>
+
+<header class="topbar">
+  <button class="icon-btn" id="menuBtn" aria-label="เปิดเมนู">☰</button>
+  <a class="brand" href="index.html"><span class="brand-logo">OS</span><span>เว็บติว OS Final<span class="brand-sub">บทที่ 8 · Semaphore</span></span></a>
+  <span class="spacer"></span>
+  <span class="progress-pill" id="quizPill"></span>
+  <button class="icon-btn" id="themeBtn">🌙</button>
+</header>
+
+<div class="layout">
+<main class="content">
+
+<div class="chip-row">
+  <span class="chip final">หัวใจของ Final</span>
+  <span class="chip">วิดีโอ 10.1–10.3, 11.1–11.2 · Handout No.6</span>
+</div>
+<h1>บทที่ 8 — Semaphore, ปัญหาคลาสสิกทั้ง 3, Monitor และ Java Synchronization</h1>
+<p class="lead">Semaphore คือเครื่องมือจัดจังหวะที่ OS ให้มา ปลอดจาก busy waiting — อาจารย์ใช้อุปมา <strong>"โหลหิน"</strong> สอนตลอดคลิป บทนี้จะใช้อุปมาเดียวกันให้จำติดมือ พร้อมโค้ด Bounded Buffer / Readers-Writers / Dining Philosophers ครบ</p>
+
+<div class="toc">
+  <div class="toc-title">สารบัญบทนี้</div>
+  <ol>
+    <li><a href="#sem">Semaphore คืออะไร + อุปมาโหลหิน</a></li>
+    <li><a href="#impl">Implement แบบไม่ busy waiting</a></li>
+    <li><a href="#bounded">ปัญหาที่ 1: Bounded Buffer 🔥</a></li>
+    <li><a href="#rw">ปัญหาที่ 2: Readers-Writers</a></li>
+    <li><a href="#dp">ปัญหาที่ 3: Dining Philosophers</a></li>
+    <li><a href="#wrong">การใช้ Semaphore ผิด → Deadlock</a></li>
+    <li><a href="#monitor">Monitor & Condition Variables</a></li>
+    <li><a href="#java">Java Synchronization</a></li>
+    <li><a href="#quiz">แบบฝึกหัดท้ายบท</a></li>
+  </ol>
+</div>
+
+<h2 id="sem">1. Semaphore คืออะไร + อุปมาโหลหิน 🪨</h2>
+<p><strong>Semaphore S = ตัวแปร integer</strong> ที่เข้าถึงได้ผ่าน 2 คำสั่ง atomic เท่านั้น (ชื่อเดิม P/V จากภาษาดัตช์):</p>
+<div class="codewrap"><pre class="code"><code><span class="f">wait</span>(S) {              <span class="c">// P = "ขอหิน"</span>
+    <span class="k">while</span> (S &lt;= 0);    <span class="c">// ไม่มีหิน → ยืนรอ</span>
+    S--;               <span class="c">// หยิบหินออกจากโหล 1 ลูก</span>
+}
+<span class="f">signal</span>(S) {            <span class="c">// V = "คืนหิน"</span>
+    S++;               <span class="c">// โยนหินกลับใส่โหล → ปลุกคนรอให้มาหยิบ</span>
+}</code></pre></div>
+<div class="callout analogy">
+  <div class="co-title">🪨 อุปมาโหลหินของอาจารย์</div>
+  <p>โหลใส่หิน = ทรัพยากรที่มีอยู่ (จำนวนหิน = ค่า S) · <strong>wait()</strong> = เดินมาหยิบหิน 1 ลูกถึงจะเข้าห้องน้ำได้ ถ้าโหลว่างต้องยืนรอ · <strong>signal()</strong> = ใช้เสร็จเอาหินมาคืนใส่โหล คนรอคนแรกจะได้หยิบต่อ</p>
+</div>
+<ul>
+  <li><strong>Counting semaphore</strong> — ค่าได้เลขเต็มใด ๆ ใช้กับทรัพยากร<strong>หลายชิ้น</strong> (มีห้องน้ำ 3 ห้อง = หิน 3 ลูก)</li>
+  <li><strong>Binary semaphore</strong> — ค่าได้แค่ 0/1 เรียกอีกชื่อว่า <strong>mutex lock</strong> ใช้กันเข้า critical section ทีละคน</li>
+</ul>
+
+<h2 id="impl">2. Implement แบบไม่มี Busy Waiting</h2>
+<p>เวอร์ชันด้านบน (while วนรอ) เป็น <strong>busy waiting</strong> — รอโดยเผา CPU เปล่า ปรับปรุงด้วย <strong>waiting queue</strong>: แต่ละ semaphore มีคิวของตัวเอง (แต่ละรายการเก็บ value + pointer รายการถัดไป)</p>
+<div class="codewrap"><pre class="code"><code><span class="f">wait</span>(S) {
+    S.value--;                    <span class="c">// หยิบหินก่อนเลย</span>
+    <span class="k">if</span> (S.value &lt; 0) {            <span class="c">// ติดลบ = หินไม่พอ มีคนรอแล้ว</span>
+        add ตัวเองเข้า S.list;     <span class="c">// ไปต่อคิว</span>
+        <span class="f">block</span>();                  <span class="c">// หลับ — ไม่เผา CPU</span>
+    }
+}
+<span class="f">signal</span>(S) {
+    S.value++;                    <span class="c">// คืนหิน</span>
+    <span class="k">if</span> (S.value &lt;= 0) {           <span class="c">// ยังมีคนรออยู่</span>
+        remove P จาก S.list;
+        <span class="f">wakeup</span>(P);                <span class="c">// ปลุก 1 คนกลับ ready queue</span>
+    }
+}</code></pre></div>
+<p class="small">💡 ค่า value ติดลบ = มี process รออยู่เท่ากับ |value| ตัว (ออกถูก/ผิดได้)</p>
+
+<h2 id="bounded">3. ปัญหาที่ 1: Bounded Buffer (Producer-Consumer) 🔥🔥</h2>
+<p>Buffer n ช่อง ใช้ <strong>semaphore 3 ตัว</strong> — จำบทบาทให้แม่น เพราะข้อสอบชอบให้เติมชื่อ/ค่าเริ่มต้น:</p>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>Semaphore</th><th class="c">ค่าเริ่มต้น</th><th>หน้าที่ (ในอุปมา)</th></tr>
+  <tr><td><code>mutex</code></td><td class="c"><strong>1</strong></td><td>ล็อก buffer — เข้าแตะของทีละคน (หิน 1 ลูก)</td></tr>
+  <tr><td><code>empty</code></td><td class="c"><strong>n</strong></td><td>นับ "ช่องว่าง" ที่เหลือ (หิน = สิทธิ์เขียน)</td></tr>
+  <tr><td><code>full</code></td><td class="c"><strong>0</strong></td><td>นับ "ช่องที่มีข้อมูล" (หิน = สิทธิ์อ่าน)</td></tr>
+</table></div>
+
+<div class="card">
+<h4 class="mt0">Producer (คนใส่ของ)</h4>
+<div class="codewrap"><pre class="code"><code><span class="k">while</span> (<span class="f">true</span>) {
+    <span class="c">// สร้าง item</span>
+    <span class="f">wait</span>(empty);   <span class="c">// มีช่องว่างไหม? (หยิบหินจากโหล empty)</span>
+    <span class="f">wait</span>(mutex);   <span class="c">// ล็อก buffer</span>
+    <span class="c">// เขียน item ลง buffer</span>
+    <span class="f">signal</span>(mutex); <span class="c">// ปลดล็อก</span>
+    <span class="f">signal</span>(full);  <span class="c">// คืนหินเข้าโหล full → บอก consumer ว่ามีของแล้ว</span>
+}</code></pre></div>
+<h4>Consumer (คนหยิบของ)</h4>
+<div class="codewrap"><pre class="code"><code><span class="k">while</span> (<span class="f">true</span>) {
+    <span class="f">wait</span>(full);    <span class="c">// มีของให้อ่านไหม?</span>
+    <span class="f">wait</span>(mutex);
+    <span class="c">// ดึง item ออกจาก buffer</span>
+    <span class="f">signal</span>(mutex);
+    <span class="f">signal</span>(empty); <span class="c">// คืนหินเข้าโหล empty → มีช่องว่างแล้ว</span>
+    <span class="c">// ประมวลผล item</span>
+}</code></pre></div>
+</div>
+
+<div class="callout exam">
+  <div class="co-title">🚨 จุดหลอกยอดฮิต: สลับลำดับ wait → Deadlock!</div>
+  <p>ถ้า producer เขียนผิดเป็น <code>wait(mutex); wait(empty);</code> — ตอน buffer เต็ม producer จะได้<strong>mutex ไปครองก่อน</strong> แล้วไปติดรอ empty (จะว่างก็ต่อเมื่อ consumer อ่าน) แต่ consumer เข้ามาอ่านไม่ได้เพราะ <strong>mutex ถูก producer ครองค้าง!</strong> → รอกันตาย กฎเหล็ก: <strong>เช็คทรัพยากร (empty/full) ก่อน แล้วค่อยล็อก (mutex) เสมอ</strong></p>
+</div>
+
+<h2 id="rw">4. ปัญหาที่ 2: Readers-Writers</h2>
+<p>ข้อมูลชุดหนึ่งถูกใช้โดย 2 พวก: <strong>Readers</strong> (อ่านอย่างเดียว) กับ <strong>Writers</strong> (อ่าน+เขียน) · กติกา: <strong>Reader หลายตัวอ่านพร้อมกันได้</strong> แต่ Writer ทำงานเมื่อไร <strong>ห้ามใครยุ่งเด็ดขาด</strong> — ใช้ <code>mutex = 1</code>, <code>wrt = 1</code>, <code>readcount = 0</code></p>
+<div class="card">
+<h4 class="mt0">Writer — ง่ายสุด</h4>
+<div class="codewrap"><pre class="code"><code><span class="f">wait</span>(wrt);
+<span class="c">// เขียนข้อมูล</span>
+<span class="f">signal</span>(wrt);</code></pre></div>
+<h4>Reader — ใช้ readcount เป็น "ตัวแทนหมู่"</h4>
+<div class="codewrap"><pre class="code"><code><span class="f">wait</span>(mutex);              <span class="c">// ล็อกตัวนับ (แตะ readcount ทีละคน)</span>
+readcount++;
+<span class="k">if</span> (readcount == 1)      <span class="hl">// reader ตัวแรกเป็นคนล็อก writer</span>
+    <span class="f">wait</span>(wrt);
+<span class="f">signal</span>(mutex);
+<span class="c">// อ่านข้อมูล (พร้อมกันได้หลายคน)</span>
+<span class="f">wait</span>(mutex);
+readcount--;
+<span class="k">if</span> (readcount == 0)      <span class="hl">// reader ตัวสุดท้ายเป็นคนปลดล็อก</span>
+    <span class="f">signal</span>(wrt);
+<span class="f">signal</span>(mutex);</code></pre></div>
+</div>
+<p class="small">💡 จำสั้น ๆ: "ตัวแรกล็อก ตัวสุดท้ายปลด" — ตัวกลาง ๆ เดินผ่านได้เลยเพราะผู้จัดการคือ readcount</p>
+
+<h2 id="dp">5. ปัญหาที่ 3: Dining Philosophers (นักปราชญ์ 5 คน)</h2>
+<p>5 คน นั่งโต๊ะกลม กับข้าววางกลาง มี <strong>ตะเกียบ 5 อัน</strong> (อันละช่องว่างระหว่างคน) — จะกินข้าวได้ต้องมี<strong>ตะเกียบครบ 2 ข้าง</strong> (ซ้าย+ขวา) ข้อมูลแชร์: <code>semaphore chopstick[5]</code> เริ่มทุกตัว = 1</p>
+<div class="codewrap"><span class="codetag">โค้ดของนักปราชญ์ i</span><pre class="code"><code><span class="k">while</span> (<span class="f">true</span>) {
+    <span class="f">wait</span>(chopstick[i]);            <span class="c">// หยิบตะเกียบซ้าย</span>
+    <span class="f">wait</span>(chopstick[(i + 1) % 5]);  <span class="c">// หยิบตะเกียบขวา</span>
+    <span class="c">// กินข้าว 🍚</span>
+    <span class="f">signal</span>(chopstick[i]);          <span class="c">// วางซ้าย</span>
+    <span class="f">signal</span>(chopstick[(i + 1) % 5]);<span class="c">// วางขวา</span>
+    <span class="c">// คิดปรัชญา 🤔</span>
+}</code></pre></div>
+
+<figure class="fig">
+<svg viewBox="0 0 480 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="dining philosophers">
+  <circle cx="240" cy="170" r="70" fill="#fef9c3" stroke="#ca8a04" stroke-width="2"/>
+  <text x="240" y="176" text-anchor="middle" font-size="13" font-weight="800" fill="#854d0e">🍚</text>
+  <g font-size="12" font-weight="800" fill="#4f46e5">
+    <circle cx="240" cy="48" r="20" fill="#eef0ff" stroke="#4f46e5"/><text x="240" y="53" text-anchor="middle">P0</text>
+    <circle cx="380" cy="120" r="20" fill="#eef0ff" stroke="#4f46e5"/><text x="380" y="125" text-anchor="middle">P1</text>
+    <circle cx="325" cy="280" r="20" fill="#eef0ff" stroke="#4f46e5"/><text x="325" y="285" text-anchor="middle">P2</text>
+    <circle cx="155" cy="280" r="20" fill="#eef0ff" stroke="#4f46e5"/><text x="155" y="285" text-anchor="middle">P3</text>
+    <circle cx="100" cy="120" r="20" fill="#eef0ff" stroke="#4f46e5"/><text x="100" y="125" text-anchor="middle">P4</text>
+  </g>
+  <g font-size="11" font-weight="700" fill="#92400e">
+    <rect x="288" y="58" width="34" height="16" rx="4" fill="#fde68a" stroke="#d97706"/><text x="305" y="70" text-anchor="middle">C0</text>
+    <rect x="370" y="196" width="34" height="16" rx="4" fill="#fde68a" stroke="#d97706"/><text x="387" y="208" text-anchor="middle">C1</text>
+    <rect x="240" y="292" width="34" height="16" rx="4" fill="#fde68a" stroke="#d97706"/><text x="257" y="304" text-anchor="middle">C2</text>
+    <rect x="112" y="196" width="34" height="16" rx="4" fill="#fde68a" stroke="#d97706"/><text x="129" y="208" text-anchor="middle">C3</text>
+    <rect x="94" y="58" width="34" height="16" rx="4" fill="#fde68a" stroke="#d97706"/><text x="111" y="70" text-anchor="middle">C4</text>
+  </g>
+  <text x="240" y="330" text-anchor="middle" font-size="12.5" font-weight="800" fill="#dc2626">ถ้าทุกคนหยิบตะเกียบซ้ายพร้อมกัน → ทุกคนรอขวาตลอดไป = Deadlock</text>
+</svg>
+<figcaption>นักปราชญ์ Pi ใช้ตะเกียบ Ci (ซ้าย) และ C(i+1)%5 (ขวา) — โซลูชัน naive นี้เกิด deadlock ได้!</figcaption>
+</figure>
+
+<div class="callout warn">
+  <div class="co-title">⚠️ จุดพังของโซลูชันนี้</div>
+  <p>ถ้า 5 คน<strong>หิวพร้อมกัน</strong>และหยิบตะเกียบซ้ายได้ครบทุกคน → ไม่มีตะเกียบว่างเหลือเลย ทุกคนรอขวาเป็นวงกลม = <strong>Deadlock</strong> (ครบเงื่อนไข hold and wait + circular wait) — วิธีแก้คลาสสิก: จำกัดให้ 4 คนนั่งพร้อมกัน / หยิบพร้อมกันเท่านั้น / หรือใช้ <strong>Monitor (ข้างล่าง)</strong> ซึ่งกัน deadlock ได้ 100%</p>
+</div>
+
+<h2 id="wrong">6. การใช้ Semaphore ผิดวิธี → เกิด Deadlock</h2>
+<p>Semaphore เป็นเครื่องมือระดับต่ำ OS ไม่ได้ตรวจว่าเราใช้ถูกไหม — ความผิดพลาดของโปรแกรมเมอร์ทำระบบพังได้:</p>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>ความผิดพลาด</th><th>ผลที่ตามมา</th></tr>
+  <tr><td><code>signal(mutex) … wait(mutex)</code> (สลับที่)</td><td>หลาย process อยู่ใน critical section พร้อมกัน (mutual exclusion แตก)</td></tr>
+  <tr><td><code>wait(mutex) … wait(mutex)</code></td><td><strong>Deadlock</strong> — ครอง lock แรกแล้วไปรอล็อกที่สอง</td></tr>
+  <tr><td>ลืม <code>wait()</code> หรือลืม <code>signal()</code></td><td>แย่งกัน / คนรอต่อคิวค้างตลอดไป</td></tr>
+  <tr><td>สอง process รอ semaphore สลับลำดับ (wait(S);wait(Q) กับ wait(Q);wait(S))</td><td><strong>Deadlock</strong> — ตัวอย่าง S/Q จากบท Deadlock (บท 9)</td></tr>
+</table></div>
+
+<h2 id="monitor">7. Monitor — ตัวเกราะระดับสูง</h2>
+<p><strong>Monitor = abstraction ระดับสูง</strong> (คล้าย class ใน OOP) ที่รวม shared data + ฟังก์ชันจัดการไว้ด้วยกัน และ<strong>รับประกัน mutual exclusion ให้อัตโนมัติ</strong> — ยอมให้มีเพียง <strong>1 process อยู่ใน monitor ต่อ 1 เวลา</strong> นักเขียนโปรแกรมจึงลืมล็อก/ปลดล็อกไม่ได้ (ต่างจาก semaphore)</p>
+<div class="codewrap"><span class="codetag">โครงสร้าง monitor</span><pre class="code"><code><span class="f">monitor</span> monitor-name {
+    <span class="c">// shared variable declarations</span>
+    <span class="f">procedure</span> P1 (...) { ... }
+    ...
+    <span class="f">procedure</span> Pn (...) { ... }
+    initialization code (...) { ... }
+}</code></pre></div>
+<p>จุดอ่อน: บางที process ที่อยู่ใน monitor ต้อง "รอเงื่อนไขอื่น" (เช่น รอเพื่อนบ้านเลิกกิน) — ถ้ารอในนั้นต่อ คนอื่นเข้าไม่ได้เลย จึงมี <strong>Condition Variables</strong> (x, y) มาช่วย:</p>
+<ul>
+  <li><code>x.wait()</code> — process ที่เรียกจะ<strong>หลับ</strong>ไปรอในคิวของเงื่อนไข x (ทำให้คนอื่นเข้า monitor ได้ต่อ)</li>
+  <li><code>x.signal()</code> — ปลุก process รอใน x 1 ตัว · <strong>ข้อแตกต่างจาก semaphore สำคัญ: ถ้าไม่มีใคนรออยู่ สัญญาณจะหายไปเฉย ๆ</strong> (ไม่มี counter ให้เก็บยอด!)</li>
+</ul>
+
+<h3>แก้ Dining Philosophers ด้วย Monitor (กัน deadlock 100%)</h3>
+<div class="codewrap"><span class="codetag">monitor DP (จาก handout)</span><pre class="code"><code><span class="f">enum</span> {THINKING, HUNGRY, EATING} state[5];
+condition self[5];
+
+<span class="f">void</span> <span class="f">pickup</span>(<span class="k">int</span> i) {
+    state[i] = HUNGRY;
+    <span class="f">test</span>(i);
+    <span class="k">if</span> (state[i] != EATING) self[i].wait;   <span class="c">// ยังหยิบไม่ได้ → หลับรอ</span>
+}
+<span class="f">void</span> <span class="f">putdown</span>(<span class="k">int</span> i) {
+    state[i] = THINKING;
+    <span class="f">test</span>((i + 4) % 5);   <span class="c">// เช็คเพื่อนบ้านซ้าย</span>
+    <span class="f">test</span>((i + 1) % 5);   <span class="c">// เช็คเพื่อนบ้านขวา</span>
+}
+<span class="f">void</span> <span class="f">test</span>(<span class="k">int</span> i) {       <span class="c">// กินได้เมื่อ "เพื่อนสองข้างไม่ได้กิน"</span>
+    <span class="k">if</span> ( (state[(i + 4) % 5] != EATING) &amp;&amp;
+         (state[i] == HUNGRY) &amp;&amp;
+         (state[(i + 1) % 5] != EATING) ) {
+        state[i] = EATING;
+        self[i].signal();
+    }
+}</code></pre></div>
+<p>การใช้งาน: <code>dp.pickup(i)</code> → กิน → <code>dp.putdown(i)</code> — เพราะไม่มีใคร "ถือตะเกียบข้างเดียวค้างไว้" จึง<strong>ไม่เกิด deadlock เลย</strong> (แต่ยังมีโอกาส starvation ถ้าเพื่อนบ้านสลับกันกินไม่เว้น!)</p>
+
+<h2 id="java">8. Java Synchronization</h2>
+<p>Java เอาแนวคิด monitor มาฝังในทุก object ผ่านคีย์เวิร์ด <code>synchronized</code>:</p>
+<ul>
+  <li>ทุก object มี <strong>lock</strong> ของตัวเอง — เรียก synchronized method ต้อง "เป็นเจ้าของ lock" ก่อน</li>
+  <li>Thread ที่มาตกคิวจะไปรอใน <strong>Entry Set</strong> · ออกจาก method = คืน lock อัตโนมัติ</li>
+  <li><code>wait()</code> — ทำ 3 อย่าง: <strong>1) คืน object lock 2) สถานะเป็น blocked 3) ย้ายเข้า Wait Set</strong></li>
+  <li><code>notify()</code> — <strong>สุ่ม</strong>เลือก 1 thread จาก Wait Set ย้ายไป Entry Set (รอแย่ง lock ใหม่ — <strong>ไม่ได้รันทันที!</strong> และเลือกตัวเองไม่ได้)</li>
+  <li><code>notifyAll()</code> — ปลุก<strong>ทุกตัว</strong>ใน Wait Set ขึ้นมาแย่งกันใน Entry Set — แนวรับที่ปลอดภัยกว่าเมื่อ wait set มีหลายตัว (ป้องกันเคส "ปลุกผิดตัวจนทุกคนรอกันตาย")</li>
+  <li>ตัวอย่างคลาสสิก: <code>insert()</code>/<code>remove()</code> ของ bounded buffer ด้วย while(count==...) wait(); ... notify(); (โค้ดเต็มใน handout)</li>
+  <li>Java 5+ มี <code>java.util.concurrent.Semaphore</code> จริง ๆ แล้ว: <code>acquire()</code> ≈ wait, <code>release()</code> ≈ signal</li>
+</ul>
+
+<div class="callout exam">
+  <div class="co-title">🎯 ตารางแยกพวก "wait" ที่หลอกเยอะที่สุด</div>
+  <div class="tbl-wrap"><table class="tbl">
+    <tr><th>wait ของใคร</th><th>ทำอะไร</th></tr>
+    <tr><td><code>wait(S)</code> ของ <strong>Semaphore</strong></td><td>หยิบหิน — ลดค่า S, ไม่มีหินก็รอ</td></tr>
+    <tr><td><code>wait()</code> ของ <strong>Java/Monitor</strong></td><td>สลัด lock + หลับใน Wait Set</td></tr>
+    <tr><td><code>wait()</code> ของ <strong>Process (บท 3)</strong></td><td>Parent รอ Child จบ เก็บ exit status</td></tr>
+  </table></div>
+  <p class="small">แถม: <code>Thread.yield()</code> แค่ยอมออกจาก CPU ไปต่อคิว ready — <strong>ยังถือ lock ค้างอยู่</strong> (เหมือนล็อกห้องแล้วปีนหน้าต่างหนี คนอื่นก็ยังเข้าไม่ได้!)</p>
+</div>
+
+<h2 id="quiz">📝 แบบฝึกหัดท้ายบท</h2>
+
+<div class="quiz" data-q data-type="mc" data-answer="c" id="ch08q1">
+  <div class="quiz-head"><span class="q-ico">🔤</span><span class="q-title">ข้อ 1</span><span class="q-tag safe">ปรนัย — ค่าเริ่มต้นต้องจำ!</span></div>
+  <div class="q-text">ในการแก้ปัญหา Bounded Buffer ด้วย Semaphore ตัวแปร mutex, full, empty ควรถูก initialize ด้วยค่าใด</div>
+  <div class="choices">
+    <div class="choice" data-val="a"><span class="mark">ก</span><span>mutex = 0, full = 0, empty = n</span></div>
+    <div class="choice" data-val="b"><span class="mark">ข</span><span>mutex = 1, full = n, empty = 0</span></div>
+    <div class="choice" data-val="c"><span class="mark">ค</span><span>mutex = 1, full = 0, empty = n</span></div>
+    <div class="choice" data-val="d"><span class="mark">ง</span><span>mutex = n, full = 1, empty = 1</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ค</span>mutex = 1 (เข้าแตะ buffer ได้ทีละคน) · full = 0 (ตอนเริ่มไม่มีข้อมูลเลย) · empty = n (ว่างทั้งหมด n ช่อง) — สลับ full/empty เป็นจุดพลาดอันดับหนึ่งของข้อสอบ</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="false" id="ch08q2">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 2</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">การเรียก x.signal() บน condition variable ของ Monitor จะเก็บค่าไว้เผื่อไว้เสมอ — แม้ตอนนั้นไม่มี process รออยู่ ค่าจะถูกใช้ปลุกคนที่มารอทีหลัง</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ผิด</span>x.signal() ของ Monitor <strong>ถ้าไม่มีใครรอ สัญญาณหายไปเฉย ๆ</strong> ไม่มีการเก็บยอด (ต่างจาก semaphore ที่ signal เพิ่ม counter ให้เรียกครั้งเดียวก็พอ)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="true" id="ch08q3">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 3</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">ในโซลูชัน Readers-Writers reader ตัวแรกเป็นคนเรียก wait(wrt) เพื่อล็อก writer และ reader ตัวสุดท้ายเป็นคนเรียก signal(wrt) เพื่อปลดล็อก</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ถูก</span>เงื่อนไข if (readcount == 1) wait(wrt) กับ if (readcount == 0) signal(wrt) — reader กลาง ๆ เดินเข้าอ่านได้เลย นี่คือเหตุผลที่ reader หลายตัวอ่านพร้อมกันได้</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="false" id="ch08q4">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 4</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">ใน Java เมื่อ thread A เรียก notify() thread B ที่รออยู่ใน Wait Set จะได้รันต่อทันที</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ผิด</span>notify() แค่ย้าย B จาก Wait Set ไป <strong>Entry Set</strong> (ต่อคิวแย่ง lock ใหม่) — B ต้องได้ lock กลับมาก่อนถึงจะรันต่อได้ และ Java เลือกตัวปลุกเอง เรากำหนดไม่ได้ (อยากปลอดภัยใช้ notifyAll())</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="text" data-answer="deadlock|dead lock" id="ch08q5">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 5</span><span class="q-tag safe">เติมคำตอบ</span></div>
+  <div class="q-text">ใน Dining Philosophers หากนักปราชญ์ทั้ง 5 หยิบตะเกียบซ้ายพร้อมกันแล้วรอตะเกียบขวาตลอดไป — สถานการณ์นี้เรียกว่าอะไร (ตอบคำภาษาอังกฤษ)</div>
+  <input type="text" placeholder="ตอบคำสั้น ๆ">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: Deadlock</span>ครบเงื่อนไข hold and wait + circular wait วิธีแก้ที่ดีที่สุดในบทนี้คือใช้ Monitor (pickup/putdown/test) ซึ่งไม่มีใครถือตะเกียบเดี่ยวค้าง → ไม่เกิด deadlock แน่นอน (แต่ยัง starvation ได้)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="false" id="ch08q6">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 6</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">การเรียก Thread.yield() ใน Java จะทำให้ thread คืน lock ของ object คืนให้ thread อื่นใช้ก่อน</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ผิด</span>yield() แค่ยอมสละ CPU ไปต่อคิว ready — <strong>ยังถือ lock ค้างอยู่!</strong> ตัวเดียวที่คืน lock ในระหว่างรอคือ wait() นี่คือจุดที่อาจารย์เน้นในวิดีโอ 11.2</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="pager">
+  <a href="07-sync.html"><span class="dir">← บทก่อนหน้า</span><span class="name">บทที่ 7: Race Condition & CS</span></a>
+  <a href="09-deadlock.html" class="next"><span class="dir">บทถัดไป →</span><span class="name">บทที่ 9: Deadlock & Banker's Algorithm</span></a>
+</div>
+
+<div class="center"><button class="btn ghost" id="doneBtn"></button></div>
+
+</main>
+</div>
+<button id="toTop" aria-label="กลับขึ้นด้านบน">↑</button>
+<script src="js/app.js"></script>
+</body>
+</html>

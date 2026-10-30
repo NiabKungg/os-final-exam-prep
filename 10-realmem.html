@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 10 — Real Memory Management | เว็บติว OS Final</title>
+<meta name="description" content="Logical vs Physical address MMU relocation register Dynamic linking Fixed/Variable partition Internal External fragmentation First Best Worst fit Segmentation พร้อมตัวอย่างคำนวณจากวิดีโอ">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="ch10">
+<div id="sidebar-root"></div>
+<div class="sidebar-backdrop"></div>
+
+<header class="topbar">
+  <button class="icon-btn" id="menuBtn" aria-label="เปิดเมนู">☰</button>
+  <a class="brand" href="index.html"><span class="brand-logo">OS</span><span>เว็บติว OS Final<span class="brand-sub">บทที่ 10 · Real Memory</span></span></a>
+  <span class="spacer"></span>
+  <span class="progress-pill" id="quizPill"></span>
+  <button class="icon-btn" id="themeBtn">🌙</button>
+</header>
+
+<div class="layout">
+<main class="content">
+
+<div class="chip-row">
+  <span class="chip final">หัวใจของ Final</span>
+  <span class="chip hot">มีคำนวณ First/Best/Worst-fit + Segmentation</span>
+  <span class="chip">วิดีโอ 12.1, 12.2, 12.4 · Handout No.8</span>
+</div>
+<h1>บทที่ 10 — การจัดการหน่วยความจำจริง (Real Memory)</h1>
+<p class="lead">บทนี้เป็นปูพื้นให้ Paging ในบทถัดไป เริ่มจากคู่แฝด Logical/Physical address แล้วเดินเรื่องการจัดสรร RAM 3 ยุค: <strong>Fixed partition → Variable partition → Paging/Segmentation</strong> พร้อมตัวอย่างเลขทุกตัวที่ปรากฏในวิดีโอ</p>
+
+<div class="toc">
+  <div class="toc-title">สารบัญบทนี้</div>
+  <ol>
+    <li><a href="#lp">Logical vs Physical Address + MMU</a></li>
+    <li><a href="#linking">Static vs Dynamic Linking (มีเลขให้คำนวณ!)</a></li>
+    <li><a href="#fixed">Fixed Partition — Internal Fragmentation</a></li>
+    <li><a href="#variable">Variable Partition — External Fragmentation</a></li>
+    <li><a href="#placement">First-fit · Best-fit · Worst-fit 🔥</a></li>
+    <li><a href="#segment">Segmentation 🔥</a></li>
+    <li><a href="#quiz">แบบฝึกหัดท้ายบท</a></li>
+  </ol>
+</div>
+
+<h2 id="lp">1. Logical vs Physical Address + MMU</h2>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th></th><th>Logical Address (Virtual Address)</th><th>Physical Address</th></tr>
+  <tr><td>ใครสร้าง</td><td><strong>CPU</strong> ปล่อยออกมาขณะรันโปรแกรม</td><td>ตำแหน่งจริงที่ "หน่วยความจำ" มองเห็น</td></tr>
+  <tr><td>จุดอ้างอิง</td><td>มองว่าโปรแกรมเริ่มที่ <strong>byte ที่ 0 เสมอ</strong></td><td>เทียบกับจุดเริ่มของ RAM จริง</td></tr>
+</table></div>
+<p><strong>MMU (Memory Management Unit)</strong> = ฮาร์ดแวร์แปลง logical → physical แบบง่ายสุดคือใช้ <strong>Relocation Register (Base Register)</strong> เก็บตำแหน่งที่ OS โหลดโปรแกรมลง RAM:</p>
+<div class="formula">Physical Address = Relocation Register + Logical Address<small>ตัวอย่างวิดีโอ: โปรแกรมถูกโหลดที่ RAM ตำแหน่ง 14,000 — CPU ขอ byte ที่ 346 → Physical = 14,000 + 346 = 14,346</small></div>
+<div class="callout analogy">
+  <div class="co-title">🏨 เปรียบเทียบ</div>
+  <p>Logical address = "เลขห้อง 305 ชั้น 3 ในโรงแรม" (เทียบกับตัวตึก) · Physical address = "พิกัดจริงบนแผนที่เมือง" · MMU = นายหน้าแปลงเลขห้องให้เป็นพิกัด — คุณ (โปรแกรม) ไม่จำเป็นต้องรู้เลยว่าตึกอยู่ถนนไหน (โปรแกรมไม่เคยเห็น physical address เลย)</p>
+</div>
+
+<h2 id="linking">2. Static vs Dynamic Linking — ตัวอย่างเลขจากวิดีโอ</h2>
+<p><strong>Static linking</strong>: ก๊อปโค้ด library มารวมในไฟล์โปรแกรมตั้งแต่ compile — <strong>Dynamic linking</strong>: เลื่อนการเชื่อมไป<strong>ตอนรัน</strong> ใส่แค่ <strong>stub</strong> (โค้ดจิ๋วที่ไปหา library แทน แล้วแทนตัวเองด้วย address ของ routine ที่หาเจอ) ทำให้ library ถูกแชร์ร่วมกันได้ (shared libraries)</p>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>สถานการณ์ (ตัวอย่างวิดีโอ)</th><th>Static Linking</th><th>Dynamic Linking</th></tr>
+  <tr><td>โปรแกรม A (10 MB) + Lib (20 MB)</td><td>ไฟล์ A = 30 MB</td><td>A = 10 + stub 2 = 12 MB</td></tr>
+  <tr><td>โปรแกรม B (20 MB) + Lib ตัวเดียวกัน</td><td>ไฟล์ B = 40 MB</td><td>B = 20 + stub 2 = 22 MB</td></tr>
+  <tr><td><strong>RAM รวมเมื่อรันทั้งคู่</strong></td><td><strong>30 + 40 = 70 MB</strong> (Lib โหลดซ้ำ 2 ชุด!)</td><td><strong>12 + 20 + 22 = 54 MB</strong> (Lib โหลดครั้งเดียว แชร์กัน)</td></tr>
+</table></div>
+<p class="small">ประหยัดไป 16 MB — stub จะเช็คว่า lib อยู่ใน RAM หรือยัง ถ้ายังไม่มีค่อยโหลด ถ้ามีแล้วใช้ร่วมทันที (OS ช่วยเช็คว่า routine นั้นอยู่ใน address space ของ process หรือไม่)</p>
+
+<h2 id="fixed">3. Fixed Partition — แบ่งช่องล่วงหน้าคงที่</h2>
+<p>แบ่ง RAM ส่วนผู้ใช้เป็นช่องขนาดคงที่ตั้งแต่ก่อนเปิดเครื่อง — <strong>มีกี่ partition รองรับ process พร้อมกันได้แค่นั้น</strong> การป้องกันใช้ <strong>Limit Register</strong> (ขนาดช่อง) + <strong>Relocation Register</strong> (ตำแหน่งเริ่มช่อง): CPU ออก logical address → เช็คว่า <code>LA &lt; Limit</code> ไหม ผ่านค่อย <code>+ Relocation</code></p>
+<p><strong>ตัวอย่างจากวิดีโอ:</strong> partitions 4 ช่อง: P1 (100K), P2 (25K), P3 (25K), P4 (50K) — งานเข้ามาตามลำดับ:</p>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>งาน</th><th>ผลการจัดสรร</th><th>เศษทิ้ง (Internal Fragmentation)</th></tr>
+  <tr><td>Job 1 (30K)</td><td>ลง P1 (100K)</td><td><strong>70K ว่างในช่องแต่ใช้ไม่ได้</strong></td></tr>
+  <tr><td>Job 2 (50K)</td><td>ลง P4 (50K) พอดี</td><td>0</td></tr>
+  <tr><td>Job 3 (30K)</td><td class="c" style="color:var(--red);font-weight:800">ต้องรอ! 😱</td><td>P2, P3 มีแค่ 25K เล็กเกินไป แม้รวมที่ว่างเหลือ 70+25+25 = 120K</td></tr>
+  <tr><td>Job 4 (25K)</td><td>ลง P2 (25K) พอดี</td><td>0</td></tr>
+</table></div>
+<div class="formula">Fixed Partition → เกิด Internal Fragmentation<small>"เศษใน" — พื้นที่ว่างที่ติดอยู่ในช่องที่ถูกจองแล้ว ใครก็เอาไปใช้ต่อไม่ได้</small></div>
+
+<h2 id="variable">4. Variable Partition — จัดตามขนาดจริง</h2>
+<p>ไม่แบ่งล่วงหน้า งานมาเท่าไรตัดให้เท่านั้น — ตอนแรกไม่มีของเสียเลย แต่พองานเก่าจบทิ้งช่องว่างกระจัดกระจาย เกิด <strong>External Fragmentation</strong> ("เศษนอก" — รวม ๆ ว่างเยอะแต่ช่องเดี่ยวเล็ก)</p>
+<p><strong>ตัวอย่างวิดีโอ:</strong> ช่องว่างเหลือ 5 MB, 2 MB, 1 MB (รวม 8 MB) — งานใหม่ต้องการ 7 MB → <strong>โหลดไม่ได้!</strong> เพราะไม่มีช่องเดียวใหญ่พอ</p>
+
+<div class="memgrid">
+  <span class="memcell used">Job A</span>
+  <span class="memcell free">ว่าง 5MB</span>
+  <span class="memcell used">Job B</span>
+  <span class="memcell free">ว่าง 2MB</span>
+  <span class="memcell used">Job C</span>
+  <span class="memcell free">ว่าง 1MB</span>
+  <span class="memcell bad">รับ 7MB ไม่ได้ (ช่องใหญ่สุดแค่ 5MB)</span>
+</div>
+
+<p>วิธีรักษา external fragmentation มี 2 ทาง:</p>
+<ul>
+  <li><strong>Coalescing</strong> — รวมช่องว่างที่<strong>ติดกัน</strong>เป็นช่องใหญ่หนึ่งช่อง (ถูก แต่ถ้าช่องว่างไม่ได้ติดกันก็ช่วยไม่ทันการ)</li>
+  <li><strong>Compaction</strong> — ลาก process ทั้งหมดมา<strong>อัดติดกัน</strong>ทางซ้าย รวมของว่างไว้ปลายเดียว — ได้ที่ว่างใหญ่จริง แต่<strong>overhead แพงมาก</strong> ต้องหยุดงาน ย้ายข้อมูล คำนวณตำแหน่งใหม่ และทำได้เฉพาะเมื่อ relocation เป็นแบบ <strong>dynamic (ทำตอน execution time)</strong></li>
+</ul>
+
+<div class="callout exam">
+  <div class="co-title">🎯 สูตรลับแยกสอง fragmentation (ข้อถูก/ผิดออกวนไป)</div>
+  <p><strong>Fixed Partition = Internal</strong> (เศษอยู่ในช่องจองแล้ว) · <strong>Variable Partition และ Segmentation = External</strong> (เศษกระจายนอก) · Paging = ไม่มี External แต่มี Internal ที่เพจสุดท้าย (บทถัดไป)</p>
+</div>
+
+<h2 id="placement">5. First-fit · Best-fit · Worst-fit 🔥</h2>
+<p>เมื่องานขนาด S มาขอ จะเลือกหลุม (hole) ไหนดี? — <strong>ตัวอย่างวิดีโอ:</strong> หลุมเรียงตามลำดับใน RAM: <strong>16 MB, 14 MB, 5 MB, 30 MB</strong> และมี process ใหม่ต้องการ <strong>13 MB</strong>:</p>
+
+<div class="card">
+<h4 class="mt0">First-fit — เจอช่องแรกที่พอ จบเกม</h4>
+<p>ไล่จากซ้าย: 16 ≥ 13 ✓ → ลงช่อง 16 MB ทันที เหลือทิ้ง <strong>3 MB</strong> · จุดเด่น: <strong>เร็วที่สุด</strong> (ไม่ต้องสแกนครบ) จุดด้อย: ใช้พื้นที่เปลืองกว่า</p>
+<div class="memgrid">
+  <span class="memcell used">13MB ลงนี่ (First-fit)</span>
+  <span class="memcell free">เหลือ 3</span>
+  <span class="memcell free">14</span>
+  <span class="memcell free">5</span>
+  <span class="memcell free">30</span>
+</div>
+<h4>Best-fit — สแกนครบ เลือกช่องที่ "ใหญ่พอ + แน่นที่สุด"</h4>
+<p>16 → เหลือ 3 · 14 → เหลือ 1 · 5 → ไม่พอ · 30 → เหลือ 17 → เลือก <strong>14 MB</strong> เหลือทิ้ง <strong>1 MB</strong> · จุดเด่น: คุ้มสุด จุดด้อย: <strong>ช้า</strong> (สแกนครบทุกช่อง) และมักทิ้งเศษจิ๋ว ๆ ใช้ต่อไม่ได้</p>
+<div class="memgrid">
+  <span class="memcell free">16</span>
+  <span class="memcell used">13MB ลงนี่ (Best-fit)</span>
+  <span class="memcell free">เหลือ 1</span>
+  <span class="memcell free">5</span>
+  <span class="memcell free">30</span>
+</div>
+<h4>Worst-fit — สแกนครบ เลือกช่องใหญ่ที่สุด</h4>
+<p>ใหญ่สุดคือ 30 MB → ลงที่นั่น เหลือทิ้ง <strong>17 MB</strong> · แนวคิด: ทิ้งเศษชิ้นใหญ่ไว้ให้งานถัดไปใช้ต่อได้ (แต่โดยรวมมักแพ้ best-fit)</p>
+<div class="memgrid">
+  <span class="memcell free">16</span>
+  <span class="memcell free">14</span>
+  <span class="memcell free">5</span>
+  <span class="memcell used">13MB ลงนี่ (Worst-fit)</span>
+  <span class="memcell free">เหลือ 17</span>
+</div>
+</div>
+
+<div class="callout tip">
+  <div class="co-title">💡 วิธีทำในห้องสอบ (เร็ว 30 วินาที)</div>
+  <p>1) เขียนเลขหลุมเรียงตามลำดับที่โจทย์ให้มา (ห้ามจัดเรียงเอง!) 2) First-fit = วิ่งจากซ้ายหยุดหลุมแรกที่ ≥ S 3) Best-fit = เทียบ (หลุม − S) ทุกหลุมที่ ≥ S เลือกค่าน้อยสุด 4) Worst-fit = เลือกหลุมใหญ่สุด · อย่าลืมเขียน "เศษเหลือ" ทิ้งไว้ให้ข้อถัดไปด้วยถ้าโจทย์ให้จัดหลายงานต่อกัน</p>
+</div>
+
+<h2 id="segment">6. Segmentation — แบ่งตามสายตาโปรแกรมเมอร์ 🔥</h2>
+<p>Paging แบ่งตามใจฮาร์ดแวร์ (ก้อนเท่ากัน) แต่ <strong>Segmentation แบ่งตามมุมมองของคนเขียนโปรแกรม</strong>: main, function, object, stack, global variables — แต่ละ segment <strong>ขนาดไม่เท่ากัน</strong> (เป็น logical unit)</p>
+<ul>
+  <li>Logical address = คู่ลำดับ <code>&lt;segment-number (s), offset (d)&gt;</code></li>
+  บ<code>
+  <li>Segment table แต่ละแถวมี <strong>Base</strong> (ตำแหน่งเริ่มใน RAM) + <strong>Limit</strong> (ความยาว segment)</li>
+  <li>Register ประกอบ: <strong>STBR</strong> ชี้ตำแหน่งตาราง · <strong>STLR</strong> บอกจำนวน segment — s ถูกต้องถ้า <code>s &lt; STLR</code></li>
+</ul>
+<div class="formula">ขั้นแรก: เช็ค d &lt; Limit — ถ้า d ≥ Limit → TRAP (Segmentation Fault!)<br>ขั้นต่อมา: Physical Address = Base + Offset<small>เช็คขอบเขต "ก่อนเสมอ" แล้วค่อยบวก — เคร่งครัดเรื่อง &lt; ไม่ใช่ ≤</small></div>
+
+<h3>ตัวอย่างจากวิดีโอ</h3>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>Segment</th><th class="c">Base</th><th class="c">Limit</th></tr>
+  <tr><td>1</td><td class="c">6300</td><td class="c">500</td></tr>
+  <tr><td>2</td><td class="c">4300</td><td class="c">400</td></tr>
+</table></div>
+<ol class="steps">
+  <li><span class="st-title">Logical address &lt;1, 300&gt;</span>เช็ค: offset 300 &lt; limit 500 ✓ → PA = 6300 + 300 = <strong>6600</strong> ✅</li>
+  <li><span class="st-title">Logical address &lt;2, 400&gt;</span>เช็ค: offset 400 &lt; limit 400 ? → <strong>ไม่ผ่าน!</strong> (400 ไม่ได้ "น้อยกว่า" 400) → <strong>Trap / Error</strong> ทันที ❌</li>
+</ol>
+
+<figure class="fig">
+<svg viewBox="0 0 740 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="segmentation hardware">
+  <defs><marker id="ar10" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0,0 L7,3.2 L0,6.4 z" fill="#64748b"/></marker></defs>
+  <text x="120" y="24" text-anchor="middle" font-size="13" font-weight="800" fill="#4f46e5">Logical address &lt;s, d&gt;</text>
+  <rect x="60" y="36" width="120" height="44" rx="10" fill="#eef0ff" stroke="#4f46e5"/><text x="120" y="64" text-anchor="middle" font-size="13" font-weight="800" fill="#3730a3">s = 1</text>
+  <rect x="60" y="88" width="120" height="44" rx="10" fill="#fff7ed" stroke="#d97706"/><text x="120" y="116" text-anchor="middle" font-size="13" font-weight="800" fill="#92400e">d = 300</text>
+  <rect x="280" y="30" width="180" height="130" rx="12" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="370" y="54" text-anchor="middle" font-size="12.5" font-weight="800" fill="#334155">Segment Table</text>
+  <g font-size="11.5" font-weight="700">
+    <rect x="292" y="62" width="156" height="26" rx="6" fill="#fef9c3" stroke="#ca8a04"/><text x="300" y="80" fill="#854d0e">S1</text><text x="360" y="80" fill="#854d0e">base 6300</text><text x="430" y="80" fill="#854d0e">limit 500</text>
+    <text x="300" y="114" fill="#475569">S2</text><text x="360" y="114" fill="#475569">base 4300</text><text x="430" y="114" fill="#475569">limit 400</text>
+    <text x="300" y="140" fill="#94a3b8">S0</text><text x="360" y="140" fill="#94a3b8">base 1400</text><text x="430" y="140" fill="#94a3b8">limit …</text>
+  </g>
+  <rect x="540" y="52" width="170" height="90" rx="12" fill="#ecfdf5" stroke="#059669"/>
+  <text x="625" y="82" text-anchor="middle" font-size="13" font-weight="800" fill="#065f46">RAM</text>
+  <rect x="556" y="92" width="138" height="36" rx="8" fill="#a7f3d0"/>
+  <text x="625" y="116" text-anchor="middle" font-size="12" font-weight="800" fill="#065f46">6300 … 6800 ← 6600 ✅</text>
+  <path d="M182 58 L278 58" stroke="#64748b" stroke-width="2" marker-end="url(#ar10)"/>
+  <path d="M360 118 C 480 160 520 130 538 118" stroke="#64748b" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ar10)"/>
+  <text x="430" y="205" text-anchor="middle" font-size="12.5" font-weight="800" fill="#dc2626">ถ้า d ≥ limit → trap (เช่น &lt;2,400&gt; เพราะ 400 ไม่ &lt; 400)</text>
+  <text x="430" y="228" text-anchor="middle" font-size="12" fill="#475569" font-weight="700">PA = base + d = 6300 + 300 = 6600</text>
+</svg>
+<figcaption>Segmentation hardware: ใช้ s หา base+limit → เช็ค d &lt; limit → ส่ง base + d ไป RAM</figcaption>
+</figure>
+
+<div class="callout exam">
+  <div class="co-title">🎯 ข้อสังเกตปิดบท</div>
+  <p>Segmentation สวยตามใจคน แต่ segment แต่ละตัวต้องวางใน RAM "<strong>ต่อเนื่องเป็นผืนเดียว</strong>" ดังนั้นยังเจ็บปวดกับ <strong>External Fragmentation</strong> เหมือน variable partition — แก้สุดท้ายด้วยการรวมพลังกับ paging เป็น segmentation/paging (v = (s, p, d)) ตามที่มีใน handout</p>
+</div>
+
+<h2 id="quiz">📝 แบบฝึกหัดท้ายบท</h2>
+
+<div class="quiz" data-q data-type="num" data-answer="14346" data-tolerance="0" id="ch10q1">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 1</span><span class="q-tag safe">เติมตัวเลข — ตัวอย่างวิดีโอ</span></div>
+  <div class="q-text">โปรแกรมถูกโหลดเริ่มที่ physical address 14,000 (relocation register = 14,000) — CPU สร้าง logical address 346 physical address คือเท่าไร</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 14,346</span>PA = Relocation Register + Logical Address = 14,000 + 346 = 14,346</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="17" data-tolerance="0" id="ch10q2">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 2</span><span class="q-tag safe">เติมตัวเลข — จากวิดีโอ</span></div>
+  <div class="q-ctx">หลุมว่างเรียงตามลำดับใน RAM: 16 MB, 14 MB, 5 MB, 30 MB — process ใหม่ต้องการ 13 MB</div>
+  <div class="q-text">ถ้าใช้ <strong>Worst-fit</strong> จะเหลือช่องว่างในหลุมที่ใหญ่ที่สุดกี่ MB</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 17</span>Worst-fit เลือกหลุมใหญ่สุด = 30 MB → 30 − 13 = 17 MB เทียบ: First-fit ลง 16 (เหลือ 3), Best-fit ลง 14 (เหลือ 1)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="mc" data-answer="b" id="ch10q3">
+  <div class="quiz-head"><span class="q-ico">🔤</span><span class="q-title">ข้อ 3</span><span class="q-tag safe">ปรนัย</span></div>
+  <div class="q-text">ช่องว่างใน RAM กระจายเป็น 5 MB, 2 MB, 1 MB แล้วมี process ใหม่ต้องการ 7 MB แต่โหลดไม่ได้ — สถานการณ์นี้คือ fragmentation แบบใด และเกิดในการจัดสรรแบบใด</div>
+  <div class="choices">
+    <div class="choice" data-val="a"><span class="mark">ก</span><span>Internal — Fixed partition</span></div>
+    <div class="choice" data-val="b"><span class="mark">ข</span><span>External — Variable partition</span></div>
+    <div class="choice" data-val="c"><span class="mark">ค</span><span>Internal — Variable partition</span></div>
+    <div class="choice" data-val="d"><span class="mark">ง</span><span>External — Fixed partition</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ข</span>รวมว่าง 8 MB แต่ไม่มีช่องเดียวใหญ่พอ = <strong>External fragmentation</strong> อาการเฉพาะของ variable partition (และ segmentation) — วิธีรักษาคือ coalescing หรือ compaction</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="false" id="ch10q4">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 4</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">Logical address &lt;2, 400&gt; กับ segment table (S2: base 4300, limit 400) สามารถแปลงเป็น physical address 4700 ได้ตามปกติ</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ผิด</span>ต้องเช็ค d &lt; limit ก่อนเสมอ — offset 400 <strong>ไม่ได้น้อยกว่า</strong> limit 400 (ต้องเคร่งครัดเรื่อง &lt;) → เกิด trap/error ทันที ไม่ถึงขั้นคำนวณ base + d เลย</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="54" data-tolerance="0" id="ch10q5">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 5</span><span class="q-tag safe">เติมตัวเลข — Dynamic linking จากวิดีโอ</span></div>
+  <div class="q-ctx">โปรแกรม A (10 MB) และ B (20 MB) ใช้ library ร่วมกัน (20 MB) · Dynamic linking ใช้ stub 2 MB ต่อโปรแกรม</div>
+  <div class="q-text">เมื่อรันทั้งสองโปรแกรม ใช้ RAM รวมกี่ MB (ในแบบ dynamic linking)</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 54</span>A (10+2) + Lib (20, โหลดครั้งเดียวแชร์กัน) + B (20+2) = 12+20+22 = 54 MB · แบบ static จะเป็น 30+40 = 70 MB — dynamic ประหยัด 16 MB</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="false" id="ch10q6">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 6</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">การทำ Compaction ใช้ได้กับทุกระบบเพราะเป็นแค่การย้ายข้อมูล ไม่ต้องมีเงื่อนไขพิเศษ</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ผิด</span>Compaction ทำได้ต่อเมื่อ relocation เป็นแบบ <strong>dynamic (ทำตอน execution time)</strong> เท่านั้น เพราะ process ต้องถูกย้ายตำแหน่งขณะยังรัน — ถ้า bind address คงที่ตั้งแต่ compile/load ย้ายไม่ได้ แถม overhead แพงด้วย</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="pager">
+  <a href="09-deadlock.html"><span class="dir">← บทก่อนหน้า</span><span class="name">บทที่ 9: Deadlock</span></a>
+  <a href="11-paging.html" class="next"><span class="dir">บทถัดไป →</span><span class="name">บทที่ 11: Paging & Address Translation 🔥</span></a>
+</div>
+
+<div class="center"><button class="btn ghost" id="doneBtn"></button></div>
+
+</main>
+</div>
+<button id="toTop" aria-label="กลับขึ้นด้านบน">↑</button>
+<script src="js/app.js"></script>
+</body>
+</html>

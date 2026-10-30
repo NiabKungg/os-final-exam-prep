@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ห้องซ้อมข้อสอบ Final — Operating Systems | เว็บติว OS</title>
+<meta name="description" content="ข้อสอบจำลอง OS Final ครบทุกรูปแบบจากรีวิวรุ่นพี่: ถูก/ผิด +2/−1/0 เติมตัวเลข ไล่โค้ด fork คำนวณ paging replacement scheduling พร้อมเฉลยละเอียด">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="exam">
+<div id="sidebar-root"></div>
+<div class="sidebar-backdrop"></div>
+
+<header class="topbar">
+  <button class="icon-btn" id="menuBtn" aria-label="เปิดเมนู">☰</button>
+  <a class="brand" href="index.html"><span class="brand-logo">OS</span><span>เว็บติว OS Final<span class="brand-sub">ห้องซ้อมข้อสอบ</span></span></a>
+  <span class="spacer"></span>
+  <span class="progress-pill" id="quizPill"></span>
+  <button class="icon-btn" id="themeBtn">🌙</button>
+</header>
+
+<div class="layout">
+<main class="content">
+
+<div class="chip-row">
+  <span class="chip hot">จำลองรูปแบบข้อสอบจริง</span>
+</div>
+<h1>📝 ห้องซ้อมข้อสอบ Final</h1>
+<p class="lead">ชุดนี้ออกแบบตามรีวิวรุ่นพี่: <strong>Part A ถูก/ผิด</strong> (ในข้อสอบจริงตอบถูก +2 ผิด −1 ไม่ตอบ 0) · <strong>Part B คำนวณเติมตัวเลข</strong> · <strong>Part C ไล่โค้ด fork</strong> — แนะนำจับเวลา <strong>40 นาที</strong> ทำบนกระดาษก่อนแล้วค่อยกรอก พอกดตรวจจะมีเฉลยละเอียดทีละขั้น</p>
+
+<div class="card" id="scorePanel" style="display:none;text-align:center">
+  <div class="score-big" id="scoreBig">0</div>
+  <div class="small" id="scoreDetail"></div>
+  <div class="small" style="margin-top:6px">ระบบคะแนนจำลอง: ถูก/ผิด ถูก +2 ผิด −1 ไม่ตอบ 0 · ข้อเติมคำตอบถูก +1</div>
+</div>
+
+<h2>Part A — ถูก / ผิด (ระวังติดลบ!)</h2>
+
+<div class="quiz" data-q data-type="tf" data-answer="false" id="exq1">
+  <div class="quiz-head"><span class="q-ico">A1</span><span class="q-title">หน่วยความจำ</span><span class="q-tag">ถูก/ผิด · +2 / −1 / 0</span></div>
+  <div class="q-text">Paging ทำให้หน่วยความจำเกิด External Fragmentation เพราะเพจถูกวางกระจายไม่ติดกัน</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ผิด</span>Paging <strong>ไม่มี External frag</strong> (frame ว่างก้อนไหนก็ใช้ได้) — มันมี <strong>Internal frag</strong> เฉพาะเพจสุดท้าย คนที่จำสับสนกับ variable partition มักหลงกับดักข้อนี้</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="false" id="exq2">
+  <div class="quiz-head"><span class="q-ico">A2</span><span class="q-title">Synchronization</span><span class="q-tag">ถูก/ผิด · +2 / −1 / 0</span></div>
+  <div class="q-text">การเรียก x.signal() บน condition variable ของ monitor เมื่อไม่มี process รออยู่ จะถูกเก็บค่าไว้ใช้ปลุก process ถัดไปที่มารอภายหลัง</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ผิด</span>สัญญาณของ monitor <strong>หายไปเฉย ๆ</strong> ถ้าไม่มีคนรอ (ไม่มี counter เก็บยอด) — ลักษณะนี้ต่างจาก semaphore ที่ signal สะสมค่าได้ ข้อนี้ตรวจความเข้าใจบ่อยมาก</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="true" id="exq3">
+  <div class="quiz-head"><span class="q-ico">A3</span><span class="q-title">Deadlock</span><span class="q-tag">ถูก/ผิด · +2 / −1 / 0</span></div>
+  <div class="q-text">หาก Resource-Allocation Graph ไม่มี cycle เลย ระบบรับประกันได้ว่าไม่เกิด deadlock</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ถูก</span>ไม่มี cycle = ไม่มีวงจรรอ = ไม่มี deadlock แน่นอน 100% (ส่วนมี cycle จะรับประกันได้เฉพาะเมื่อทรัพยากรชิ้นเดียวต่อประเภท)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="true" id="exq4">
+  <div class="quiz-head"><span class="q-ico">A4</span><span class="q-title">IPC</span><span class="q-tag">ถูก/ผิด · +2 / −1 / 0</span></div>
+  <div class="q-text">หลังจาก pipe(pfd) แล้วตามด้วย fork() และให้ parent เป็นผู้ส่ง — parent ควรปิด pfd[0] และ child ควรปิด pfd[1]</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ถูก</span>parent = ผู้ส่ง เก็บปลายเขียน pfd[1] ปิดปลายอ่าน pfd[0] · child = ผู้รับ เก็บ pfd[0] ปิด pfd[1] — ปิดให้ครบท่อจึงกลายเป็นทางเดียวที่ทำงานแน่นอน</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="false" id="exq5">
+  <div class="quiz-head"><span class="q-ico">A5</span><span class="q-title">Virtual Memory</span><span class="q-tag">ถูก/ผิด · +2 / −1 / 0</span></div>
+  <div class="q-text">การเพิ่มจำนวน frame ในระบบที่ใช้ FIFO page replacement จะทำให้จำนวน page fault ลดลงเสมอ</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ผิด</span>FIFO มี <strong>Belady's Anomaly</strong> — string 1,2,3,4,1,2,5,1,2,3,4,5 กับ 3 frames เกิด 9 faults แต่ 4 frames เกิด <strong>10 faults</strong> (เพิ่ม frame แล้ว fault โตขึ้น!)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="true" id="exq6">
+  <div class="quiz-head"><span class="q-ico">A6</span><span class="q-title">File System</span><span class="q-tag">ถูก/ผิด · +2 / −1 / 0</span></div>
+  <div class="q-text">Symbolic link สามารถสร้างข้าม file system และสร้างชี้ไปยัง directory ได้ แต่จะกลายเป็น broken link หากไฟล์ต้นทางถูกลบ</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ถูก</span>soft link เก็บแค่ "path" จึงข้าม partition/ชี้ directory ได้ แต่ต้นทางหาย = dangling ข้อความชุดนี้ถูกต้องครบ — ตรงข้ามกับ hard link ที่ห้ามทั้งสองอย่างแต่ทนการลบ</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<h2>Part B — คำนวณ เติมตัวเลข</h2>
+
+<div class="quiz" data-q data-type="num" data-answer="27" data-tolerance="0" id="exq7">
+  <div class="quiz-head"><span class="q-ico">B1</span><span class="q-title">Paging 🔥</span><span class="q-tag safe">เติมตัวเลข</span></div>
+  <div class="q-ctx">Page size = 8 bytes · Page table: 0→2, 1→5, 2→3, 3→1 · Logical address = <strong>(p = 2, d = 3)</strong></div>
+  <div class="q-text">Physical address คือเท่าไร</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 27</span>เพจ 2 → frame 3 → PA = (3 × 8) + 3 = 24 + 3 = <strong>27</strong> — ขั้นตอน: เปิดตารางด้วย p → คูณ frame ด้วย page size → บวก offset</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="10" data-tolerance="0" id="exq8">
+  <div class="quiz-head"><span class="q-ico">B2</span><span class="q-title">Paging — หาบิต</span><span class="q-tag safe">เติมตัวเลข</span></div>
+  <div class="q-text">ระบบมี logical address space ขนาด 2¹⁴ bytes และ page size = 2¹⁰ bytes — ฟิลด์ page number ต้องใช้กี่บิต</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 10 บิต</span>offset ต้องใช้ 10 บิต (2¹⁰) → page number = 14 − 10 = 10 บิต → มีเพจได้ 2¹⁰ = 1,024 เพจ (ตรวจ: 1024 เพจ × 1KB = 1MB = 2¹⁴ ✓)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="4.5" data-tolerance="0.05" id="exq9">
+  <div class="quiz-head"><span class="q-ico">B3</span><span class="q-title">CPU Scheduling 🔥</span><span class="q-tag safe">เติมตัวเลข</span></div>
+  <div class="q-ctx">P1 (Arrival 0, BT 8), P2 (Arrival 1, BT 4), P3 (Arrival 2, BT 9), P4 (Arrival 3, BT 5) จัดด้วย <strong>SRTF</strong> — ไล่ได้ Gantt: P1(0–1), P2(1–5), P4(5–10), P1(10–13), P3(13–22)</div>
+  <div class="q-text">ค่าเฉลี่ย Waiting Time คือเท่าไร (กรอกทศนิยมได้ เช่น 4.5)</div>
+  <input type="text" inputmode="decimal" placeholder="เช่น 4.5">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 4.5</span>ใช้ WT = TAT − BT: P1: TAT=13−0=13, WT=13−8=5 · P2: TAT=5−1=4, WT=4−4=0 · P3: TAT=22−2=20, WT=20−9=11 · P4: TAT=10−3=7, WT=7−5=2 → รวม 5+0+11+2 = 18 ÷ 4 = <strong>4.5</strong> (เทคนิคอาจารย์ใช้ได้เป๊ะ ไม่ต้องไล่ช่วงรอจาก Gantt เลย)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="6" data-tolerance="0" id="exq10">
+  <div class="quiz-head"><span class="q-ico">B4</span><span class="q-title">Page Replacement 🔥</span><span class="q-tag safe">เติมตัวเลข</span></div>
+  <div class="q-ctx">Reference string: <strong>2, 3, 2, 1, 5, 2, 4, 5, 3, 2, 5, 2</strong> · RAM มี <strong>3 frames</strong> เริ่มว่าง · ใช้ <strong>LRU</strong></div>
+  <div class="q-text">เกิด page fault รวมกี่ครั้ง</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 6 ครั้ง</span>ไล่ LRU (แทนตัวที่ไม่ได้ใช้นานสุด): 2F → 3F → 2H → 1F (frames 2,3,1) → 5F แทน 3 (LRU คือ 3 เพราะ 2 เพิ่งถูกใช้) → 2H → 4F แทน 1 → 5H → 3F แทน 4 → 2H → 5H → 2H รวม F ที่ตำแหน่ง 1, 2, 4, 5, 7, 9 = <strong>6 ครั้ง</strong> · เทคนิค: เขียนเลขกำกับ "ใช้ล่าสุดตอนไหน" ใต้แต่ละ frame จะไม่งง</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="1.6" data-tolerance="0.05" id="exq11">
+  <div class="quiz-head"><span class="q-ico">B5</span><span class="q-title">TLB / EAT</span><span class="q-tag safe">เติมตัวเลข</span></div>
+  <div class="q-text">TLB search = 0.2 μs, hit ratio = 60%, memory access = 1 μs — EAT = กี่ μs</div>
+  <input type="text" inputmode="decimal" placeholder="เช่น 1.6">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 1.6 μs</span>Hit (0.6): 0.2+1 = 1.2 · Miss (0.4): 0.2+1+1 = 2.2 → EAT = 0.6×1.2 + 0.4×2.2 = 0.72 + 0.88 = <strong>1.6 μs</strong> (สูตรลัด 2+ε−α = 2+0.2−0.6 = 1.6 ✓ ตรงกัน)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="9" data-tolerance="0" id="exq12">
+  <div class="quiz-head"><span class="q-ico">B6</span><span class="q-title">First-fit / Best-fit</span><span class="q-tag safe">เติมตัวเลข</span></div>
+  <div class="q-ctx">หลุมว่างเรียงตามลำดับ: <strong>100 KB, 500 KB, 200 KB, 300 KB, 600 KB</strong> (แบบ handout) · มี process ต้องการ <strong>212 KB</strong></div>
+  <div class="q-text">ถ้าใช้ <strong>Best-fit</strong> — process ลงหลุมขนาดเท่าไร (ตอบขนาดหลุม เป็น KB)</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 300 KB</span>หลุมที่พอ: 500 (เหลือ 288), 300 (เหลือ 88), 600 (เหลือ 388) — เหลือน้อยสุดคือ 300 → Best-fit เลือก 300 · (First-fit จะได้ 500, Worst-fit ได้ 600 — สามแบบต่างกันหมด!)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="1" data-tolerance="0" id="exq13">
+  <div class="quiz-head"><span class="q-ico">B7</span><span class="q-title">Segmentation</span><span class="q-tag safe">เติมตัวเลข</span></div>
+  <div class="q-ctx">Segment table: S1 (base 6300, limit 500), S2 (base 4300, limit 400)</div>
+  <div class="q-text">Logical address &lt;1, 200&gt; physical address คือเท่าไร</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 6500</span>เช็ค: offset 200 &lt; limit 500 ✓ → PA = base + d = 6300 + 200 = <strong>6500</strong> (จำลำดับ: เช็ค limit ก่อนเสมอ — ถ้า &lt;2, 400&gt; จะ trap เพราะ 400 ไม่ &lt; 400)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="8" data-tolerance="0" id="exq14">
+  <div class="quiz-head"><span class="q-ico">B8</span><span class="q-title">Banker's Algorithm</span><span class="q-tag safe">เติมตัวเลข</span></div>
+  <div class="q-ctx">ตารางจาก handout: Available = (3,3,2) · Need: P0=(7,4,3), P1=(1,2,2), P2=(6,0,0), P3=(0,1,1), P4=(4,3,1) · Safe sequence &lt;P1,P3,P4,P2,P0&gt;</div>
+  <div class="q-text">หลังจากรัน P4 เสร็จและคืนทรัพยากร (ตามลำดับข้างบน) ค่า Work ช่อง C จะเท่ากับเท่าไร</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 5</span>Work หลัง P1 = (5,3,2) · หลัง P3 = (7,4,3) · หลัง P4 = (7,4,3) + (0,0,2) = (7,4,<strong>5</strong>) → ช่อง C = 5 (ต่อไป P2 → (10,4,7), P0 → (10,5,7))</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<h2>Part C — ไล่โค้ด</h2>
+
+<div class="quiz" data-q data-type="num" data-answer="12" data-tolerance="0" id="exq15">
+  <div class="quiz-head"><span class="q-ico">C1</span><span class="q-title">fork 🔥</span><span class="q-tag safe">เติมตัวเลข</span></div>
+  <div class="q-ctx"><pre class="code"><code>fork();              <span class="c">// จุดที่ 1</span>
+if (fork() == 0) {   <span class="c">// จุดที่ 2 — ทุกสายผ่าน</span>
+    fork();          <span class="c">// จุดที่ 3 — เฉพาะสายที่ได้ 0</span>
+}
+fork();              <span class="c">// จุดที่ 4 — ทุกสายผ่าน</span>
+printf("hi\n");</code></pre></div>
+  <div class="q-text">มี process ทั้งหมดกี่ตัว (รวม process เริ่มต้น) — เคล็ดลับ: วาด process tree ทีละ fork จำไว้ว่าทุกสายที่ผ่าน fork จะทำให้จำนวนสาย "เป็นเท่าตัว"</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 12 ตัว</span>ไล่จำนวนสาย: เริ่ม 1 → จุดที่ 1: <strong>2</strong> (P, A) → จุดที่ 2 ทุกสาย fork: <strong>4</strong> (P, A, B, B′ โดย B, B′ ได้ค่า 0) → จุดที่ 3 เฉพาะ B, B′ fork: 4 + 2 = <strong>6</strong> → จุดที่ 4 ทั้ง 6 สาย fork: 6 × 2 = <strong>12</strong> ✅ กติกา: จำนวน process เท่าตัว "ต่อจำนวนสายที่ผ่าน fork จุดนั้น" ไม่ใช่เท่าตัวทั้งหมดเสมอ (จุดที่ 3 มีแค่ 2 ใน 4 สายที่ผ่าน!)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="44" data-tolerance="0" id="exq16">
+  <div class="quiz-head"><span class="q-ico">C2</span><span class="q-title">exit status</span><span class="q-tag safe">เติมตัวเลข</span></div>
+  <div class="q-text">child process เรียก exit(300) — parent ใช้ WEXITSTATUS(status) อ่านค่าที่ได้จริงคือเท่าไร (คำใบ้: exit status ถูกเก็บไว้เพียง 8 บิตล่าง)</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 44</span>exit status เก็บได้แค่ 8 บิต (ค่า 0–255) — 300 &amp; 0xFF = 300 mod 256 = <strong>44</strong> — จำหลักไว้: ค่าที่ส่งได้อย่างมีความหมายคือ 0–255 เกินจากนั้นโดน wrap รอบ และอย่าลืมว่าต้องอ่านผ่าน WEXITSTATUS ไม่ใช่พิมพ์ status ตรง ๆ (จะได้เลขใหญ่ผิด ๆ เช่น 32768)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="callout tip">
+  <div class="co-title">📌 จบชุดแล้วทำอะไรต่อ</div>
+  <p>1) กลับไปอ่านเฉลยข้อที่ผิดในบทที่เกี่ยวข้อง 2) ลองเปลี่ยนตัวเลขโจทย์แล้วทำใหม่ (เช่น เปลี่ยน quantum หรือ reference string) 3) ทำซ้ำชุดนี้วันละรอบจนได้คะแนนเต็มโดยไม่เปิดเฉลย 4) พิมพ์ <a href="cheatsheet.html">cheatsheet</a> ติดมือสอบ</p>
+</div>
+
+<div class="pager">
+  <a href="13-filesystem.html"><span class="dir">← บทก่อนหน้า</span><span class="name">บทที่ 13: File System</span></a>
+  <a href="cheatsheet.html" class="next"><span class="dir">สุดท้าย →</span><span class="name">Cheatsheet พกเข้าสอบ</span></a>
+</div>
+
+</main>
+</div>
+<button id="toTop" aria-label="กลับขึ้นด้านบน">↑</button>
+<script src="js/app.js"></script>
+<script>
+/* สรุปคะแนนรวมของชุดซ้อม (จำลองระบบคะแนนข้อสอบจริงสำหรับข้อถูก/ผิด) */
+(function () {
+  const panel = document.getElementById("scorePanel");
+  const big = document.getElementById("scoreBig");
+  const det = document.getElementById("scoreDetail");
+  const quizzes = [...document.querySelectorAll("[data-q]")];
+  function refresh() {
+    const store = JSON.parse(localStorage.getItem("os-quiz") || "{}");
+    let score = 0, right = 0, wrong = 0, skip = 0, answered = 0;
+    quizzes.forEach((q) => {
+      const s = store[q.id];
+      if (!s) return;
+      answered++;
+      if (s.skip) { skip++; return; }
+      if (s.ok) { right++; score += q.dataset.type === "tf" ? 2 : 1; }
+      else { wrong++; score -= q.dataset.type === "tf" ? 1 : 0; }
+    });
+    if (!answered) { panel.style.display = "none"; return; }
+    panel.style.display = "block";
+    big.textContent = score;
+    big.style.color = score > 0 ? "var(--green)" : score < 0 ? "var(--red)" : "var(--amber)";
+    det.innerHTML = `ตอบแล้ว ${answered}/${quizzes.length} ข้อ · ถูก ${right} · ผิด ${wrong} · ข้าม ${skip}`;
+  }
+  document.addEventListener("quizchecked", refresh);
+  refresh();
+})();
+</script>
+</body>
+</html>

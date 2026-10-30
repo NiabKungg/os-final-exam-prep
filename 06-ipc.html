@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 6 — IPC: Signal · Pipe · Shared Memory | เว็บติว OS Final</title>
+<meta name="description" content="Inter-Process Communication signal() kill() raise() pipe() dup2() shmget shmat shmdt shmctl ftok IPC_PRIVATE พร้อมภาพและโค้ดไล่ทีละขั้น">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="ch06">
+<div id="sidebar-root"></div>
+<div class="sidebar-backdrop"></div>
+
+<header class="topbar">
+  <button class="icon-btn" id="menuBtn" aria-label="เปิดเมนู">☰</button>
+  <a class="brand" href="index.html"><span class="brand-logo">OS</span><span>เว็บติว OS Final<span class="brand-sub">บทที่ 6 · IPC</span></span></a>
+  <span class="spacer"></span>
+  <span class="progress-pill" id="quizPill"></span>
+  <button class="icon-btn" id="themeBtn">🌙</button>
+</header>
+
+<div class="layout">
+<main class="content">
+
+<div class="chip-row">
+  <span class="chip final">ช่วง Final (สัปดาห์ 7–8)</span>
+  <span class="chip">วิดีโอ 7.1–7.2.2, 8.1–8.2 · Handout No.5</span>
+</div>
+<h1>บทที่ 6 — การสื่อสารระหว่าง Process: Signal, Pipe, Shared Memory</h1>
+<p class="lead">Process แยก address space ออกจากกันเด็ดขาด (เพราะบท memory) ถ้าอยากคุยกันต้องผ่าน "ช่องทางที่ OS จัดให้" 3 แบบหลักของ UNIX: <strong>Signal, Pipe และ Shared Memory</strong></p>
+
+<div class="toc">
+  <div class="toc-title">สารบัญบทนี้</div>
+  <ol>
+    <li><a href="#why">ทำไม process ต้องสื่อสารกัน</a></li>
+    <li><a href="#signal">Signal — สัญญาณตัดเข้ามา</a></li>
+    <li><a href="#send">ส่ง Signal: raise(), kill(), คำสั่ง kill</a></li>
+    <li><a href="#msg">Message Passing & Blocking</a></li>
+    <li><a href="#pipe">Pipe — ท่อส่งข้อมูลทางเดียว</a></li>
+    <li><a href="#dup2">dup2() — สลับท่อให้เข้าที่</a></li>
+    <li><a href="#shm">Shared Memory — แชร์ RAM กันตรง ๆ</a></li>
+    <li><a href="#quiz">แบบฝึกหัดท้ายบท</a></li>
+  </ol>
+</div>
+
+<h2 id="why">1. Process อิสระ vs ร่วมมือกัน</h2>
+<ul>
+  <li><strong>Independent</strong> — ไม่กระทบกันเลย</li>
+  <li><strong>Cooperating</strong> — มีผลต่อกัน/แลกข้อมูลกัน เหตุผลที่ต้องร่วมมือ: <strong>แชร์ข้อมูล (information sharing)</strong>, <strong>เพิ่มความเร็ว (computation speedup)</strong>, <strong>แบ่งโมดูล (modularity)</strong></li>
+</ul>
+<p>แต่พออยากคุยกัน ต้องมี IPC (Interprocess Communication) — UNIX ให้มา 3 อย่าง: <strong>Signal · Pipe · Shared Memory</strong> (นอกนั้นยังมี message passing แนวคิดกว้าง ๆ)</p>
+
+<h2 id="signal">2. Signal — "ตบไหล่" บอก process ให้หยุดฟังก่อน</h2>
+<p><strong>Signal = software interrupt</strong> ที่แจ้ง process ว่า "มีเหตุการณ์เกิดขึ้นแล้ว!" ข้อมูลที่ส่งได้น้อยมาก (ส่งได้แค่<em>หมายเลข signal</em>) จึงใช้กับการแจ้งเตือนง่าย ๆ เช่น:</p>
+<ul>
+  <li>Error/exception — "หารศูนย์แล้วนะ!"</li>
+  <li>เหตุการณ์ภายนอก — "ผู้ใช้กด Ctrl+C!"</li>
+  <li>การแจ้งเตือน — "ลูกทำงานเสร็จแล้ว!", "หมดเวลาแล้ว!"</li>
+</ul>
+
+<h3>Signal ที่ต้องรู้จัก (จำพวก SIGKILL เป็นพิเศษ)</h3>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>ชื่อ</th><th>เกิดเมื่อไร</th><th>ข้อสังเกต</th></tr>
+  <tr><td><code>SIGFPE</code></td><td>คณิตศาสตร์พัง (หารศูนย์, overflow/underflow)</td><td>FPE = Floating Point Exception</td></tr>
+  <tr><td><code>SIGINT</code></td><td>กด <strong>Ctrl+C</strong></td><td>Interrupt — ขอให้โปรแกรมหยุด</td></tr>
+  <tr><td><code>SIGTERM</code></td><td>ขอ terminate แบบสุภาพ (ค่า default ของคำสั่ง kill)</td><td>จับ/ปัดป้องได้</td></tr>
+  <tr><td><code>SIGQUIT</code></td><td>กด Ctrl+\</td><td>non-ANSI C</td></tr>
+  <tr><td><code>SIGUSR1/2</code></td><td>ให้โปรแกรมเมอร์กำหนดเอง</td><td>non-ANSI C</td></tr>
+  <tr class="hl-row"><td><code>SIGKILL</code></td><td>สั่งฆ่าทันที</td><td><strong>จับ (catch) หรือเมิน (ignore) ไม่ได้เด็ดขาด</strong> — โดนแล้วตายแน่ = <code>kill -9</code></td></tr>
+</table></div>
+
+<h3>3 ทางเลือกของ process เมื่อรับ signal</h3>
+<ol class="steps">
+  <li><span class="st-title">Catch</span>กำหนด<strong>handler function</strong> เอาไว้ทำงานเฉพาะเมื่อโดน signal นั้น</li>
+  <li><span class="st-title">ใช้ Default ของ OS</span>ไม่ตั้งอะไรเลย OS จัดการตามมาตรฐาน (ส่วนใหญ่คือ terminate)</li>
+  <li><span class="st-title">Mask (ปิดกั้น)</span>บอก OS ว่า "signal ชนิดนี้ค้างไว้ก่อน (withhold) จนกว่าฉันจะเปิด mask ออก"</li>
+</ol>
+
+<h3>ฟังก์ชัน signal() — ติดตั้ง handler</h3>
+<div class="codewrap"><span class="codetag">signal_demo.c</span><pre class="code"><code><span class="f">signal</span>(<span class="k">int</span> signum, <span class="k">void</span> (*handler)(<span class="k">int</span>));
+<span class="c">// ex. บอก OS ว่า: ถ้าเห็น SIGINT ให้เรียกฟังก์ชันชื่อ sig_handler</span>
+<span class="f">signal</span>(SIGINT, sig_handler);
+
+<span class="k">void</span> <span class="f">sig_handler</span>(<span class="k">int</span> sig) {   <span class="c">// handler ต้องรับ int (เลข signal) คืน void</span>
+    <span class="f">printf</span>(<span class="s">"ไม่ยอมตายง่าย ๆ หรอก! (sig=%d)\n"</span>, sig);
+}</code></pre></div>
+<p>ถ้าต้องจัดการหลาย signal มี 2 แนวทาง: ติดตั้ง handler แยกทีละตัว หรือ ใช้ handler เดียวรับหมดแล้ว <code>switch (sig)</code> แยกกรณีเอง</p>
+
+<h2 id="send">3. การส่ง Signal — raise(), kill(), คำสั่ง kill</h2>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>เครื่องมือ</th><th>ใช้ส่งให้ใคร</th><th>รูปแบบ</th></tr>
+  <tr><td><code>raise(sig)</code></td><td>ส่งให้<strong>ตัวเอง</strong> (calling process)</td><td>สำเร็จคืน 0, error คืนค่าไม่ใช่ศูนย์</td></tr>
+  <tr><td><code>kill(pid, sig)</code></td><td>ส่งให้<strong>process อื่น</strong> (หรือกลุ่ม)</td><td>สำเร็จคืน 0, error คืน -1</td></tr>
+  <tr><td>คำสั่ง <code>kill</code> ใน shell</td><td>จาก command line</td><td><code>kill -SIGNAL pid ...</code> (ชื่อไม่ต้องมี SIG เช่น <code>kill -INT 123</code>)</td></tr>
+</table></div>
+
+<h3>ค่า pid ใน kill() — ออกเติมคำ/ถูกผิดบ่อย</h3>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>ค่า pid</th><th>ความหมาย</th></tr>
+  <tr><td><strong>&gt; 0</strong></td><td>ส่งให้ process ที่มี PID ตรงตามนั้น</td></tr>
+  <tr><td><strong>0</strong></td><td>ส่งให้ทุก process ใน<strong>process group เดียวกับผู้เรียก</strong></td></tr>
+  <tr><td><strong>-1</strong></td><td>ส่งให้ทุก process ที่เรามีสิทธิ์ส่ง (ยกเว้น process 1 / init)</td></tr>
+  <tr><td><strong>ค่าลบอื่น</strong></td><td>ส่งให้ทุก process ที่ process group ID = |pid|</td></tr>
+</table></div>
+<div class="callout exam">
+  <div class="co-title">🎯 จุดหลอก</div>
+  <p><code>kill -9 pid</code> = ส่ง <strong>SIGKILL</strong> — ตัวเดียวที่ process <strong>จับ/เมินไม่ได้</strong> · ถ้าไม่ใส่ชื่อ signal คำสั่ง kill จะใช้ <strong>SIGTERM</strong> เป็นค่าเริ่มต้น (ไม่ใช่ SIGKILL!)</p>
+</div>
+
+<h2 id="msg">4. Message Passing และเรื่อง Blocking</h2>
+<p>แนวคิดแม่แบบของการคุยกัน: มี <code>send(message)</code> กับ <code>receive(message)</code> — ก่อนคุยกันต้องมี communication link ถ้าจะส่งสองทางใช้สองทางเดินข้อความ (ทิศทางละหนึ่ง)</p>
+<div class="memgrid">
+  <span class="memcell used">Blocking send = Synchronous (ส่งแล้วรอจนถูกรับ)</span>
+  <span class="memcell used">Blocking receive = รอจนมีข้อความ</span>
+  <span class="memcell">Non-blocking send = ส่งปุ๊บเดินปั๊บ (Asynchronous)</span>
+  <span class="memcell">Non-blocking receive = ได้ข้อความหรือ null</span>
+</div>
+
+<h2 id="pipe">5. Pipe — ท่อส่งข้อมูลทางเดียว 🔥</h2>
+<p><strong>Anonymous pipe = ท่อไบต์ทางเดียว (one-way)</strong> สร้างด้วย <code>pipe(pfd)</code> — OS ให้มาเป็น<strong>file descriptor 2 ตัว</strong>: <code>pfd[0]</code> = ปลาย<strong>อ่าน</strong>, <code>pfd[1]</code> = ปลาย<strong>เขียน</strong> (จำ: 0 อ่าน, 1 เขียน — เหมือน stdin/stdout)</p>
+<div class="codewrap"><span class="codetag">pipe.c (โครง)</span><pre class="code"><code><span class="k">int</span> pfd[2];
+<span class="f">pipe</span>(pfd);                    <span class="c">// สร้างท่อ</span>
+<span class="f">write</span>(pfd[1], buf, size);     <span class="c">// เขียนผ่านปลาย [1]</span>
+<span class="f">read</span>(pfd[0], buf, SIZE);      <span class="c">// อ่านผ่านปลาย [0]</span></code></pre></div>
+
+<h3>เมื่อ fork แล้ว ท่อจะโตขึ้นเป็น 4 ปลาย!</h3>
+<p>ประเด็นสำคัญที่วิดีโอเน้น: <code>pipe()</code> สร้างก่อน แล้วค่อย <code>fork()</code> — ลูกจะได้ <strong>copy ของ descriptor ทั้งคู่</strong> → กลายเป็นมี 2 read end + 2 write end ทั้งสองฝั่งเขียน/อ่านได้ = รก! วิธีจัดการให้เป็นระบบ:</p>
+<ol class="steps">
+  <li><span class="st-title">ตกลงบทบาทให้ชัด</span>เช่น parent = ผู้ส่ง, child = ผู้รับ</li>
+  <li><span class="st-title">Parent ปิด read end</span><code>close(pfd[0])</code> — พ่อเขียนอย่างเดียว</li>
+  <li><span class="st-title">Child ปิด write end</span><code>close(pfd[1])</code> — ลูกอ่านอย่างเดียว</li>
+  <li><span class="st-title">กลายเป็นสายพานเรียบร้อย</span>ข้อมูลไหลทางเดียว parent → child</li>
+</ol>
+
+<figure class="fig">
+<svg viewBox="0 0 760 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="pipe with fork">
+  <defs><marker id="ar7" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0,0 L7,3.2 L0,6.4 z" fill="#64748b"/></marker></defs>
+  <text x="380" y="20" text-anchor="middle" font-size="13" font-weight="800" fill="#475569">หลัง pipe() ก่อน fork — parent มี 2 ปลาย</text>
+  <rect x="90" y="95" width="150" height="66" rx="10" fill="#eef0ff" stroke="#4f46e5"/>
+  <text x="165" y="122" text-anchor="middle" font-size="13" font-weight="800" fill="#3730a3">Parent</text>
+  <text x="165" y="144" text-anchor="middle" font-size="11.5" fill="#4f46e5">pfd[0] read · pfd[1] write</text>
+  <rect x="330" y="108" width="120" height="40" rx="20" fill="#fef9c3" stroke="#ca8a04"/>
+  <text x="390" y="133" text-anchor="middle" font-size="12" font-weight="800" fill="#854d0e">PIPE 🌊→</text>
+  <text x="640" y="20" text-anchor="middle" font-size="0" fill="none"></text>
+  <text x="380" y="192" text-anchor="middle" font-size="13" font-weight="800" fill="#475569">หลัง fork — ได้ 2 read end + 2 write end → ต้องปิดให้เหลือทางเดียว</text>
+  <rect x="60" y="205" width="150" height="40" rx="10" fill="#ecfdf5" stroke="#059669"/>
+  <text x="135" y="230" text-anchor="middle" font-size="12" font-weight="800" fill="#065f46">Parent: close(pfd[0]) เขียนอย่างเดียว</text>
+  <rect x="250" y="205" width="120" height="40" rx="20" fill="#fef9c3" stroke="#ca8a04"/>
+  <text x="310" y="230" text-anchor="middle" font-size="12" font-weight="800" fill="#854d0e">🌊→ ทางเดียว</text>
+  <rect x="440" y="205" width="150" height="40" rx="10" fill="#fff7ed" stroke="#d97706"/>
+  <text x="515" y="230" text-anchor="middle" font-size="12" font-weight="800" fill="#92400e">Child: close(pfd[1]) อ่านอย่างเดียว</text>
+  <path d="M240 128 L328 128" stroke="#64748b" stroke-width="2" marker-end="url(#ar7)"/>
+  <path d="M450 128 L560 128" stroke="#64748b" stroke-width="2" marker-end="url(#ar7)"/>
+  <rect x="560" y="95" width="150" height="66" rx="10" fill="#fff7ed" stroke="#d97706"/>
+  <text x="635" y="122" text-anchor="middle" font-size="13" font-weight="800" fill="#92400e">Child (copy)</text>
+  <text x="635" y="144" text-anchor="middle" font-size="11.5" fill="#b45309">ได้ pfd[0], pfd[1] อีกชุด</text>
+</svg>
+<figcaption>pipe สร้างก่อน fork → สอง process ถือ descriptor ครบทั้งสองปลาย — ต้องปิดปลายที่ไม่ใช้ ท่อจึงกลายเป็นทางเดียวที่ชัดเจน</figcaption>
+</figure>
+
+<h3>ตัวอย่าง "ls | wc" — shell ทำได้ไง</h3>
+<p>เมื่อคุณพิมพ์ <code>ls | wc</code> shell จะ: สร้าง pipe → fork สองครั้ง → parent ตัวหนึ่ง exec เป็น <code>ls</code> (ผู้เขียน) อีกตัว exec เป็น <code>wc</code> (ผู้อ่าน) — ปัญหาคือ <strong>ls ปกติเขียนไปที่ fd 1 (stdout), wc ปกติอ่านจาก fd 0 (stdin)</strong> แต่ปลายท่อเราได้มาเป็น fd 3, fd 4 ทำยังไงให้เข้าที่? → ใช้ <strong>dup2()</strong></p>
+
+<h2 id="dup2">6. dup2() — อยากให้ fd ตัวไหน "กลายเป็น" ตัวไหนก็ได้</h2>
+<div class="codewrap"><span class="codetag">dup2</span><pre class="code"><code><span class="f">dup2</span>(fd, fd2);
+<span class="c">// "fd อยากเป็น fd2" — ชี้ fd2 ไปที่ไฟล์/ท่อเดียวกับ fd แล้วปิด fd เดิมได้</span>
+
+<span class="c">// ตัวอย่าง: ปลายเขียนของท่อคือ fd=3, อยากให้กลายเป็น stdout (1)</span>
+<span class="f">dup2</span>(3, 1);   <span class="c">// fd=1 ชี้มาที่ท่อแล้ว → ls พิมพ์ลงท่อโดยไม่รู้ตัว!</span>
+<span class="f">close</span>(3);     <span class="c">// เก็บของ ปิดของเกิน</span>
+
+<span class="c">// ฝั่ง wc: ปลายอ่านคือ fd=4, อยากให้กลายเป็น stdin (0)</span>
+<span class="f">dup2</span>(4, 0);
+<span class="f">close</span>(4);</code></pre></div>
+<p>dup2 มีประโยชน์ทั่วไป: <strong>redirect</strong> เช่น หัน stdout ไปเขียนลงไฟล์แทนจอ</p>
+
+<div class="callout note">
+  <div class="co-title">📌 อยากคุยสองทาง?</div>
+  <p>pipe เป็นทางเดียว — ถ้า parent อยากทั้งเขียนและอ่านกับ child ต้อง<strong>สร้างสองท่อ</strong>: ท่อแรก parent เขียน→child อ่าน, ท่อสอง child เขียน→parent อ่าน (ไฟล์ twopipe.c ในวิดีโอ)</p>
+</div>
+
+<h2 id="shm">7. Shared Memory — เปิดพื้นที่ RAM ให้แชร์กันตรง ๆ 🔥</h2>
+<p>แนวคิด: ให้ process สองตัว "ผูก" พื้นที่ RAM ก้อนเดียวกันเข้า address space ของตัวเอง แล้วอ่าน/เขียนกันเหมือน memory ของตัวเองเลย — <strong>เร็วที่สุด</strong>เพราะไม่ต้องผ่าน kernel ทุกครั้ง แต่<strong>ไม่มีการป้องกันให้!</strong> (ถ้าไม่จัด synchronization เอง จะเจอ race condition — ตัวต่อบท 7)</p>
+
+<figure class="fig">
+<svg viewBox="0 0 720 210" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="shared memory">
+  <defs><marker id="ar8" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0,0 L7,3.2 L0,6.4 z" fill="#64748b"/></marker></defs>
+  <rect x="40" y="30" width="200" height="150" rx="14" fill="#eef0ff" stroke="#4f46e5"/>
+  <text x="140" y="58" text-anchor="middle" font-size="14" font-weight="800" fill="#3730a3">Process 1</text>
+  <rect x="60" y="76" width="160" height="88" rx="8" fill="#fff" stroke="#a5b4fc"/>
+  <text x="140" y="100" text-anchor="middle" font-size="11.5" fill="#4f46e5" font-weight="700">address space A</text>
+  <rect x="60" y="112" width="160" height="40" rx="8" fill="#fde68a" stroke="#d97706"/>
+  <text x="140" y="137" text-anchor="middle" font-size="12" font-weight="800" fill="#92400e">SHM (attach)</text>
+  <rect x="480" y="30" width="200" height="150" rx="14" fill="#fff7ed" stroke="#d97706"/>
+  <text x="580" y="58" text-anchor="middle" font-size="14" font-weight="800" fill="#92400e">Process 2</text>
+  <rect x="500" y="76" width="160" height="88" rx="8" fill="#fff" stroke="#fdba74"/>
+  <text x="580" y="100" text-anchor="middle" font-size="11.5" fill="#b45309" font-weight="700">address space B</text>
+  <rect x="500" y="112" width="160" height="40" rx="8" fill="#fde68a" stroke="#d97706"/>
+  <text x="580" y="137" text-anchor="middle" font-size="12" font-weight="800" fill="#92400e">SHM (attach)</text>
+  <rect x="290" y="102" width="140" height="60" rx="12" fill="#fef9c3" stroke="#ca8a04" stroke-width="2"/>
+  <text x="360" y="128" text-anchor="middle" font-size="13" font-weight="800" fill="#854d0e">พื้นที่แชร์กลาง</text>
+  <text x="360" y="148" text-anchor="middle" font-size="11" fill="#a16207">ก้อนเดียวกัน 2 มุมมอง</text>
+  <path d="M222 132 L288 132" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar8)"/>
+  <path d="M498 132 L432 132" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar8)"/>
+  <text x="360" y="192" text-anchor="middle" font-size="11.5" fill="#64748b" font-weight="600">เขียนที่เดียวเห็นกันทั้งคู่ทันที — แต่ควบคุมจังหวะเองนะ (race condition!)</text>
+</svg>
+<figcaption>Shared memory: ก้อนเดียวถูก "attach" เข้าทั้งสอง process — เร็วสุด แต่ต้องจัดการสิทธิ์และจังหวะเอง</figcaption>
+</figure>
+
+<h3>โปรโตคอลของ Server (ตัวตั้ง) และ Client (ตัวเข้าร่วม)</h3>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>ขั้น</th><th>System call</th><th>ทำอะไร</th></tr>
+  <tr><td>1</td><td><code>shmget(key, size, flag)</code></td><td>ขอ shared memory ด้วย key → ได้ <strong>shared memory ID</strong> (server ใช้ <code>IPC_CREAT | 0666</code> = สร้าง+อนุญาตอ่านเขียน · client ใช้แค่ <code>0666</code>)</td></tr>
+  <tr><td>2</td><td><code>shmat(id, NULL, 0)</code></td><td><strong>Attach</strong> พื้นที่เข้า address space → คืน pointer (cast เอา) · flag <code>SHM_RDONLY</code> = อ่านอย่างเดียว</td></tr>
+  <tr><td>3</td><td>ใช้งาน</td><td>เขียน/อ่านผ่าน pointer (server เริ่มก่อน และเตรียมพื้นที่ให้พร้อม)</td></tr>
+  <tr><td>4</td><td><code>shmdt(ptr)</code></td><td><strong>Detach</strong> — เลิกใช้ (ยังไม่ถูกลบ ผูกกลับได้ อาจได้ address ใหม่)</td></tr>
+  <tr><td>5</td><td><code>shmctl(id, IPC_RMID, NULL)</code></td><td><strong>ลบ</strong> shared memory ทิ้ง (อยากใช้อีกต้อง shmget ใหม่)</td></tr>
+</table></div>
+
+<h3>Key — บัตรเข้าใช้พื้นที่ มี 3 วิธีได้มา</h3>
+<ol class="steps">
+  <li><span class="st-title">เลขกำหนดเอง</span><code>key = 1234;</code> — ง่ายแต่<strong>เสี่ยง</strong>: ใครใช้เลขเดียวกันก็ล้วงเข้ามาได้</li>
+  <li><span class="st-title">ftok()</span><code>key_t ftok(const char *path, int id);</code> — สร้าง key จาก path + id ตัวเลข (นิยมใช้ "." = directory ปัจจุบัน) — process ที่เรียกด้วย argument เหมือนกันจะได้ key เดียวกันเสมอ เช่น <code>ftok(".", 'x')</code></li>
+  <li><span class="st-title">IPC_PRIVATE</span><span>OS สร้าง key ไม่ซ้ำใครให้ — รับประกัน exclusive ใช้กันในพวกญาติ (parent/child, child/child) เพราะลูกได้ค่าสืบทอดตอน fork</span></li>
+</ol>
+<p class="small">💡 key เป็นชนิด <code>key_t</code> ตามที่กำหนดใน sys/types.h — ห้ามใช้ int/long แทน เพราะขนาดขึ้นกับระบบ</p>
+
+<div class="callout exam">
+  <div class="co-title">🎯 สรุปจุดออกสอบของ Shared Memory</div>
+  <p>• ลำดับ server: <strong>shmget → shmat → ใช้ → shmdt → shmctl(IPC_RMID)</strong> · client ไม่ทำ IPC_RMID!<br>• Client ที่ใช้ IPC_PRIVATE ต้องเป็น<strong>ลูกที่เกิดหลัง</strong>จากที่ parent ได้ shm มาแล้ว (ค่าผ่านทาง fork)<br>• Server ต้องเริ่มก่อน client เสมอ<br>• shmget สำเร็จคืน ID เป็นเลขไม่ลบ, ล้มเหลวคืนค่าลบ</p>
+</div>
+
+<h2 id="quiz">📝 แบบฝึกหัดท้ายบท</h2>
+
+<div class="quiz" data-q data-type="tf" data-answer="true" id="ch06q1">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 1</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">SIGKILL เป็น signal ที่ process ปลายทางไม่สามารถ catch หรือ ignore ได้</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ถูก</span>SIGKILL (เลข 9) OS บังคับ terminate ทันที — นี่คือเหตุผลที่ <code>kill -9</code> ใช้กับ process ดื้อรัง</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="mc" data-answer="a" id="ch06q2">
+  <div class="quiz-head"><span class="q-ico">🔤</span><span class="q-title">ข้อ 2</span><span class="q-tag safe">ปรนัย</span></div>
+  <div class="q-text">หลังจาก pipe(pfd) แล้วตามด้วย fork() — ในระบบจะมีปลาย pipe ที่ใช้งานได้รวมกี่ปลาย</div>
+  <div class="choices">
+    <div class="choice" data-val="a"><span class="mark">ก</span><span>4 ปลาย (2 read + 2 write)</span></div>
+    <div class="choice" data-val="b"><span class="mark">ข</span><span>2 ปลาย (1 read + 1 write)</span></div>
+    <div class="choice" data-val="c"><span class="mark">ค</span><span>3 ปลาย เพราะ child ได้แค่ปลายอ่าน</span></div>
+    <div class="choice" data-val="d"><span class="mark">ง</span><span>6 ปลาย เพราะทั้งคู่ได้สองชุด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ก</span>parent มี pfd[0], pfd[1] และ child ได้ copy อีกชุด = 2 read end + 2 write end — จึงต้องปิดปลายที่ไม่ใช้ให้กลายเป็นทางเดียว</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="false" id="ch06q3">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 3</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">ในการสร้าง shared memory ฝั่ง client ต้องเรียก shmget() โดยใส่ flag IPC_CREAT เหมือนกับ server เพื่อให้ได้พื้นที่เดียวกัน</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ผิด</span>server ใช้ <code>IPC_CREAT | 0666</code> (สร้างใหม่ + ให้สิทธิ์) แต่ client ใช้แค่ <code>0666</code> (เข้าร่วมของที่มีอยู่) และ server ต้องเริ่มก่อนเสมอ</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="text" data-answer="shmdt" id="ch06q4">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 4</span><span class="q-tag safe">เติมคำตอบ</span></div>
+  <div class="q-text">System call ที่ใช้ "ถอน" shared memory ออกจาก address space ของ process (โดยยังไม่ลบพื้นที่ทิ้ง) คือฟังก์ชันอะไร</div>
+  <input type="text" placeholder="ตอบชื่อฟังก์ชัน">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: shmdt()</span>shmdt = detach (เลิกผูก แต่พื้นที่ยังอยู่ ผูกกลับได้) · ส่วนการลบทิ้งจริงคือ shmctl(id, IPC_RMID, NULL)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="true" id="ch06q5">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 5</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">Anonymous pipe เป็นการสื่อสารแบบทางเดียว (one-way communication) ของ stream ของ bytes</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ถูก</span>pipe เดินหน้าอย่างเดียว — ต้องการสองทางต้องสร้างสองท่อ (เช่น twopipe.c)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="pager">
+  <a href="05-scheduling.html"><span class="dir">← บทก่อนหน้า</span><span class="name">บทที่ 5: CPU Scheduling</span></a>
+  <a href="07-sync.html" class="next"><span class="dir">บทถัดไป →</span><span class="name">บทที่ 7: Race Condition & Critical Section</span></a>
+</div>
+
+<div class="center"><button class="btn ghost" id="doneBtn"></button></div>
+
+</main>
+</div>
+<button id="toTop" aria-label="กลับขึ้นด้านบน">↑</button>
+<script src="js/app.js"></script>
+</body>
+</html>

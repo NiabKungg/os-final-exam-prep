@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 2 — OS Structure & System Call | เว็บติว OS Final</title>
+<meta name="description" content="บริการของ OS System Call ผ่าน API Win32 POSIX Java ประเภท system call สถาปัตยกรรมเคอร์เนล Monolithic vs Microkernel สรุปละเอียดพร้อมภาพและแบบฝึกหัด">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="ch02">
+<div id="sidebar-root"></div>
+<div class="sidebar-backdrop"></div>
+
+<header class="topbar">
+  <button class="icon-btn" id="menuBtn" aria-label="เปิดเมนู">☰</button>
+  <a class="brand" href="index.html"><span class="brand-logo">OS</span><span>เว็บติว OS Final<span class="brand-sub">บทที่ 2 · OS Structure</span></span></a>
+  <span class="spacer"></span>
+  <span class="progress-pill" id="quizPill"></span>
+  <button class="icon-btn" id="themeBtn">🌙</button>
+</header>
+
+<div class="layout">
+<main class="content">
+
+<div class="chip-row">
+  <span class="chip mid">ช่วงต้นเทอม · ทบทวน</span>
+  <span class="chip">วิดีโอ 2.3–2.4 · Handout No.2</span>
+</div>
+<h1>บทที่ 2 — OS Structure และการเรียกใช้บริการผ่าน System Call</h1>
+<p class="lead">บทนี้ตอบคำถามว่า "โปรแกรมของเราคุยกับ OS ยังไง?" — คำตอบคือ System Call และโครงสร้างเคอร์เนลกำหนดว่า OS นั้นจัดวางงานยังไง ข้อสอบมักถามถึงชนิดของ system call และจุดต่าง Monolithic vs Microkernel</p>
+
+<div class="toc">
+  <div class="toc-title">สารบัญบทนี้</div>
+  <ol>
+    <li><a href="#services">บริการของ OS</a></li>
+    <li><a href="#cli">User Interface: CLI / GUI / Batch</a></li>
+    <li><a href="#syscall">System Call คืออะไร</a></li>
+    <li><a href="#types">ประเภทของ System Call</a></li>
+    <li><a href="#arch">สถาปัตยกรรมเคอร์เนล</a></li>
+    <li><a href="#quiz">แบบฝึกหัดท้ายบท</a></li>
+  </ol>
+</div>
+
+<h2 id="services">1. OS ให้บริการอะไรบ้าง (Operating System Services)</h2>
+<p>มอง OS เป็น "ร้านค้าบริการ" ที่มีเคาน์เตอร์ให้บริการ 9 ด้าน — จำพววหมวดก็พอ ออกถูก/ผิดเยอะ:</p>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>บริการ</th><th>ทำอะไร</th><th>ตัวอย่าง</th></tr>
+  <tr><td><strong>User Interface</strong></td><td>ช่องทางให้คนคุยกับเครื่อง</td><td>CLI, GUI, Batch</td></tr>
+  <tr><td><strong>Program execution</strong></td><td>โหลดโปรแกรมเข้า memory รัน และจบการทำงาน (ปกติหรือผิดปกติ)</td><td>ดับเบิลคลิก .exe</td></tr>
+  <tr><td><strong>I/O operations</strong></td><td>โปรแกรมร้องขออ่าน/เขียนไฟล์หรืออุปกรณ์ I/O — OS ทำให้แทน</td><td>printf, อ่านกล้อง</td></tr>
+  <tr><td><strong>File-system manipulation</strong></td><td>สร้าง/ลบ/ค้นหาไฟล์-directory, จัดการสิทธิ์</td><td>mkdir, chmod</td></tr>
+  <tr><td><strong>Communications</strong></td><td>process คุยกัน (เครื่องเดียวหรือข้ามเครือข่าย) ผ่าน <strong>shared memory</strong> หรือ <strong>message passing</strong></td><td>pipe, socket — เชื่อมบท 6!</td></tr>
+  <tr><td><strong>Error detection</strong></td><td>จับตา error ของ hardware/software ตลอด แล้วจัดการให้เหมาะสม</td><td>CPU พัง, RAM error</td></tr>
+  <tr><td><strong>Resource allocation</strong></td><td>แบ่งทรัพยากร (CPU, memory, อุปกรณ์) ให้หลาย process พร้อมกัน</td><td>แบ่ง CPU time</td></tr>
+  <tr><td><strong>Accounting</strong></td><td>จดบันทึกว่าใครใช้ทรัพยากรเท่าไร ชนิดไหน (เก็บสถิติ/เก็บเงิน)</td><td>usage stat</td></tr>
+  <tr><td><strong>Protection & Security</strong></td><td>ควบคุมการเข้าถึงทรัพยากร (protection) + ยืนยันตัวตนกันคนนอก (security)</td><td>permission, login</td></tr>
+</table></div>
+
+<h2 id="cli">2. User Interface — CLI, GUI, Batch</h2>
+<ul>
+  <li><strong>CLI (Command Line Interface)</strong> / command interpreter — พิมพ์คำสั่งตรง ๆ เช่น bash, cmd ข้อดีคือเร็วและสั่งอะไรก็ได้ละเอียด
+    <ul>
+      <li>ใช้งานได้ 2 แบบ: ฝังอยู่ใน kernel เลย หรือ เป็น<strong>โปรแกรมภายนอก</strong> (มีหลาย flavor เช่น bash, zsh — shell แต่ละตัวทำงานเหมือนกันแต่หน้าตา/ฟีเจอร์ต่าง)</li>
+      <li>หน้าที่หลักของ shell: <strong>ดึงคำสั่งจากผู้ใช้ → สั่งการทำงาน</strong> บางคำสั่งเป็น built-in บางคำสั่งคือชื่อโปรแกรม (จำไว้ — ประเด็น <code>cd</code> เป็น built-in จะโผล่อีกทีในเรื่อง exec())</li>
+    </ul>
+  </li>
+  <li><strong>GUI (Graphics User Interface)</strong> — หน้าต่าง ไอคอน เมาส์ ใช้ง่ายกับคนทั่วไป</li>
+  <li><strong>Batch</strong> — คำสั่งอยู่ในไฟล์ รันรวดเดียว ไม่ต้องคนคุม</li>
+</ul>
+
+<h2 id="syscall">3. System Call — ประตูบริการของ OS 🔥</h2>
+<p><strong>System Call = API ที่ให้โปรแกรมเข้าถึงฟังก์ชัน/บริการของ OS</strong> โดยทั่วไปเขียนด้วยภาษาระดับสูง (C/C++) — เมื่อโปรแกรมต้องการสั่งงานฮาร์ดแวร์มันไม่ได้สั่งตรง แต่ "ยื่นเรื่อง" ผ่าน system call</p>
+
+<div class="callout analogy">
+  <div class="co-title">🏦 เปรียบเทียบ</div>
+  <p>System call = เคาน์เตอร์ธนาคาร คุณ (โปรแกรม user) เข้าห้องหลัง (kernel) เองไม่ได้ ต้องยื่นแบบฟอร์ม (system call) ให้พนักงาน (OS) ทำให้แทน จบแล้วรับผลลัพธ์กลับ</p>
+</div>
+
+<h3>โปรแกรมใช้ API แทน system call ตรง ๆ ทำไม?</h3>
+<p>จริง ๆ แล้วโปรแกรมเมอร์เรียกผ่าน <strong>API ระดับสูง</strong> ไม่ได้เรียก system call ตรง ๆ เพราะ API มีข้อดี: โค้ดพกพาข้ามเครื่อง/OS ได้ (portability) และใช้ง่ายกว่า API ยอดนิยม 3 ตระกูล (ออกเติมคำ!):</p>
+<div class="memgrid">
+  <span class="memcell used">Win32 API → Windows</span>
+  <span class="memcell used">POSIX API → UNIX/Linux/macOS</span>
+  <span class="memcell used">Java API → JVM</span>
+</div>
+
+<h3>ตัวอย่างที่ต้องเข้าใจ: printf → write</h3>
+<div class="codewrap"><pre class="code"><code>printf(<span class="s">"Hello"</span>);  <span class="c">// เราเรียกฟังก์ชันใน Standard C Library (API)</span>
+                <span class="c">// ข้างในมันเรียก system call write() เพื่อส่งข้อความออกหน้าจอจริง ๆ</span></code></pre></div>
+
+<figure class="fig">
+<svg viewBox="0 0 740 210" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="API system call flow">
+  <defs><marker id="ar3" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0,0 L7,3.2 L0,6.4 z" fill="#64748b"/></marker></defs>
+  <rect x="20" y="70" width="150" height="70" rx="12" fill="#ecfdf5" stroke="#059669"/>
+  <text x="95" y="100" text-anchor="middle" font-size="14.5" font-weight="800" fill="#065f46">User Program</text>
+  <text x="95" y="122" text-anchor="middle" font-size="11.5" fill="#047857">เรียก API เช่น printf()</text>
+  <rect x="220" y="70" width="150" height="70" rx="12" fill="#fff7ed" stroke="#d97706"/>
+  <text x="295" y="100" text-anchor="middle" font-size="14.5" font-weight="800" fill="#92400e">API / C Library</text>
+  <text x="295" y="122" text-anchor="middle" font-size="11.5" fill="#b45309">Standard C Library</text>
+  <rect x="420" y="70" width="140" height="70" rx="12" fill="#eef0ff" stroke="#4f46e5"/>
+  <text x="490" y="100" text-anchor="middle" font-size="14.5" font-weight="800" fill="#3730a3">System Call</text>
+  <text x="490" y="122" text-anchor="middle" font-size="11.5" fill="#4f46e5">trap → kernel mode</text>
+  <rect x="610" y="70" width="110" height="70" rx="12" fill="#eef0ff" stroke="#4f46e5"/>
+  <text x="665" y="100" text-anchor="middle" font-size="14.5" font-weight="800" fill="#3730a3">OS Kernel</text>
+  <text x="665" y="122" text-anchor="middle" font-size="11.5" fill="#4f46e5">ทำงานให้ + คืนผล</text>
+  <path d="M170 105 L218 105" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar3)"/>
+  <path d="M370 105 L418 105" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar3)"/>
+  <path d="M560 105 L608 105" stroke="#64748b" stroke-width="2.5" marker-end="url(#ar3)"/>
+  <text x="370" y="45" text-anchor="middle" font-size="12.5" font-weight="700" fill="#64748b">ผู้ใช้พิมพ์โค้ดเรียก API → API ไปเรียก system call → เกิด trap สลับเข้า kernel mode → OS ทำงานแล้วส่งผลกลับ</text>
+</svg>
+<figcaption>เส้นทางของ printf(): User Program → API (C library) → System Call (trap) → Kernel ทำงานจริง</figcaption>
+</figure>
+
+<h2 id="types">4. ประเภทของ System Call</h2>
+<p>มี 6 กลุ่ม — ข้อสอบชอบยก system call มาให้จำแนกกลุ่ม:</p>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>กลุ่ม</th><th>ใช้ทำอะไร</th><th>ตัวอย่างใน Windows / Unix</th></tr>
+  <tr><td><strong>Process control</strong></td><td>สร้าง/จบ process, โหลด-รันโปรแกรม</td><td>CreateProcess, ExitProcess / <code>fork()</code>, <code>exec()</code>, <code>exit()</code>, <code>wait()</code></td></tr>
+  <tr><td><strong>File management</strong></td><td>สร้าง/ลบ/เปิด/ปิด/อ่าน/เขียนไฟล์</td><td>CreateFile, ReadFile / <code>open()</code>, <code>read()</code>, <code>write()</code>, <code>close()</code></td></tr>
+  <tr><td><strong>Device management</strong></td><td>ขอ-คืนอุปกรณ์, อ่าน/เขียนอุปกรณ์</td><td>SetConsoleMode / <code>ioctl()</code>, <code>read()</code>, <code>write()</code></td></tr>
+  <tr><td><strong>Information maintenance</strong></td><td>ถาม/ตั้งข้อมูลเวลา วัน PID ฯลฯ</td><td>GetConsoleOutputCP / <code>getpid()</code>, <code>time()</code>, <code>alarm()</code></td></tr>
+  <tr><td><strong>Communications</strong></td><td>สร้างการคุยระหว่าง process</td><td>CreatePipe, CreateFileMapping / <code>pipe()</code>, <code>shmget()</code>, <code>kill()</code></td></tr>
+  <tr><td><strong>Protection</strong></td><td>ควบคุมสิทธิ์การเข้าถึง</td><td>SetFileSecurity / <code>chmod()</code>, <code>chown()</code></td></tr>
+</table></div>
+
+<div class="callout exam">
+  <div class="co-title">🎯 โยงกับบทหลัง</div>
+  <p>สังเกตว่า fork/exec/exit/wait (บท 3) เป็น <strong>process control</strong>, pipe/shmget/kill (บท 6) เป็น <strong>communications</strong> — ข้อสอบเคยให้แยกว่า system call แต่ละตัวอยู่กลุ่มไหน</p>
+</div>
+
+<h2 id="arch">5. สถาปัตยกรรมของเคอร์เนล (Kernel Architectures)</h2>
+
+<h3>5.1 Monolithic Kernel (เคอร์เนลก้อนเดียว)</h3>
+<p>รวม<em>ทุกบริการไว้ใน kernel ก้อนใหญ่ก้อนเดียว</em> — filesystem, driver, networking, memory management อยู่รวมกันใน kernel mode หมด</p>
+<ul>
+  <li>✅ เร็ว — เรียกบริการไหนก็อยู่ในก้อนเดียวกัน ไม่ต้องส่งข้อความข้ามชั้น</li>
+  <li>❌ ใหญ่ ซับซ้อน บำรุงรักษายาก — driver ตัวเดียวพังอาจลากทั้งระบบลง (ระบบ crash ทั้งเครื่อง)</li>
+  <li>ตัวอย่าง: Linux แบบดั้งเดิม, UNIX ยุคแรก</li>
+</ul>
+
+<h3>5.2 Microkernel (เคอร์เนลจิ๋ว)</h3>
+<p>เหลือใน kernel เฉพาะ<strong>สิ่งจำเป็นที่สุด</strong> (IPC, การจัดคิว CPU, memory พื้นฐาน) — ส่วนอื่นทั้งหลาย (filesystem, driver, network) ถีบออกไปรันเป็น <strong>user-space server processes</strong> คุยกันผ่าน message passing</p>
+<ul>
+  <li>✅ เสถียร — service พังก็รีสตาร์ท service นั้น เครื่องไม่ลง, เพิ่ม/ถอดบริการง่าย, ปลอดภัย (kernel เล็ก ตรวจง่าย)</li>
+  <li>❌ ช้ากว่า — เพราะทุกบริการต้องส่ง message ข้ามขอบเขต user/kernel (overhead ของ IPC)</li>
+  <li>ตัวอย่าง: Mach, QNX, MINIX</li>
+</ul>
+
+<figure class="fig">
+<svg viewBox="0 0 760 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="monolithic vs microkernel">
+  <text x="190" y="26" text-anchor="middle" font-size="15" font-weight="800" fill="#dc2626">Monolithic Kernel</text>
+  <rect x="30" y="38" width="320" height="52" rx="10" fill="#ecfdf5" stroke="#a7f3d0"/><text x="190" y="69" text-anchor="middle" font-size="13" font-weight="700" fill="#065f46">User programs (user mode)</text>
+  <rect x="30" y="100" width="320" height="130" rx="10" fill="#eef0ff" stroke="#4f46e5"/>
+  <text x="190" y="124" text-anchor="middle" font-size="13" font-weight="800" fill="#3730a3">KERNEL MODE — ก้อนเดียวใหญ่อึด</text>
+  <g font-size="12" font-weight="700" fill="#4f46e5">
+    <rect x="46" y="138" width="132" height="34" rx="7" fill="#fff"/><text x="112" y="159" text-anchor="middle">File system</text>
+    <rect x="192" y="138" width="132" height="34" rx="7" fill="#fff"/><text x="258" y="159" text-anchor="middle">Drivers</text>
+    <rect x="46" y="182" width="132" height="34" rx="7" fill="#fff"/><text x="112" y="203" text-anchor="middle">Networking</text>
+    <rect x="192" y="182" width="132" height="34" rx="7" fill="#fff"/><text x="258" y="203" text-anchor="middle">Scheduler + Memory</text>
+  </g>
+  <text x="570" y="26" text-anchor="middle" font-size="15" font-weight="800" fill="#0d9488">Microkernel</text>
+  <rect x="410" y="38" width="320" height="52" rx="10" fill="#ecfdf5" stroke="#a7f3d0"/><text x="570" y="63" text-anchor="middle" font-size="12.5" font-weight="700" fill="#065f46">User mode: โปรแกรม + บริการเป็น "server"</text>
+  <g font-size="11.5" font-weight="700" fill="#0d9488">
+    <rect x="420" y="46" width="96" height="36" rx="7" fill="#fff" stroke="#5eead4" transform="translate(0,-4)"/>
+    <rect x="528" y="42" width="96" height="36" rx="7" fill="#fff" stroke="#5eead4"/><text x="576" y="64" text-anchor="middle">File server</text>
+    <rect x="636" y="42" width="86" height="36" rx="7" fill="#fff" stroke="#5eead4"/><text x="679" y="64" text-anchor="middle">Driver</text>
+  </g>
+  <rect x="410" y="150" width="320" height="80" rx="10" fill="#eef0ff" stroke="#4f46e5"/>
+  <text x="570" y="180" text-anchor="middle" font-size="13" font-weight="800" fill="#3730a3">KERNEL เล็กกระจิ๋ว</text>
+  <text x="570" y="204" text-anchor="middle" font-size="12" fill="#4f46e5">เฉพาะ IPC · Scheduling · Memory พื้นฐาน</text>
+  <path d="M470 88 L470 148" stroke="#64748b" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ar3)"/>
+  <path d="M670 88 L670 148" stroke="#64748b" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ar3)"/>
+  <text x="690" y="120" font-size="11" fill="#64748b" transform="rotate(90 690 120)">message passing</text>
+</svg>
+<figcaption>ซ้าย: ทุกอย่างอยู่ใน kernel ก้อนเดียว (เร็วแต่พังพากัน) · ขวา: kernel เล็กน้อย ที่เหลือรันเป็น user-space server คุยผ่าน message (ปลอดภัยแต่ช้ากว่า)</figcaption>
+</figure>
+
+<div class="callout analogy">
+  <div class="co-title">🏢 เปรียบเทียบ</div>
+  <p>Monolithic = บริษัทที่ทุกแผนกอยู่ชั้นเดียวกัน คุยกันเร็วมาก แต่ถ้าไฟไหม้ห้องนึง ทั้งชั้นลุก · Microkernel = แต่ละแผนกอยู่ตึกแยก คุยกันทางโทรศัพท์ (ช้าหน่อย) แต่ตึกไหนไหม้ก็แค่สร้างตึกนั้นใหม่ ส่วนอื่นทำงานต่อ</p>
+</div>
+
+<h2 id="quiz">📝 แบบฝึกหัดท้ายบท</h2>
+
+<div class="quiz" data-q data-type="tf" data-answer="false" id="ch02q1">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 1</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">โปรแกรมส่วนใหญ่เรียกใช้ system call โดยตรงเพื่อความเร็วสูงสุด ไม่ผ่าน API ใด ๆ</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ผิด</span>โปรแกรมส่วนมากใช้ <strong>API ระดับสูง</strong> (Win32 / POSIX / Java) แทนการเรียก system call ตรง ๆ เพราะ portability ดีและใช้ง่ายกว่า — เช่น printf() คือ API ที่ข้างในเรียก write()</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="mc" data-answer="b" id="ch02q2">
+  <div class="quiz-head"><span class="q-ico">🔤</span><span class="q-title">ข้อ 2</span><span class="q-tag safe">ปรนัย</span></div>
+  <div class="q-text">fork(), exec(), wait() จัดอยู่ในประเภท system call กลุ่มใด</div>
+  <div class="choices">
+    <div class="choice" data-val="a"><span class="mark">ก</span><span>File management</span></div>
+    <div class="choice" data-val="b"><span class="mark">ข</span><span>Process control</span></div>
+    <div class="choice" data-val="c"><span class="mark">ค</span><span>Communications</span></div>
+    <div class="choice" data-val="d"><span class="mark">ง</span><span>Information maintenance</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ข — Process control</span>กลุ่ม process control ดูแลการสร้าง/จบ/ควบคุม process (fork, exec, exit, wait, CreateProcess) ส่วน pipe()/shmget()/kill() อยู่กลุ่ม Communications</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="true" id="ch02q3">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 3</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">ข้อดีหลักของ Microkernel คือความเสถียรและปลอดภัย แต่แลกมาด้วย overhead จากการส่ง message ระหว่าง components ทำให้ช้ากว่า Monolithic</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ถูก</span>บริการต่าง ๆ อยู่ใน user space ต้องคุยกันผ่าน message passing (IPC) ข้ามขอบเขต user/kernel ทำให้ overhead สูงกว่าการเรียกฟังก์ชันใน kernel ก้อนเดียว แต่เปรียบสิทธิ์คือ service พังไม่ลากเครื่องลง</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="false" id="ch02q4">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 4</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">Command interpreter (shell) สามารถ implement ได้เฉพาะการฝังอยู่ใน kernel เท่านั้น</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ผิด</span>ทำได้ 2 แบบ — ฝังใน kernel หรือเป็น<strong>โปรแกรมภายนอก</strong> (แบบนี้นิยมกว่า เพราะมี shell หลาย flavor ให้เลือกเช่น bash/zsh โดยไม่แตะ kernel)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="text" data-answer="posix" id="ch02q5">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 5</span><span class="q-tag safe">เติมคำตอบ</span></div>
+  <div class="q-text">API มาตรฐานที่ใช้บนระบบ UNIX และ Linux เรียกว่าอะไร (ตอบเป็นภาษาอังกฤษ)</div>
+  <input type="text" placeholder="ตอบคำสั้น ๆ">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: POSIX</span>POSIX API ใช้บนระบบ POSIX-based (UNIX, Linux, macOS) · Windows ใช้ Win32 API · Java ใช้ Java API บน JVM</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="pager">
+  <a href="01-intro.html"><span class="dir">← บทก่อนหน้า</span><span class="name">บทที่ 1: Introduction</span></a>
+  <a href="03-process.html" class="next"><span class="dir">บทถัดไป →</span><span class="name">บทที่ 3: Process & fork/exec/wait</span></a>
+</div>
+
+<div class="center"><button class="btn ghost" id="doneBtn"></button></div>
+
+</main>
+</div>
+<button id="toTop" aria-label="กลับขึ้นด้านบน">↑</button>
+<script src="js/app.js"></script>
+</body>
+</html>

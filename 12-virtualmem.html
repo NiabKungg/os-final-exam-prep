@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 12 — Virtual Memory & Page Replacement | เว็บติว OS Final</title>
+<meta name="description" content="Virtual Memory demand paging page fault FIFO Optimal LRU นับ page fault แบบละเอียด Belady's Anomaly Thrashing Working Set Locality of Reference ตารางไล่ครบทุกขั้น">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="ch12">
+<div id="sidebar-root"></div>
+<div class="sidebar-backdrop"></div>
+
+<header class="topbar">
+  <button class="icon-btn" id="menuBtn" aria-label="เปิดเมนู">☰</button>
+  <a class="brand" href="index.html"><span class="brand-logo">OS</span><span>เว็บติว OS Final<span class="brand-sub">บทที่ 12 · Virtual Memory</span></span></a>
+  <span class="spacer"></span>
+  <span class="progress-pill" id="quizPill"></span>
+  <button class="icon-btn" id="themeBtn">🌙</button>
+</header>
+
+<div class="layout">
+<main class="content">
+
+<div class="chip-row">
+  <span class="chip final">หัวใจของ Final</span>
+  <span class="chip hot">นับ page fault = ข้อคำนวณหลักประจำปี</span>
+  <span class="chip">วิดีโอ 13.1–13.3 · Handout No.9</span>
+</div>
+<h1>บทที่ 12 — Virtual Memory: Demand Paging, การแทนที่เพจ และ Thrashing</h1>
+<p class="lead">Virtual memory ปลดล็อกกฎเหล็กของบทก่อน: <strong>โปรแกรมไม่ต้องอยู่ใน RAM ครบทั้งตัว!</strong> โหลดเฉพาะเพจที่กำลังใช้ (demand paging) — พอไม่พอดีก็มีอัลกอริทึมเลือก "ตัวปลอด" ออก ซึ่งเป็นแหล่งโจทย์นับ page fault ที่ออกทุกปี</p>
+
+<div class="toc">
+  <div class="toc-title">สารบัญบทนี้</div>
+  <ol>
+    <li><a href="#demand">Demand Paging & Page Fault ทีละขั้น</a></li>
+    <li><a href="#replace">ตัวอย่างหลัก: Reference String + 3 อัลกอริทึม 🔥</a></li>
+    <li><a href="#belady">Belady's Anomaly</a></li>
+    <li><a href="#eat">EAT เมื่อมี Page Fault Rate</a></li>
+    <li><a href="#global">Global vs Local Allocation</a></li>
+    <li><a href="#thrash">Thrashing, Locality, Working Set 🔥</a></li>
+    <li><a href="#array">โจทย์ Array 128×128 — 16,384 vs 128</a></li>
+    <li><a href="#quiz">แบบฝึกหัดท้ายบท</a></li>
+  </ol>
+</div>
+
+<h2 id="demand">1. Demand Paging — ขอเมื่อไร ค่อยเอามา</h2>
+<p><strong>Virtual memory</strong> = การแยก logical memory ออกจาก physical memory ทำให้ address space ของโปรแกรมใหญ่กว่า RAM จริงก็ได้ · implement ได้ผ่าน <strong>demand paging</strong> หรือ demand segmentation</p>
+<p><strong>Demand paging</strong> = โหลดเพจเข้า RAM <em>เฉพาะเมื่อถูกเรียกใช้</em> — หลัก "ขี้เกียจ" ของ <strong>lazy swapper</strong> (ตัวที่ทำงานกับเพจเรียกว่า <strong>pager</strong>) ผลลัพธ์: I/O น้อยลง, ใช้ RAM น้อยลง, ตอบสนองเร็วขึ้น, รองรับ user ได้มากขึ้น</p>
+<h3>Valid/Invalid bit ในบริบทใหม่</h3>
+<p>เพจที่ยังไม่ถูกโหลด → bit = <strong>i (invalid)</strong> — ตอนแปลง address เจอ i → เกิด <strong>Page Fault</strong> (trap เข้า OS) สังเกตว่า <strong>invalid ที่นี่ไม่ใช่ error ของโปรแกรมเสมอไป</strong> — ส่วนใหญ่แปลว่า "เพจนี้ยังไม่มา" ซึ่งเป็นเรื่องปกติของ demand paging</p>
+
+<h3>ขั้นตอนจัดการ Page Fault (6 ขั้น — เรียงลำดับได้ต้องได้คะแนน)</h3>
+<ol class="steps">
+  <li><span class="st-title">Trap/Interrupt เข้าสู่ OS</span>MMU เจอ valid–invalid bit = i → ยิง trap ไปยัง OS</li>
+  <li><span class="st-title">OS ตรวจว่า invalid แบบไหน</span>ดูตารางอ้างอิงอีกใบ: ถ้า<strong>อ้างผิดจริง ๆ</strong> (นอก address space) → abort process · ถ้าเป็นแค่<strong>"ยังไม่โหลด"</strong> → ไปขั้นต่อไป</li>
+  <li><span class="st-title">หาตำแหน่งเพจบนดิสก์</span>แล้วหา <strong>frame ว่าง</strong>ใน RAM (ถ้าไม่มีว่าง → ใช้<strong>page replacement</strong> เลือกเพจอื่นออกก่อน — หัวข้อถัดไป)</li>
+  <li><span class="st-title">อ่านเพจจากดิสก์เข้า frame</span>(ขั้นนี้แหละที่แพงที่สุด — เป็น I/O ทั้งตัว)</li>
+  <li><span class="st-title">อัปเดตตาราง</span>ใส่ frame number + เปลี่ยน bit เป็น <strong>v</strong></li>
+  <li><span class="st-title">Restart คำสั่งเดิม</span>ให้ CPU รัน instruction ที่พังอีกครั้ง — คราวนี้ใช้ได้ปกติ</li>
+</ol>
+<div class="callout warn">
+  <div class="co-title">⚠️ รายละเอียดปลีกย่อยที่ออกถูก/ผิด</div>
+  <p>เพจที่ถูกแก้ไขข้อมูล (dirty/modified bit = 1) ต้อง<strong>เขียนกลับลงดิสก์ก่อน</strong> (write back) ค่อยแทนที่ — ไม่งั้นข้อมูลหาย · เพจที่ไม่ได้แก้ (clean) ทับได้เลยเพราะดิสก์มีสำเนาอยู่แล้ว</p>
+</div>
+
+<h2 id="replace">2. Page Replacement — โจทย์หลักของข้อสอบ 🔥🔥</h2>
+<p>เมื่อเกิด fault แต่ไม่มี frame ว่าง → เลือกเพจ "ไม่ค่อยใช้" ออก แล้วเอาเพจใหม่ลงแทน — วัดฝีมือด้วยการให้ <strong>reference string</strong> (ลำดับการอ้างเพจ) แล้ว<strong>นับจำนวน page fault</strong> โจทย์ตัวอย่างในวิดีโอ (ใช้ string เดียวกันทั้ง 3 อัลกอริทึม, RAM มี <strong>3 frames</strong> เริ่มว่าง):</p>
+<div class="codewrap"><span class="codetag">Reference String</span><pre class="code"><code>7, 0, 1, 2, 0, 3, 0, 4, 2, 3, 0, 3, 2, 1, 2, 0, 1, 7, 0, 1</code></pre></div>
+
+<h3>วิธีทำทีละอัลกอริทึม (ตารางไล่เต็ม — F = fault, H = hit)</h3>
+<h4 style="margin-bottom:6px">FIFO (First-In, First-Out) — เกิด page fault รวม <span style="color:var(--red)">15 ครั้ง</span></h4>
+<div class="tbl-wrap"><table class="tbl" style="min-width:900px;font-size:.78rem;text-align:center">
+<tr><th style="text-align:left">อ้างถึง</th>
+<td class="c"><strong>7</strong></td>
+<td class="c"><strong>0</strong></td>
+<td class="c"><strong>1</strong></td>
+<td class="c"><strong>2</strong></td>
+<td class="c"><strong>0</strong></td>
+<td class="c"><strong>3</strong></td>
+<td class="c"><strong>0</strong></td>
+<td class="c"><strong>4</strong></td>
+<td class="c"><strong>2</strong></td>
+<td class="c"><strong>3</strong></td>
+<td class="c"><strong>0</strong></td>
+<td class="c"><strong>3</strong></td>
+<td class="c"><strong>2</strong></td>
+<td class="c"><strong>1</strong></td>
+<td class="c"><strong>2</strong></td>
+<td class="c"><strong>0</strong></td>
+<td class="c"><strong>1</strong></td>
+<td class="c"><strong>7</strong></td>
+<td class="c"><strong>0</strong></td>
+<td class="c"><strong>1</strong></td>
+</tr>
+<tr><th style="text-align:left">Frame 0</th>
+<td class="c" style="background:var(--primary-soft);font-weight:800">7</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">7</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">7</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">2</td>
+<td class="c">2</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">2</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">2</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">4</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">4</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">4</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c">0</td>
+<td class="c">0</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c">0</td>
+<td class="c">0</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">7</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">7</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">7</td>
+</tr>
+<tr><th style="text-align:left">Frame 1</th>
+<td class="c">—</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c">0</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">3</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">3</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">3</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">2</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">2</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">2</td>
+<td class="c">2</td>
+<td class="c">2</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">1</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">1</td>
+<td class="c">1</td>
+<td class="c">1</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">1</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+</tr>
+<tr><th style="text-align:left">Frame 2</th>
+<td class="c">—</td>
+<td class="c">—</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">1</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">1</td>
+<td class="c">1</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">1</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">3</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">3</td>
+<td class="c">3</td>
+<td class="c">3</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">3</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">2</td>
+<td class="c">2</td>
+<td class="c">2</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">2</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">2</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">1</td>
+</tr>
+<tr><th style="text-align:left">ผล</th>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 7)</td>
+<td class="c" style="color:var(--green);font-weight:800">H</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 0)</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 1)</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 2)</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 3)</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 0)</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 4)</td>
+<td class="c" style="color:var(--green);font-weight:800">H</td>
+<td class="c" style="color:var(--green);font-weight:800">H</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 2)</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 3)</td>
+<td class="c" style="color:var(--green);font-weight:800">H</td>
+<td class="c" style="color:var(--green);font-weight:800">H</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 0)</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 1)</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 2)</td>
+</tr></table></div>
+<h4 style="margin-bottom:6px">Optimal (มองอนาคต — ใช้จริงไม่ได้ แค่ benchmark) — เกิด page fault รวม <span style="color:var(--red)">9 ครั้ง</span></h4>
+<div class="tbl-wrap"><table class="tbl" style="min-width:900px;font-size:.78rem;text-align:center">
+<tr><th style="text-align:left">อ้างถึง</th>
+<td class="c"><strong>7</strong></td>
+<td class="c"><strong>0</strong></td>
+<td class="c"><strong>1</strong></td>
+<td class="c"><strong>2</strong></td>
+<td class="c"><strong>0</strong></td>
+<td class="c"><strong>3</strong></td>
+<td class="c"><strong>0</strong></td>
+<td class="c"><strong>4</strong></td>
+<td class="c"><strong>2</strong></td>
+<td class="c"><strong>3</strong></td>
+<td class="c"><strong>0</strong></td>
+<td class="c"><strong>3</strong></td>
+<td class="c"><strong>2</strong></td>
+<td class="c"><strong>1</strong></td>
+<td class="c"><strong>2</strong></td>
+<td class="c"><strong>0</strong></td>
+<td class="c"><strong>1</strong></td>
+<td class="c"><strong>7</strong></td>
+<td class="c"><strong>0</strong></td>
+<td class="c"><strong>1</strong></td>
+</tr>
+<tr><th style="text-align:left">Frame 0</th>
+<td class="c" style="background:var(--primary-soft);font-weight:800">7</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">7</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">7</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">2</td>
+<td class="c">2</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">2</td>
+<td class="c">2</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">2</td>
+<td class="c">2</td>
+<td class="c">2</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">2</td>
+<td class="c">2</td>
+<td class="c">2</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">2</td>
+<td class="c">2</td>
+<td class="c">2</td>
+<td class="c">2</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">7</td>
+<td class="c">7</td>
+<td class="c">7</td>
+</tr>
+<tr><th style="text-align:left">Frame 1</th>
+<td class="c">—</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c">0</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c">0</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">4</td>
+<td class="c">4</td>
+<td class="c">4</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c">0</td>
+<td class="c">0</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c">0</td>
+<td class="c">0</td>
+<td class="c">0</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c">0</td>
+<td class="c">0</td>
+</tr>
+<tr><th style="text-align:left">Frame 2</th>
+<td class="c">—</td>
+<td class="c">—</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">1</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">1</td>
+<td class="c">1</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">3</td>
+<td class="c">3</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">3</td>
+<td class="c">3</td>
+<td class="c">3</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">3</td>
+<td class="c">3</td>
+<td class="c">3</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">1</td>
+<td class="c">1</td>
+<td class="c">1</td>
+<td class="c">1</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">1</td>
+<td class="c">1</td>
+<td class="c">1</td>
+</tr>
+<tr><th style="text-align:left">ผล</th>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 7)</td>
+<td class="c" style="color:var(--green);font-weight:800">H</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 1)</td>
+<td class="c" style="color:var(--green);font-weight:800">H</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 0)</td>
+<td class="c" style="color:var(--green);font-weight:800">H</td>
+<td class="c" style="color:var(--green);font-weight:800">H</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 4)</td>
+<td class="c" style="color:var(--green);font-weight:800">H</td>
+<td class="c" style="color:var(--green);font-weight:800">H</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 3)</td>
+<td class="c" style="color:var(--green);font-weight:800">H</td>
+<td class="c" style="color:var(--green);font-weight:800">H</td>
+<td class="c" style="color:var(--green);font-weight:800">H</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 2)</td>
+<td class="c" style="color:var(--green);font-weight:800">H</td>
+<td class="c" style="color:var(--green);font-weight:800">H</td>
+</tr></table></div>
+<h4 style="margin-bottom:6px">LRU (Least Recently Used — มองอดีต) — เกิด page fault รวม <span style="color:var(--red)">12 ครั้ง</span></h4>
+<div class="tbl-wrap"><table class="tbl" style="min-width:900px;font-size:.78rem;text-align:center">
+<tr><th style="text-align:left">อ้างถึง</th>
+<td class="c"><strong>7</strong></td>
+<td class="c"><strong>0</strong></td>
+<td class="c"><strong>1</strong></td>
+<td class="c"><strong>2</strong></td>
+<td class="c"><strong>0</strong></td>
+<td class="c"><strong>3</strong></td>
+<td class="c"><strong>0</strong></td>
+<td class="c"><strong>4</strong></td>
+<td class="c"><strong>2</strong></td>
+<td class="c"><strong>3</strong></td>
+<td class="c"><strong>0</strong></td>
+<td class="c"><strong>3</strong></td>
+<td class="c"><strong>2</strong></td>
+<td class="c"><strong>1</strong></td>
+<td class="c"><strong>2</strong></td>
+<td class="c"><strong>0</strong></td>
+<td class="c"><strong>1</strong></td>
+<td class="c"><strong>7</strong></td>
+<td class="c"><strong>0</strong></td>
+<td class="c"><strong>1</strong></td>
+</tr>
+<tr><th style="text-align:left">Frame 0</th>
+<td class="c" style="background:var(--primary-soft);font-weight:800">7</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">7</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">7</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">2</td>
+<td class="c">2</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">2</td>
+<td class="c">2</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">4</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">4</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">4</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c">0</td>
+<td class="c">0</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">1</td>
+<td class="c">1</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">1</td>
+<td class="c">1</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">1</td>
+<td class="c">1</td>
+<td class="c">1</td>
+</tr>
+<tr><th style="text-align:left">Frame 1</th>
+<td class="c">—</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c">0</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c">0</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">3</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">3</td>
+<td class="c">3</td>
+<td class="c">3</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">3</td>
+<td class="c">3</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c">0</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">0</td>
+<td class="c">0</td>
+<td class="c">0</td>
+</tr>
+<tr><th style="text-align:left">Frame 2</th>
+<td class="c">—</td>
+<td class="c">—</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">1</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">1</td>
+<td class="c">1</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">3</td>
+<td class="c">3</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">3</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">2</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">2</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">2</td>
+<td class="c">2</td>
+<td class="c">2</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">2</td>
+<td class="c">2</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">2</td>
+<td class="c">2</td>
+<td class="c" style="background:var(--primary-soft);font-weight:800">7</td>
+<td class="c">7</td>
+<td class="c">7</td>
+</tr>
+<tr><th style="text-align:left">ผล</th>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 7)</td>
+<td class="c" style="color:var(--green);font-weight:800">H</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 1)</td>
+<td class="c" style="color:var(--green);font-weight:800">H</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 2)</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 3)</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 0)</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 4)</td>
+<td class="c" style="color:var(--green);font-weight:800">H</td>
+<td class="c" style="color:var(--green);font-weight:800">H</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 0)</td>
+<td class="c" style="color:var(--green);font-weight:800">H</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 3)</td>
+<td class="c" style="color:var(--green);font-weight:800">H</td>
+<td class="c" style="color:var(--red);font-weight:800;white-space:nowrap">F (แทน 2)</td>
+<td class="c" style="color:var(--green);font-weight:800">H</td>
+<td class="c" style="color:var(--green);font-weight:800">H</td>
+</tr></table></div>
+
+<div class="formula">FIFO = 15 faults · Optimal = 9 faults · LRU = 12 faults<small>จำแนวเดียวกัน: ใน 3 อันนี้ Optimal น้อยสุดเสมอ (เพราะโกงรู้อนาคต) · LRU รองลงมา · FIFO มักแย่สุด</small></div>
+
+<div class="card">
+<h4 class="mt0">สรุปหลักคิดของแต่ละตัว</h4>
+<ul style="margin:6px 0">
+  <li><strong>FIFO</strong> — ของที่เข้ามาก่อน ออกก่อน (ต่อคิวเฉย ๆ ไม่สนว่าใครฮิต) · ง่ายแต่โง่</li>
+  <li><strong>Optimal (OPT)</strong> — เลือกแทนที่ตัวที่<strong>"จะไม่ถูกใช้อีกนานที่สุดในอนาคต"</strong> (มองไปข้างหน้า!) — ใช้จริงไม่ได้เพราะ OS รู้อนาคตไม่ได้ มีไว้เป็นเกณฑ์เทียบ (benchmark)</li>
+  <li><strong>LRU</strong> — มองอดีต เลือกแทนตัวที่<strong>"ไม่ได้ใช้มานานที่สุด"</strong> — ทำจริงได้ (เก็บประวัติย้อนหลังได้) และดีกว่า FIFO</li>
+</ul>
+</div>
+
+<div class="callout analogy">
+  <div class="co-title">👕 เปรียบเทียบตู้เสื้อผ้า 3 ชั้น</div>
+  <p><strong>FIFO</strong> = ชั้นล่างสุดคือของที่ใส่มานานสุด รีดออกก่อนไม่สนว่าจะใส่ซ้ำ · <strong>Optimal</strong> = หมอดูได้ รีดตัวที่จะไม่ใส่อีกนานสุด · <strong>LRU</strong> = จำได้ว่าเมื่อไรใส่ตัวไหนล่าสุด รีดตัวที่ทิ้งไว้นานสุด</p>
+</div>
+
+<h2 id="belady">3. Belady's Anomaly — เพิ่ม frame แล้ว fault กลับเพิ่ม?! 🤯</h2>
+<p>สามัญสำนึกบอกว่า RAM มากขึ้น = fault น้อยลง แต่ <strong>FIFO</strong> มีวันเสียสามัญสำนึก โจทย์คลาสสิก (จาก handout): reference string <code>1,2,3,4,1,2,5,1,2,3,4,5</code>:</p>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>จำนวน frame</th><th class="c">3 frames</th><th class="c">4 frames</th></tr>
+  <tr><td>จำนวน page fault (FIFO)</td><td class="c"><strong>9</strong> ครั้ง</td><td class="c"><strong>10</strong> ครั้ง 😱</td></tr>
+</table></div>
+<p>เพิ่ม frame หนึ่งช่อง fault กลับโตขึ้น — เรียกว่า <strong>Belady's Anomaly</strong> เกิดได้กับ FIFO (และอัลกอริทึมที่ไม่ใช่ stack algorithm) แต่ <strong>ไม่เกิดกับ LRU และ Optimal</strong></p>
+
+<h2 id="eat">4. EAT เมื่อมี Page Fault Rate (p)</h2>
+<p>เมื่อ p = อัตราการเกิด page fault (0 ≤ p ≤ 1):</p>
+<div class="formula">EAT = (1 − p) × memory access time + p × page fault service time<small>ขวาคือเวลาที่เจ็บปวดมาก เพราะรวม trap + I/O ดิสก์ + restart</small></div>
+<p>ตัวเลขชวนคิด (มาตรฐานเท็กซ์บุ๊ก): ถ้า access = 200 ns แต่ page fault service = 8 ms → ที่ p = 1/1,000 (fault แค่ 0.1%) EAT = 0.999×200 + 0.001×8,000,000 ≈ 8,200 ns = <strong>8.2 μs — ช้าขึ้นกว่า 40 เท่า!</strong> เพราะฉะนั้น "ห้ามให้ p โตเด็ดขาด" → โยงเข้าเรื่อง thrashing ข้างล่าง</p>
+
+<h2 id="global">5. Global vs Local Allocation</h2>
+<ul>
+  <li><strong>Global replacement</strong> — ตอนต้องแทนที่ เลือกเพจออกจาก <strong>frame ใดก็ได้ในระบบ</strong> (แย่งของข้าม process ได้)</li>
+  <li><strong>Local replacement</strong> — เลือกจาก<strong>เฉพาะ frame ของตัวเอง</strong> (คนละบ้านกับคนละบ้าน)</li>
+</ul>
+
+<h2 id="thrash">6. Thrashing, Locality of Reference และ Working Set 🔥</h2>
+<h3>Thrashing — เครื่องยังเปิดแต่เหมือนตาย</h3>
+<ul>
+  <li>ถ้า process มีเพจไม่พอ → fault ถี่มาก → วุ่นอยู่กับ <strong>สลับเพจเข้า-ออกดิสก์ตลอดเวลา</strong> (paging in/out ไม่หยุด)</li>
+  <li>ผล: <strong>CPU utilization ดิ่ง</strong>เพราะ CPU หยุดรอดิสก์ตลอด</li>
+  <li><strong>ความเข้าใจผิดอันตรายของ OS:</strong> เห็น CPU ว่าง ก็คิดว่า "งานน้อย เอา process เพิ่ม" → degree of multiprogramming สูงขึ้น → RAM ยิ่งแบ่งกันไม่พอ → thrashing <strong>ยิ่งหนักขึ้น</strong> (วงจรนรก)</li>
+  <li>เกิดได้ทั้งข้ามงาน (หลายงานแย่งเพจน้อย ๆ) และในงานเดียว (ลูปที่ข้ามขอบเพจไปมา)</li>
+</ul>
+
+<h3>Locality of Reference + Working Set — ยาแก้ thrashing</h3>
+<p><strong>Locality of reference</strong> = พฤติกรรมธรรมชาติของโปรแกรม: ช่วงเวลาสั้น ๆ มักอ้างเฉพาะ "กลุ่มเพจเดิม ๆ" (เช่น อยู่ในฟังก์ชันเดียว วนลูปที่อาร์เรย์เดิม) — <strong>Working set</strong> = กลุ่มเพจที่ process ต้องใช้จริงใน locality นั้น (เก็บให้ครบใน RAM = ไม่มี fault ในช่วงนั้น)</p>
+<ul>
+  <li><strong>Δ (working-set window)</strong> = จำนวนครั้งการอ้างที่ใช้มองย้อนหลัง (เช่น 10,000 instruction)</li>
+  <li><strong>WSSᵢ</strong> = จำนวนเพจที่ Pᵢ อ้างใน window ล่าสุด · Δ เล็กไป = ครอบ locality ไม่หมด · Δ ใหญ่ไป = กินหลาย locality · Δ = ∞ คือทั้งโปรแกรม</li>
+  <li><strong>D = Σ WSSᵢ</strong> = ความต้องการ frame รวมของระบบ · ถ้า <strong>D &gt; m (จำนวน frame จริง) → thrashing!</strong> → OS ต้อง <strong>suspend บาง process</strong> (ส่งออกไปดิสก์) คืน frame ให้คนที่เหลือพอ</li>
+</ul>
+
+<div class="callout analogy">
+  <div class="co-title">🍳 เปรียบเทียบ</div>
+  <p>Working set = "ของที่ต้องมีบนเคาน์เตอร์เพื่อทำเมนูนี้ให้จบ" ถ้าเคาน์เตอร์ (RAM) วางของไม่ครบ คุณจะวิ่งไปตู้เย็น (ดิสก์) ทุก 30 วินาที = ไม่มีอะไรเสร็จ (thrashing) ทางแก้คือลดจำนวน "เมนูที่ทำพร้อมกัน" (suspend process) ให้ของต่อเมนูพอ</p>
+</div>
+
+<h2 id="array">7. โจทย์สุดคลาสสิก: Array 128×128 วนลูปสลับกัน 🔥</h2>
+<p>จากวิดีโอ 13.3 — <code>int data[128][128]</code> แต่ละ <strong>แถว (row) อยู่ใน 1 เพจ</strong> (เก็บแบบ <strong>row-major</strong>: ข้อมูลเรียงต่อกันตามแถว):</p>
+<div class="card">
+<h4 class="mt0">❌ แบบที่ 1: วน column นอก, row ใน (กระโดดข้ามแถวทุกครั้ง)</h4>
+<div class="codewrap"><pre class="code"><code><span class="k">for</span> (j = 0; j &lt; 128; j++)       <span class="c">// column อยู่นอก</span>
+    <span class="k">for</span> (i = 0; i &lt; 128; i++)   <span class="c">// row อยู่ใน → ทุกการอ้างกระโดดเพจใหม่!</span>
+        data[i][j] = 0;</code></pre></div>
+<p>ทุกครั้งที่แตะสมาชิก 1 ตัว = เปลี่ยนเพจ = fault → <strong>128 × 128 = 16,384 page faults</strong></p>
+<h4>✅ แบบที่ 2: วน row นอก, column ใน (ไล่ต่อเนื่องในเพจเดียว)</h4>
+<div class="codewrap"><pre class="code"><code><span class="k">for</span> (i = 0; i &lt; 128; i++)       <span class="c">// row อยู่นอก</span>
+    <span class="k">for</span> (j = 0; j &lt; 128; j++)   <span class="c">// column ใน → อยู่เพจเดียวกันทั้งแถว</span>
+        data[i][j] = 0;</code></pre></div>
+<p>เพจละ fault เดียวตอนเปลี่ยนแถว → <strong>128 page faults</strong> เท่านั้น!</p>
+</div>
+<div class="formula">โค้ดเหมือนกัน แค่สลับลูป → fault ต่างกัน 128 เท่า (16,384 : 128)<small>บทเรียน: เข้าใจ locality + โครงสร้าง memory ช่วยเขียนโค้ดเร็วขึ้นมหาศาล</small></div>
+
+<h2 id="quiz">📝 แบบฝึกหัดท้ายบท</h2>
+
+<div class="quiz" data-q data-type="num" data-answer="15" data-tolerance="0" id="ch12q1">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 1</span><span class="q-tag safe">เติมตัวเลข — จากวิดีโอ</span></div>
+  <div class="q-text">Reference string: 7,0,1,2,0,3,0,4,2,3,0,3,2,1,2,0,1,7,0,1 กับ 3 frames ใช้ <strong>FIFO</strong> — เกิด page fault กี่ครั้ง</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 15 ครั้ง</span>ดูตารางไล่เต็มในบท — จุดที่พลาดบ่อยคือช่วงต้น (7,0,1 = 3 faults) แล้ว 2 แทน 7, 3 แทน 0, 0 แทน 1, 4 แทน 2, 2 แทน 3, 3 แทน 0, 0 แทน 4 ฯลฯ</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="9" data-tolerance="0" id="ch12q2">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 2</span><span class="q-tag safe">เติมตัวเลข</span></div>
+  <div class="q-text">String เดิม 3 frames ใช้ <strong>Optimal</strong> — เกิด page fault กี่ครั้ง</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 9 ครั้ง</span>Optimal มองอนาคต เลือกแทนตัวที่จะไม่ถูกใช้นานสุด — น้อยที่สุดในบรรดาอัลกอริทึม (เพราะมันโกง) แต่ใช้จริงไม่ได้ มีไว้เทียบวัดฝีมือตัวอื่น</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="12" data-tolerance="0" id="ch12q3">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 3</span><span class="q-tag safe">เติมตัวเลข</span></div>
+  <div class="q-text">String เดิม 3 frames ใช้ <strong>LRU</strong> — เกิด page fault กี่ครั้ง</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 12 ครั้ง</span>LRU มองอดีต แทนตัวที่ไม่ได้ใช้นานสุด — ดีกว่า FIFO (15) และทำจริงได้ ต่างจาก Optimal</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="false" id="ch12q4">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 4</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">Optimal page replacement ใช้งานจริงใน OS ได้ เพราะ OS สามารถเก็บสถิติการอ้างอิงเพจไว้ได้</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ผิด</span>Optimal ต้อง<strong>มองอนาคต</strong> (ตัวที่จะไม่ถูกใช้อีกนานสุด) ซึ่ง OS ทำไม่ได้ — สถิติย้อนหลังนั่นแหละคือสิ่งที่ LRU ใช้ (LRU ใช้จริงได้) จำ: Optimal มองหน้า/ใช้จริงไม่ได้, LRU มองหลัง/ใช้ได้</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="true" id="ch12q5">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 5</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">เมื่อเกิด page fault และเพจที่จะถูกแทนที่มี dirty bit = 1 OS ต้องเขียนเพจนั้นกลับลงดิสก์ก่อนจึงจะนำเพจใหม่เข้ามาแทนได้</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ถูก</span>dirty/modified = สำเนาบนดิสก์ล้าสมัยแล้ว ทับทันที = ข้อมูลหาย · เพจ clean (ไม่ได้แก้) ทับได้เลย</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="128" data-tolerance="0" id="ch12q6">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 6</span><span class="q-tag safe">เติมตัวเลข — จากวิดีโอ 13.3</span></div>
+  <div class="q-text">data[128][128] เก็บ row-major, 1 แถว = 1 เพจ — ถ้าเขียนลูป "row อยู่นอก, column อยู่ใน" จะเกิด page fault กี่ครั้ง</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 128 ครั้ง</span>วนตามที่เก็บ (row-major) = อยู่เพจเดียวกันตลอดแถว fault เฉพาะตอนเปลี่ยนแถว = 128 ครั้ง (สลับลูปกลายเป็น 16,384 ครั้ง — ต่างกัน 128 เท่า!)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="true" id="ch12q7">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 7</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">ใน Working-Set Model ถ้า D = ΣWSSᵢ มากกว่าจำนวน frame ทั้งหมด (m) แปลว่าระบบมีแนวโน้มเกิด thrashing และ OS ควร suspend บาง process</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ถูก</span>D &gt; m = ความต้องการเพจรวมเกิน frame ที่มี → ใครแค่บางตัวก็วิ่งไปดิสก์ตลอด (thrashing) → สั่ง suspend process ออกไปตัวหนึ่งเพื่อให้ working set ของที่เหลือพอ</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="pager">
+  <a href="11-paging.html"><span class="dir">← บทก่อนหน้า</span><span class="name">บทที่ 11: Paging 🔥</span></a>
+  <a href="13-filesystem.html" class="next"><span class="dir">บทถัดไป →</span><span class="name">บทที่ 13: File System</span></a>
+</div>
+
+<div class="center"><button class="btn ghost" id="doneBtn"></button></div>
+
+</main>
+</div>
+<button id="toTop" aria-label="กลับขึ้นด้านบน">↑</button>
+<script src="js/app.js"></script>
+</body>
+</html>

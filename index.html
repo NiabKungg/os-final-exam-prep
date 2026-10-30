@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เว็บติวสอบ Final — Operating Systems | หน้าแรก</title>
+<meta name="description" content="สื่อการสอนเตรียมสอบ Final วิชา Operating Systems 05506007 — สรุปทุกบท ตัวอย่างคำนวณ step-by-step และแบบซ้อมข้อสอบแนวรุ่นพี่">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="index">
+<div id="sidebar-root"></div>
+<div class="sidebar-backdrop"></div>
+
+<header class="topbar">
+  <button class="icon-btn" id="menuBtn" aria-label="เปิดเมนู">☰</button>
+  <a class="brand" href="index.html">
+    <span class="brand-logo">OS</span>
+    <span>เว็บติว OS Final<span class="brand-sub">05506007 · Operating Systems</span></span>
+  </a>
+  <span class="spacer"></span>
+  <span class="progress-pill" id="quizPill"></span>
+  <button class="icon-btn" id="themeBtn" aria-label="สลับโหมดมืด/สว่าง">🌙</button>
+</header>
+
+<div class="layout">
+<main class="content">
+
+<section class="hero">
+  <div class="kicker">05506007 Operating Systems · เตรียมสอบ Final</div>
+  <h1>ติว OS ตัวต่อตัว ครบทุกบท พร้อมโจทย์คำนวณ Step-by-Step 🚀</h1>
+  <p>สรุปเนื้อหาจาก Handout ทั้ง 10 บท + วิดีโอบรรยายของอาจารย์ทั้ง 59 คลิป เรียบเรียงให้อ่านเข้าใจง่าย มีภาพประกอบทุกเรื่องยาก พร้อม <strong>ห้องซ้อมข้อสอบ</strong>และ<strong>เทคนิคทำข้อสอบ</strong>จากรีวิวรุ่นพี่ อ่านได้ทั้งคอมและมือถือ</p>
+  <div class="hero-actions">
+    <a class="btn big" href="exam.html">📝 เข้าห้องซ้อมข้อสอบ</a>
+    <a class="btn big ghost" href="#chapters">📖 เริ่มอ่านทีละบท</a>
+    <a class="btn big ghost" href="cheatsheet.html">📋 Cheatsheet</a>
+  </div>
+</section>
+
+<h2>🎯 รู้จักข้อสอบก่อน — รีวิวจากรุ่นพี่</h2>
+<p class="lead">อ่านตรงนี้ก่อน เพราะ "เข้าใจข้อสอบ" สำคัญเท่ากับ "เข้าใจเนื้อหา"</p>
+
+<div class="card">
+  <h3 class="mt0">รูปแบบข้อสอบ Final (จากรีวิวรุ่นพี่)</h3>
+  <ul>
+    <li><strong>ปรนัย 2 ตัวเลือก (ถูก/ผิด)</strong> — ระบบคะแนนแบบกินคน: <span style="color:var(--green);font-weight:700">ตอบถูก +2</span>, <span style="color:var(--red);font-weight:700">ตอบผิด −1</span>, <span style="color:var(--amber);font-weight:700">ไม่ตอบ 0</span> ⇒ <em>ไม่แน่ใจจริง ๆ ให้ข้าม อย่าเดามั่ว</em></li>
+    <li><strong>เติมคำตอบ</strong> — ส่วนมากเป็น<strong>การเติมตัวเลข</strong>หรือคำสั้น ๆ (เช่น คำนวณ physical address, จำนวน page fault, waiting time)</li>
+    <li><strong>ข้อสอบเยอะกว่า Midterm + โจทย์คำนวณเยอะกว่า</strong> — 3 ชั่วโมงแทบไม่พอ เน้น<strong>ความเร็ว</strong></li>
+    <li><strong>ส่วนมากคนคำนวณ Paging กันไม่ทัน</strong> — ต้องฝึกคำนวณ address translation ให้ลื่นมือ 🔥</li>
+    <li><strong>Open Book</strong> — เอา Handout/ชีทเข้าได้ แต่<em>ไม่มีเวลาไปเปิดหาทีละข้อ</em> ควรจดสรุปสั้น ๆ ติดมือไปด้วย</li>
+    <li><strong>โค้ดทุกข้อ Compile ผ่านหมด</strong> — ไม่มีคำตอบว่า "Error" ถ้าเจอโจทย์ไล่โค้ด fork ให้ไล่ลำดับการทำงานจริง ๆ ระวังจุดหลอก</li>
+  </ul>
+</div>
+
+<div class="callout exam">
+  <div class="co-title">🚨 สิ่งที่ต้องฝึกให้เร็วที่สุด (ตามลำดับความสำคัญ)</div>
+  <ol style="margin:6px 0 2px;">
+    <li><strong>Paging address translation</strong> — แปลง logical → physical แบบเร็วและแม่น (<a href="11-paging.html">บทที่ 11</a>)</li>
+    <li><strong>Page Replacement</strong> — นับ page fault FIFO / Optimal / LRU ให้ไว (<a href="12-virtualmem.html">บทที่ 12</a>)</li>
+    <li><strong>CPU Scheduling</strong> — วาด Gantt หา TAT/WT ทุกอัลกอริทึม (<a href="05-scheduling.html">บทที่ 5</a>)</li>
+    <li><strong>Banker's Algorithm</strong> — หา safe sequence (<a href="09-deadlock.html">บทที่ 9</a>)</li>
+    <li><strong>ไล่โค้ด fork/exec/wait</strong> — นับ process, เดา output (<a href="03-process.html">บทที่ 3</a>)</li>
+  </ol>
+</div>
+
+<h2 id="chapters">📚 บทเรียนทั้งหมด</h2>
+<p class="lead">บท 1–6 คือช่วงก่อน Midterm (ทบทวนเร็ว) · บท 7–13 คือหัวใจของ <strong>ข้อสอบ Final</strong></p>
+
+<div class="grid-cards">
+  <a class="unit-card" href="01-intro.html">
+    <span class="uc-num" style="background:#64748b">1</span>
+    <span class="uc-title">รู้จัก OS · Boot · Dual Mode · VM/Container</span>
+    <span class="uc-desc">OS ทำอะไร บูตเครื่องยังไง BIOS vs UEFI, interrupt, mode bit, VM ต่างจาก Container ยังไง</span>
+    <span class="uc-tags"><span class="chip mid">ทบทวน</span></span>
+  </a>
+  <a class="unit-card" href="02-structure.html">
+    <span class="uc-num" style="background:#0ea5e9">2</span>
+    <span class="uc-title">OS Structure & System Call</span>
+    <span class="uc-desc">บริการของ OS, system call ทำงานยังไง, API (Win32/POSIX/Java), สถาปัตยกรรมเคอร์เนล Monolithic vs Microkernel</span>
+    <span class="uc-tags"><span class="chip mid">ทบทวน</span></span>
+  </a>
+  <a class="unit-card" href="03-process.html">
+    <span class="uc-num" style="background:#059669">3</span>
+    <span class="uc-title">Process & fork/exec/wait</span>
+    <span class="uc-desc">Process คืออะไร, state diagram, PCB, context switch, ไล่โค้ด fork() ที่มีจุดหลอกเยอะ 🔥</span>
+    <span class="uc-tags"><span class="chip mid">ทบทวน</span><span class="chip hot">ไล่โค้ด</span></span>
+  </a>
+  <a class="unit-card" href="04-thread.html">
+    <span class="uc-num" style="background:#0d9488">4</span>
+    <span class="uc-title">Thread & Multithreading</span>
+    <span class="uc-desc">Thread vs Process, User/Kernel thread, โมเดล Many-to-One ฯลฯ, Pthreads, Java Thread, Thread Pool</span>
+    <span class="uc-tags"><span class="chip mid">ทบทวน</span></span>
+  </a>
+  <a class="unit-card" href="05-scheduling.html">
+    <span class="uc-num" style="background:#d97706">5</span>
+    <span class="uc-title">CPU Scheduling</span>
+    <span class="uc-desc">FCFS · SJF · SRTF · Priority · RR · MLFQ พร้อมสูตร TAT/WT และวิธีวาด Gantt แบบอาจารย์ 🔥คำนวณหนัก</span>
+    <span class="uc-tags"><span class="chip hot">คำนวณ</span><span class="chip final">Final</span></span>
+  </a>
+  <a class="unit-card" href="06-ipc.html">
+    <span class="uc-num" style="background:#2563eb">6</span>
+    <span class="uc-title">IPC: Signal · Pipe · Shared Memory</span>
+    <span class="uc-desc">signal()/kill()/raise(), pipe + fork + dup2, shmget/shmat ครบทุก system call พร้อมภาพ</span>
+    <span class="uc-tags"><span class="chip final">Final</span></span>
+  </a>
+  <a class="unit-card" href="07-sync.html">
+    <span class="uc-num" style="background:#db2777">7</span>
+    <span class="uc-title">Race Condition & Critical Section</span>
+    <span class="uc-desc">ทำไม count++ ถึงพัง, เงื่อนไข 3 ข้อ, Peterson's Solution, Bakery Algorithm</span>
+    <span class="uc-tags"><span class="chip final">Final</span></span>
+  </a>
+  <a class="unit-card" href="08-semaphore.html">
+    <span class="uc-num" style="background:#7c3aed">8</span>
+    <span class="uc-title">Semaphore & Monitor</span>
+    <span class="uc-desc">wait/signal แบบไม่ busy waiting, Bounded Buffer, Readers-Writers, Dining Philosophers, Monitor + Java sync</span>
+    <span class="uc-tags"><span class="chip final">Final</span></span>
+  </a>
+  <a class="unit-card" href="09-deadlock.html">
+    <span class="uc-num" style="background:#dc2626">9</span>
+    <span class="uc-title">Deadlock & Banker's Algorithm</span>
+    <span class="uc-desc">เงื่อนไข 4 ข้อ, Resource-Allocation Graph, Prevention/Avoidance, ไล่ Safe Sequence ทีละขั้น 🔥</span>
+    <span class="uc-tags"><span class="chip hot">คำนวณ</span><span class="chip final">Final</span></span>
+  </a>
+  <a class="unit-card" href="10-realmem.html">
+    <span class="uc-num" style="background:#4f46e5">10</span>
+    <span class="uc-title">Real Memory Management</span>
+    <span class="uc-desc">Logical vs Physical, MMU, Fixed/Variable Partition, First/Best/Worst-fit, fragmentation, Segmentation</span>
+    <span class="uc-tags"><span class="chip hot">คำนวณ</span><span class="chip final">Final</span></span>
+  </a>
+  <a class="unit-card" href="11-paging.html">
+    <span class="uc-num" style="background:#e11d48">11</span>
+    <span class="uc-title">Paging & Address Translation</span>
+    <span class="uc-desc">แปลง address ทีละบิต, page table, TLB + EAT, Two-level paging — <strong>เรื่องที่คนสอบไม่ทันสุด ๆ</strong> 🔥🔥</span>
+    <span class="uc-tags"><span class="chip hot">คำนวณหนัก</span><span class="chip final">Final</span></span>
+  </a>
+  <a class="unit-card" href="12-virtualmem.html">
+    <span class="uc-num" style="background:#9333ea">12</span>
+    <span class="uc-title">Virtual Memory & Page Replacement</span>
+    <span class="uc-desc">Demand paging, page fault, FIFO/Optimal/LRU นับ fault, Belady, Thrashing, Working Set, Locality 🔥</span>
+    <span class="uc-tags"><span class="chip hot">คำนวณ</span><span class="chip final">Final</span></span>
+  </a>
+  <a class="unit-card" href="13-filesystem.html">
+    <span class="uc-num" style="background:#0891b2">13</span>
+    <span class="uc-title">File System</span>
+    <span class="uc-desc">FAT32/NTFS/ext4/exFAT/APFS, Contiguous/Linked/Indexed allocation, hard link vs soft link, directory, สิทธิ์ rwx</span>
+    <span class="uc-tags"><span class="chip final">Final</span></span>
+  </a>
+  <a class="unit-card" href="exam.html" style="border-color:var(--primary)">
+    <span class="uc-num" style="background:linear-gradient(135deg,var(--primary),var(--accent))">📝</span>
+    <span class="uc-title">ห้องซ้อมข้อสอบ Final</span>
+    <span class="uc-desc">ข้อสอบจำลองครบทุกรูปแบบ: ถูก/ผิด +2/−1, เติมตัวเลข, ไล่โค้ด fork, คำนวณ Paging พร้อมเฉลยละเอียด</span>
+    <span class="uc-tags"><span class="chip hot">ลองทำ!</span></span>
+  </a>
+  <a class="unit-card" href="cheatsheet.html">
+    <span class="uc-num" style="background:#334155">📋</span>
+    <span class="uc-title">Cheatsheet ก่อนเข้าห้องสอบ</span>
+    <span class="uc-desc">สรุปสูตร+ตารางทั้งหมดในหน้าเดียว พิมพ์ติดมือเข้าห้องสอบ (Open Book แต่เวลาน้อย!)</span>
+    <span class="uc-tags"><span class="chip mid">พกเข้าสอบ</span></span>
+  </a>
+</div>
+
+<h2>🗓️ แผนอ่าน 3 วันก่อนสอบ (แนะนำ)</h2>
+<div class="card">
+  <ul style="margin:4px 0">
+    <li><strong>วันที่ 1:</strong> บท 10 → 11 (Real Memory + Paging) — ทำโจทย์ address translation จนไม่ต้องคิด เช็คสูตรจาก cheatsheet</li>
+    <li><strong>วันที่ 2:</strong> บท 12 (Virtual Memory) → บท 5 (Scheduling) — ฝึกนับ page fault และวาด Gantt ให้ไว จับเวลาทำข้อละไม่เกิน 2 นาที</li>
+    <li><strong>วันที่ 3:</strong> บท 7–9 (Sync + Deadlock) → ทบทวนบท 3 ไล่ fork → เข้าห้องซ้อมข้อสอบ <a href="exam.html">exam.html</a> ทำเวลาจริง → พิมพ์ cheatsheet</li>
+  </ul>
+  <p class="small">💡 เนื้อหาทุกบทอ้างอิงจาก Handout OSNo01–10 และวิดีโอบรรยายของ ผศ.ดร.ศรัณย์ อินทโกสุม (ตัวอย่างเลข/โจทย์ในเว็บดึงมาจากตัวอย่างที่ปรากฏจริงในวิดีโอ)</p>
+</div>
+
+<div class="pager">
+  <a href="01-intro.html" class="next" style="text-align:right">
+    <span class="dir">เริ่มบทแรก →</span>
+    <span class="name">บทที่ 1: รู้จัก OS, Boot, Dual Mode, VM/Container</span>
+  </a>
+</div>
+
+<div class="center" style="margin-top:26px">
+  <button class="btn ghost" id="doneBtn"></button>
+</div>
+
+</main>
+</div>
+<button id="toTop" aria-label="กลับขึ้นด้านบน">↑</button>
+<script src="js/app.js"></script>
+</body>
+</html>

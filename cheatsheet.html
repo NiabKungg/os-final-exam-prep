@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cheatsheet — พกเข้าห้องสอบ | เว็บติว OS Final</title>
+<meta name="description" content="สรุปสูตร OS ทั้งหมดในหน้าเดียว: TAT WT Gantt paging EAT page replacement banker segmentation inode permissions พิมพ์ติดมือเข้าสอบ Open Book">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  @media print {
+    .content { max-width: 100%; padding: 0; }
+    h2 { page-break-after: avoid; }
+    .card, .callout { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body data-page="cheatsheet">
+<div id="sidebar-root"></div>
+<div class="sidebar-backdrop"></div>
+
+<header class="topbar">
+  <button class="icon-btn" id="menuBtn" aria-label="เปิดเมนู">☰</button>
+  <a class="brand" href="index.html"><span class="brand-logo">OS</span><span>Cheatsheet<span class="brand-sub">พกเข้าห้องสอบ</span></span></a>
+  <span class="spacer"></span>
+  <span class="progress-pill" id="quizPill"></span>
+  <button class="icon-btn" id="themeBtn">🌙</button>
+</header>
+
+<div class="layout">
+<main class="content">
+
+<div class="callout tip">
+  <div class="co-title">🖨️ วิธีใช้</div>
+  <p>ข้อสอบเป็น Open Book แต่<strong>เวลาไม่พอเปิดหา</strong> — แนะนำกด Ctrl+P พิมพ์หน้านี้ (เลือกไม่รวม header) หรือจดย่อไว้ในกระดาษแผ่นเดียว พร้อมสั่งพิมพ์ Handout แยกเล่มไว้เปิดเร็ว ๆ</p>
+</div>
+
+<h2>1. CPU Scheduling</h2>
+<div class="card">
+  <div class="formula">TAT = Completion − Arrival &nbsp;&nbsp;|&nbsp;&nbsp; WT = TAT − Burst Time<small>เทคนิคอาจารย์: หา TAT ก่อนเสมอ (โดยเฉพาะ preemptive) แล้วลบ BT — อย่าไล่นับช่วงรอจาก Gantt</small></div>
+  <div class="tbl-wrap"><table class="tbl">
+    <tr><th>อัลกอริทึม</th><th>Preempt?</th><th>หลักเลือก</th><th>จำ</th></tr>
+    <tr><td>FCFS</td><td class="c">ไม่</td><td>มาก่อน-ได้ก่อน</td><td>Convoy effect · q ใหญ่สุดของ RR</td></tr>
+    <tr><td>SJF</td><td class="c">ไม่</td><td>BT สั้นสุดในคิว ตอน CPU ว่าง</td><td>optimal (WT ต่ำสุด) · เท่ากัน→มาก่อน</td></tr>
+    <tr><td>SRTF</td><td class="c">✅</td><td>งานใหม่ BT สั้นกว่า <strong>remaining</strong> ของงานเดิม → ขัด</td><td>ใช้ remaining ไม่ใช่ BT ดิบ!</td></tr>
+    <tr><td>Priority</td><td class="c">ได้ทั้งคู่</td><td>สิทธิสูงก่อน</td><td>Unix เลขน้อย=สูง · Java เลขมาก=สูง · Starvation→Aging</td></tr>
+    <tr><td>RR</td><td class="c">✅</td><td>หมด quantum → ต่อท้ายคิว</td><td>q ใหญ่=FCFS · q เล็ก=overhead · รอไม่เกิน (n−1)q</td></tr>
+    <tr><td>MLFQ</td><td class="c">✅</td><td>Q0(RR q8) → Q1(RR q16) → Q2(FCFS) ตามลำดับ</td><td>คิวบนว่างก่อน คิวล่างค่อยได้รัน</td></tr>
+  </table></div>
+</div>
+
+<h2>2. Process / fork</h2>
+<div class="card">
+  <ul style="margin:4px 0">
+    <li><code>fork()</code>: ใน parent คืน <strong>PID ลูก (&gt;0)</strong> · ใน child คืน <strong>0</strong> · ติดลบ = error</li>
+    <li>fork ติดกัน n ครั้งไม่มีเงื่อนไข → process = <strong>2ⁿ</strong> (ลูกใหม่ 2ⁿ−1) — วาด process tree ถ้ามีเงื่อนไข</li>
+    <li>ลูกในลูป <strong>ต้อง exit()</strong> — ไม่งั้นวนลูปสร้างลูก/หลานต่อ (output รวน)</li>
+    <li><code>exec()</code> สำเร็จ → โค้ดหลังบรรทัดนั้น<strong>ไม่รันเด็ดขาด</strong> (fail ค่อยรันต่อ) · <code>execlp(f, arg0, …, NULL)</code>: l=list, p=PATH · cd เป็น shell built-in exec ไม่ได้</li>
+    <li><code>wait(NULL)</code> รอลูกใดก็ได้จบ · <code>waitpid(pid,&amp;s,0)</code> รอเจาะจง · exit status ใช้ได้ 0–255 · พิมพ์ status ต้องผ่าน <code>WIFEXITED/WEXITSTATUS</code></li>
+    <li><strong>Orphan</strong> = พ่อตายก่อน → init/systemd รับเลี้ยง (PPID เปลี่ยน) · <strong>Zombie</strong> = ลูกตาย พ่อไม่ wait → สถานะ Z/defunct · <strong>Cascading termination</strong> = พ่อโดน terminate ลูกหลานโดนตาม</li>
+    <li>โค้ดข้อสอบ <strong>compile ผ่านหมด</strong> ไม่มีตอบ Error · ไม่มี wait ห้ามสรุปลำดับพิมพ์</li>
+  </ul>
+</div>
+
+<h2>3. Thread & Sync</h2>
+<div class="card">
+  <ul style="margin:4px 0">
+    <li>Thread แชร์ code/data/heap — ส่วนตัวแค่ <strong>PC, registers, stack</strong> · Model: Many-to-One (early Unix), One-to-One (Win NT+/Linux/Solaris9+), Many-to-Many (Solaris&lt;9, Tru64)</li>
+    <li>Java: priority 1–10 (default <strong>5</strong>, มาก=สูง) — <strong>ไม่การันตีลำดับ! ห้ามฝาก correctness กับ scheduler</strong></li>
+    <li>Critical section 3 เงื่อนไข: <strong>Mutual Exclusion, Progress, Bounded Waiting</strong></li>
+    <li>count++/-- = 3 คำสั่งเครื่อง (read/modify/write) → race condition</li>
+    <li>Peterson: flag[i]=true; turn=j; รอเมื่อ flag[j] && turn==j (turn ให้เพื่อน = bounded waiting)</li>
+    <li>Bakery: จ่ายเลข max+1, เทียบ (number, pid) แบบ lexicographical</li>
+  </ul>
+</div>
+
+<h2>4. Semaphore / Monitor / Java</h2>
+<div class="card">
+  <ul style="margin:4px 0">
+    <li>wait(S): S≤0 รอ / ไม่งั้น S−− · signal(S): S++ (อุปมาโหลหิน: หยิบ/คืน)</li>
+    <li><strong>Bounded buffer:</strong> mutex=1, empty=n, full=0 · Producer: wait(empty)→wait(mutex)→เขียน→signal(mutex)→signal(full) · Consumer: wait(full)→wait(mutex)→อ่าน→signal(mutex)→signal(empty)</li>
+    <li><strong>สลับมาเป็น wait(mutex) ก่อน = deadlock!</strong> ทรัพยากรก่อนล็อกเสมอ</li>
+    <li>Readers-Writers: wrt=1, readcount=0 — reader แรก wait(wrt), reader สุดท้าย signal(wrt)</li>
+    <li>Dining Phil: chopstick[5]=1, wait(ซ้าย)+wait(ขวา) → หยิบซ้ายพร้อมกัน = deadlock · Monitor DP (test เพื่อนบ้าน) ไม่ deadlock แต่ starvation ได้</li>
+    <li>Monitor: 1 process ใน monitor · x.wait() หลับ + x.signal() ปลุก1 — <strong>ไม่มีใครรอ → สัญญาณหายเปล่า</strong> (ไม่มี counter)</li>
+    <li>Java: synchronized = ล็อก object · wait() คืน lock+เข้า wait set · notify() สุ่ม 1 ตัวไป entry set (ไม่รันทันที) · notifyAll() ปลุกหมด · <strong>yield() ไม่คืน lock!</strong></li>
+  </ul>
+</div>
+
+<h2>5. Deadlock</h2>
+<div class="card">
+  <ul style="margin:4px 0">
+    <li>4 เงื่อนไขครบพร้อมกัน: <strong>Mutual Exclusion, Hold & Wait, No Preemption, Circular Wait</strong></li>
+    <li>RAG: ไม่มี cycle = ไม่ deadlock แน่ · cycle + single instance = deadlock แน่ · cycle + multiple = "อาจ"</li>
+    <li>Prevention: ตัด 1 เงื่อนไข (circular wait → เลขทรัพยากร ขอจากน้อยไปมาก) — ทฤษฎีดี ปฏิบัติไม่คุ้ม</li>
+    <li>Avoidance: แจ้ง Max ล่วงหน้า, safe state เท่านั้น · single instance = claim edge + เช็ค cycle · multiple = <strong>Banker's</strong></li>
+    <li>Banker's: <strong>Need = Max − Allocation</strong> · ขอได้เมื่อ Request ≤ Need และ ≤ Available แล้วไล่: หา Need ≤ Work → Work += Allocation → จนหมด = SAFE (unsafe = ไม่ให้ รอ)</li>
+    <li>Detection: single instance → wait-for graph (ตัด resource ออก) หา cycle · OS ส่วนใหญ่ (Unix) <strong>เมิน deadlock</strong></li>
+  </ul>
+</div>
+
+<h2>6. Memory — Partitions & Segmentation</h2>
+<div class="card">
+  <div class="formula">Relocation/Base: PA = Base + Logical &nbsp;|&nbsp; Segmentation: เช็ค d &lt; Limit (ผิด=trap) แล้ว PA = Base + d</div>
+  <ul style="margin:8px 0 0">
+    <li><strong>Fixed partition → Internal frag</strong> (เศษในช่องจองแล้ว) · <strong>Variable partition / Segmentation → External frag</strong> (รวมว่างเยอะแต่ช่องเดียวไม่พอ) · แก้: coalescing / compaction (ต้อง dynamic relocation)</li>
+    <li><strong>First-fit</strong> = หลุมแรกที่พอ (เร็ว) · <strong>Best-fit</strong> = เหลือน้อยสุด (ช้า เศษจิ๋ว) · <strong>Worst-fit</strong> = หลุมใหญ่สุด (เหลือชิ้นใหญ่ให้งานต่อไป)</li>
+    <li>Static linking ซ้ำ lib ทุกโปรแกรม · Dynamic linking ผ่าน stub แชร์ lib ครั้งเดียว (10MB+20MB vs 22MB ตย.วิดีโอ: 70 → 54 MB)</li>
+  </ul>
+</div>
+
+<h2>7. Paging 🔥 (เรื่องที่คนไม่ทัน)</h2>
+<div class="card">
+  <div class="formula">บิต offset = log₂(page size) · บิต page# = บิต address − บิต offset<br>PA = (Frame × PageSize) + Offset &nbsp;—&nbsp; ห้ามบวก frame+offset ตรง ๆ!</div>
+  <ul style="margin:8px 0 0">
+    <li>จำนวนเพจ = ceil(ขนาดโปรแกรม ÷ page size) — 42/4 → <strong>11 เพจ</strong> (ปัดขึ้น, IF = 2B)</li>
+    <li>เพจนับเริ่ม <strong>Page 0</strong> · Paging: ไม่มี external frag แต่มี internal frag ที่เพจสุดท้าย</li>
+    <li>Valid/invalid bit ดูระดับทั้งเพจ — กัน offset เกินโปรแกรมไม่ได้ · PTBR ชี้ตาราง, PTLR ชี้ความยาว</li>
+    <li>ไม่มี TLB = RAM 2 ครั้ง/การอ่าน · TLB hit = 1 ครั้ง · miss = ค้น TLB + 2</li>
+    <li><strong>EAT = α(1+ε) + (1−α)(2+ε) = 2 + ε − α</strong> (ตย. ε=0.1, α=0.8 → 1.3 μs)</li>
+    <li>32-bit, 4KB page → page# 20 บิต → 2²⁰ × 4B = <strong>4MB/page table/process</strong></li>
+    <li>Two-level 10|10|12: inner tables = ceil(จำนวนเพจ ÷ 1024) · 1MB → 256 เพจ → 4+4 = <strong>8KB</strong> · 8MB → 2048 เพจ → 4+8 = <strong>12KB</strong></li>
+  </ul>
+</div>
+
+<h2>8. Virtual Memory & Page Replacement 🔥</h2>
+<div class="card">
+  <ul style="margin:4px 0">
+    <li>Demand paging: โหลดเมื่อใช้ (lazy swapper/pager) · Page fault 6 ขั้น: trap → เช็ค invalid จริงไหม → หาเพจบนดิสก์ → หา frame ว่าง (ไม่มี→replace) → อัปเดตตาราง+valid → restart</li>
+    <li>เพจ dirty (แก้แล้ว) ต้อง <strong>write back ก่อนแทนที่</strong></li>
+    <li><strong>FIFO มองคิว · Optimal มองอนาคต (ใช้จริงไม่ได้) · LRU มองอดีต</strong> — นับ fault: จำผล 7,0,1,2,0,3,0,4,2,3,0,3,2,1,2,0,1,7,0,1 (3 frames) = 15 / 9 / 12</li>
+    <li>Belady (FIFO): เพิ่ม frame fault อาจเพิ่ม (1,2,3,4,1,2,5,1,2,3,4,5: 3f=9, 4f=10) — LRU/OPT ไม่มีปัญหานี้</li>
+    <li>EAT = (1−p)·mat + p·service (mat 200ns, service 8ms, p=0.001 → 8.2μs)</li>
+    <li>Thrashing: สลับเพจตลอด CPU ดิ่ง, OS เพิ่ม process = ยิ่งแย่ · Working set: D = ΣWSSᵢ; <strong>D &gt; m → suspend process</strong></li>
+    <li>128×128 row-major: column-นอก = 16,384 faults · row-นอก = <strong>128 faults</strong></li>
+  </ul>
+</div>
+
+<h2>9. File System</h2>
+<div class="card">
+  <ul style="margin:4px 0">
+    <li>FAT32 ไฟล์สูงสุด <strong>4GB</strong> (ตันแน่นอนไม่ว่าดิสก์เหลือเท่าไร) · NTFS/ext4 มี journaling · exFAT ไม่มี · APFS ของ Apple (snapshot/encrypt)</li>
+    <li>Contiguous: เร็วสุด แต่ external frag + ขยายยาก · Linked: random ช้ามาก pointer พังไฟล์ขาด · Indexed: random เร็ว เปลือง index block · FAT = ดึง pointer รวมตารางใน RAM</li>
+    <li><strong>inode 15 pointers (12 direct + 3 indirect)</strong>: entries/block = block÷pointer (4KB÷4B = 1024) · สูงสุด = 12×4KB + 4MB + 4GB + 4TB ≈ 4TB</li>
+    <li>Hard link: ชี้ inode เดียวกัน, นับ refcount, ตายเมื่อ = 0, <strong>ห้ามข้าม partition / ห้ามชี้ dir</strong> · Soft link: เก็บ path, ต้นทางลบ → broken, ข้าม partition + dir ได้</li>
+    <li>mount อุปกรณ์ → mount point · umount ก่อนถอด</li>
+    <li><strong>R=4, W=2, X=1</strong> · 761 = rwx / rw- / --x · 6 = rw- (ไม่ใช่ r-x = 5)</li>
+  </ul>
+</div>
+
+<h2>10. IPC เร็ว ๆ</h2>
+<div class="card">
+  <ul style="margin:4px 0">
+    <li>signal(): ติดตั้ง handler · SIGKILL(9) <strong>จับ/เมินไม่ได้</strong> · kill ไม่ใส่ชื่อ = SIGTERM · raise() ส่งให้ตัวเอง, kill(pid,sig) ส่งข้าม process (pid&gt;0 เจาะจง, 0=กลุ่มเดียวกัน, −1=ทุกตัวที่มีสิทธิ์ยกเว้น init)</li>
+    <li>pipe(pfd): pfd[0]=read, pfd[1]=write — ทางเดียว · fork แล้วได้ 4 ปลาย → ปิดข้างที่ไม่ใช้ · สองทาง = สองท่อ</li>
+    <li>dup2(fd, fd2): "fd อยากเป็น fd2" — redirect stdout/stdin ทำ ls|wc ได้</li>
+    <li>SHM: server shmget(IPC_PRIVATE|key, size, IPC_CREAT|0666) → shmat(id,NULL,0) → ใช้ → shmdt → shmctl(id, IPC_RMID) · client ไม่ใส่ IPC_CREAT · server เริ่มก่อน · key: เลขตรง/ftok(path,id)/IPC_PRIVATE</li>
+    <li>Blocking = synchronous, Non-blocking = asynchronous</li>
+  </ul>
+</div>
+
+<h2>11. Boot / Mode / เกร็ด</h2>
+<div class="card">
+  <ul style="margin:4px 0">
+    <li>Boot: Power → <strong>POST</strong> → BIOS(→MBR) หรือ <strong>UEFI(→ESP, GPT, Secure Boot)</strong> → Bootloader → โหลด Kernel → OS init</li>
+    <li><strong>mode bit: 0 = kernel, 1 = user</strong> · privileged instructions ใช้ได้เฉพาะ kernel · interrupt มาจากฮาร์ดแวร์, <strong>trap มาจากซอฟต์แวร์</strong> (exception/system call)</li>
+    <li>API: Win32 (Windows) / <strong>POSIX</strong> (Unix/Linux/macOS) / Java (JVM) — printf ใช้ write() ข้างใน</li>
+    <li>Monolithic = เร็วแต่พังพากัน · Microkernel = ปลอดภัย แต่ส่ง message ช้ากว่า</li>
+    <li>Container แชร์ kernel host (เบา เร็ว พกพาง่าย) · VM จำลองทั้งเครื่อง+OS (หนัก ช้า แยกสนิท)</li>
+    <li>Hard real-time: พลาด deadline = พังทลาย, <strong>ใช้ time-sharing ไม่ได้</strong> (VxWorks, RTXC) · Soft = มัลติมีเดีย/VR</li>
+  </ul>
+</div>
+
+<div class="callout exam">
+  <div class="co-title">🚨 กลยุทธ์ห้องสอบ (จากรีวิวรุ่นพี่)</div>
+  <p>• ถูก/ผิด: ถูก +2, ผิด −1, ไม่ตอบ 0 — <strong>ไม่แน่จริงอย่าตอบ</strong><br>• ทำโจทย์คำนวณ (Paging/Replacement/Scheduling) <strong>ก่อนข้อทฤษฎียาว ๆ</strong> — คะแนนต่อนาทีสูงกว่า<br>• จับเวลา: ข้อคำนวณไม่เกิน 2 นาที ติดให้ข้าม วนกลับมาทีหลัง<br>• เขียนขั้นตอนสั้น ๆ ไว้ข้างคำตอบ (ถ้าตรวจอนุโลมจะได้เครดิต)</p>
+</div>
+
+<div class="pager">
+  <a href="index.html"><span class="dir">← กลับ</span><span class="name">หน้าแรก</span></a>
+  <a href="exam.html" class="next"><span class="dir">ลองฝึกทำ →</span><span class="name">ห้องซ้อมข้อสอบ</span></a>
+</div>
+
+</main>
+</div>
+<button id="toTop" aria-label="กลับขึ้นด้านบน">↑</button>
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 3 — Process & fork/exec/wait | เว็บติว OS Final</title>
+<meta name="description" content="Process concept state diagram PCB context switch fork exec wait waitpid zombie orphan ไล่โค้ดทีละบรรทัดพร้อมจุดหลอกข้อสอบ">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="ch03">
+<div id="sidebar-root"></div>
+<div class="sidebar-backdrop"></div>
+
+<header class="topbar">
+  <button class="icon-btn" id="menuBtn" aria-label="เปิดเมนู">☰</button>
+  <a class="brand" href="index.html"><span class="brand-logo">OS</span><span>เว็บติว OS Final<span class="brand-sub">บทที่ 3 · Process</span></span></a>
+  <span class="spacer"></span>
+  <span class="progress-pill" id="quizPill"></span>
+  <button class="icon-btn" id="themeBtn">🌙</button>
+</header>
+
+<div class="layout">
+<main class="content">
+
+<div class="chip-row">
+  <span class="chip mid">ช่วงต้นเทอม · ทบทวน</span>
+  <span class="chip hot">ข้อสอบชอบให้ไล่โค้ด fork 🔥</span>
+  <span class="chip">วิดีโอ 3.1–3.4, 4.1–4.4 · Handout No.3</span>
+</div>
+<h1>บทที่ 3 — Process และการสร้าง Process ด้วย fork/exec/wait</h1>
+<p class="lead">รุ่นพี่บอกว่า "Midterm/Final มีให้ไล่ดูโค้ด fork process ดูดี ๆ มีจุดหลอกเยอะ" — บทนี้จะสอนไล่ทีละบรรทัดให้คล่องมือ พร้อมสูตรนับ process และกลศาสตร์ของ exec/wait ครบจบ</p>
+
+<div class="toc">
+  <div class="toc-title">สารบัญบทนี้</div>
+  <ol>
+    <li><a href="#concept">Program vs Process</a></li>
+    <li><a href="#states">สถานะของ Process</a></li>
+    <li><a href="#queues">Scheduling Queues & PCB</a></li>
+    <li><a href="#ctx">Context Switch & Dispatcher</a></li>
+    <li><a href="#sched">Schedulers (ระยะยาว/ระยะสั้น)</a></li>
+    <li><a href="#fork">fork() — สร้าง process แบบโคลนตัวเอง</a></li>
+    <li><a href="#trace">ไล่โค้ด fork ทีละบรรทัด + จุดหลอก</a></li>
+    <li><a href="#count">นับจำนวน Process สูตร 2ⁿ</a></li>
+    <li><a href="#exec">exec() — เปลี่ยนร่าง</a></li>
+    <li><a href="#wait">exit/wait/waitpid และสถานะซากศพ</a></li>
+    <li><a href="#quiz">แบบฝึกหัดท้ายบท</a></li>
+  </ol>
+</div>
+
+<h2 id="concept">1. Program vs Process — ผีกับคนสิง</h2>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th></th><th>Program 📄</th><th>Process 🏃</th></tr>
+  <tr><td>คือ</td><td>ไฟล์คำสั่งที่นอนอยู่บนดิสก์</td><td><strong>Program in execution</strong> — โปรแกรมที่กำลัง "มีชีวิต" ทำงานอยู่</td></tr>
+  <tr><td>สภาพ</td><td><strong>Passive (inactive)</strong> entity</td><td><strong>Active</strong> entity — ต้องใช้ทรัพยากร</td></tr>
+  <tr><td>ข้อมูลที่มี</td><td>แค่ข้อความคำสั่ง</td><td><strong>Program counter (PC)</strong>, stack, data section, heap</td></tr>
+  <tr><td>ชื่อเรียกอื่น</td><td>—</td><td>Time-sharing system เรียก "<strong>Task</strong>" · Batch system เรียก "<strong>Job</strong>"</td></tr>
+</table></div>
+<div class="callout analogy">
+  <div class="co-title">📖 เปรียบเทียบ</div>
+  <p>Program = <strong>สูตรอาหารวางอยู่บนชั้นหนังสือ</strong> (ไม่ขยับ ไม่กินทรัพยากร) · Process = <strong>คนกำลังทำอาหารตามสูตรนั้นในครัว</strong> (ใช้เตา ใช้จาน ใช้เวลา — 1 สูตรเดียวทำซ้ำหลายคนได้ คนละ process!)</p>
+</div>
+
+<h2 id="states">2. สถานะของ Process (Process States)</h2>
+<p>Process หนึ่งตัวตลอดชีวิตเดินไปมาระหว่างสถานะ แบบพื้นฐาน 5 สถานะ (ใน handout ใช้ Seven-state model เพิ่ม suspended อีก 2):</p>
+
+<figure class="fig">
+<svg viewBox="0 0 780 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="process state diagram">
+  <defs><marker id="ar4" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0,0 L7,3.2 L0,6.4 z" fill="#64748b"/></marker></defs>
+  <g font-size="14" font-weight="800">
+    <rect x="330" y="16" width="120" height="46" rx="23" fill="#eef0ff" stroke="#4f46e5"/><text x="390" y="45" text-anchor="middle" fill="#3730a3">New</text>
+    <rect x="120" y="140" width="140" height="46" rx="23" fill="#ecfdf5" stroke="#059669"/><text x="190" y="169" text-anchor="middle" fill="#065f46">Ready</text>
+    <rect x="330" y="140" width="120" height="46" rx="23" fill="#fef9c3" stroke="#ca8a04"/><text x="390" y="169" text-anchor="middle" fill="#854d0e">Running</text>
+    <rect x="620" y="140" width="140" height="46" rx="23" fill="#fff7ed" stroke="#d97706"/><text x="690" y="169" text-anchor="middle" fill="#92400e">Waiting</text>
+    <rect x="330" y="280" width="120" height="46" rx="23" fill="#fef2f2" stroke="#dc2626"/><text x="390" y="309" text-anchor="middle" fill="#b91c1c">Terminated</text>
+  </g>
+  <g font-size="11.5" fill="#64748b" font-weight="600">
+    <text x="240" y="70">admitted (โหลดเข้า RAM)</text>
+    <text x="520" y="70">dispatch (ได้ CPU)</text>
+    <text x="180" y="120">interrupt (หมดเวลา/ถูกแย่ง)</text>
+    <text x="520" y="128">I/O or event wait</text>
+    <text x="500" y="230">I/O หรือ event เสร็จแล้ว</text>
+    <text x="270" y="260">exit (ทำงานจบ)</text>
+  </g>
+  <g stroke="#64748b" stroke-width="2" fill="none">
+    <path d="M350 62 Q 240 90 210 138" marker-end="url(#ar4)"/>
+    <path d="M262 163 L328 163" marker-end="url(#ar4)"/>
+    <path d="M430 148 Q 500 100 618 152" marker-end="url(#ar4)"/>
+    <path d="M390 186 L390 278" marker-end="url(#ar4)"/>
+    <path d="M360 186 Q 330 230 360 262" marker-end="url(#ar4)"/>
+    <path d="M660 186 Q 400 260 420 262" stroke-dasharray="6 5" marker-end="url(#ar4)"/>
+    <path d="M420 158 Q 560 130 660 128 Q 700 150 660 142" stroke="none"/>
+    <path d="M452 163 L618 163" stroke-dasharray="6 5" marker-end="url(#ar4)"/>
+  </g>
+  <text x="470" y="182" font-size="12" font-weight="800" fill="#dc2626">ลูกศรประ: กลับมา Ready หลังรอเสร็จ — ไม่กลับ Running ตรง ๆ!</text>
+</svg>
+<figcaption>วงจรชีวิต: New → Ready → Running → (Terminated หรือ Waiting → กลับ Ready) — Waiting เสร็จต้องไปต่อคิวที่ Ready เสมอ</figcaption>
+</figure>
+
+<div class="callout exam">
+  <div class="co-title">🎯 จุดหลอกข้อสอบ</div>
+  <p>Process ที่จบ I/O <strong>ไปรอที่ Ready ก่อน</strong> ไม่ได้กลับเข้า Running ทันที — ต้องรอ dispatcher เรียกใหม่ (เพราะ CPU อาจมีคนใช้อยู่)</p>
+</div>
+
+<h3>Seven-State Model (เพิ่มเรื่อง suspend)</h3>
+<p>เมื่อ RAM ตึงตัว ระบบอาจ "<strong>swap out</strong>" process ที่รออยู่ไปพักบนดิสก์ ทำให้มีสถานะเพิ่มอีก 2: <strong>Suspended Ready</strong> (พร้อมรันแต่ถูกย้ายออกจาก RAM) และ <strong>Suspended Blocked</strong> (กำลังรอ event แล้วก็ถูกย้ายออกด้วย) รวมเป็น 7 สถานะ</p>
+
+<h2 id="queues">3. Scheduling Queues และ PCB</h2>
+<p>OS จัด process เป็นคิว 3 แบบ:</p>
+<ul>
+  <li><strong>Job queue</strong> — process ทุกตัวในระบบ</li>
+  <li><strong>Ready queue</strong> — ตัวที่อยู่ใน RAM พร้อมรัน รอ CPU</li>
+  <li><strong>Device queues</strong> — ตัวที่รออุปกรณ์ I/O แต่ละชนิด (คิวรอพรินเตอร์ก็มีคิวตัวเอง รอดิสก์ก็มีของตัวเอง)</li>
+</ul>
+<p>Process เดินย้ายคิวไปมาตลอดชีวิต และข้อมูลทั้งหมดของมันถูกเก็บใน "<strong>รหัสประชาชน</strong>" ที่เรียกว่า <strong>PCB (Process Control Block)</strong>:</p>
+<div class="memgrid">
+  <span class="memcell used">Process state</span>
+  <span class="memcell used">Program counter (PC)</span>
+  <span class="memcell used">CPU registers</span>
+  <span class="memcell used">Scheduling info (priority, queue)</span>
+  <span class="memcell used">Memory info (base/limit)</span>
+  <span class="memcell used">Accounting info</span>
+  <span class="memcell used">I/O status</span>
+</div>
+
+<h2 id="ctx">4. Context Switch</h2>
+<p>เมื่อ CPU จะเปลี่ยนจาก process A ไป process B: OS ต้อง <strong>เซฟ state เดิมของ A เข้า PCB ของ A</strong> แล้ว <strong>โหลด state ของ B จาก PCB ของ B</strong> กลับเข้า CPU — ช่วงเวลานี้เรียกว่า <strong>context switch</strong></p>
+<div class="callout warn">
+  <div class="co-title">⚠️ สำคัญกับความเข้าใจเรื่อง overhead</div>
+  <p>ช่วง context switch เป็น <strong>pure overhead</strong> — ระบบ<em>ไม่ได้ทำงานที่มีประโยชน์เลย</em>แม้แต่วินาทีเดียว เวลาที่ใช้ขึ้นกับ<strong>ฮาร์ดแวร์</strong>ที่ช่วยได้แค่ไหน (เช่น register หลายชุด) — ประเด็นนี้จะกลับมาตอนเลือก time quantum ใน Round Robin (บท 5)</p>
+</div>
+
+<h3>Dispatcher</h3>
+<p>Dispatcher คือ "คนขับส่ง" ที่รับ process จาก short-term scheduler แล้วทำ 3 อย่าง:</p>
+<ol class="steps">
+  <li><span class="st-title">Switching context</span>สลับ context (เซฟเก่า โหลดใหม่)</li>
+  <li><span class="st-title">Switching to user mode</span>เปลี่ยนจาก kernel mode กลับเป็น user mode</li>
+  <li><span class="st-title">Jump ไปตำแหน่งเดิม</span>กระโดดไปที่ address ใน user program เพื่อรันต่อจากเดิม</li>
+</ol>
+<p><strong>Dispatch latency</strong> = เวลาที่ dispatcher ใช้หยุด process หนึ่งและเริ่มอีก process หนึ่ง</p>
+
+<h2 id="sched">5. Schedulers — เลือกคนเข้าคิว vs เลือกคนขึ้นเวที</h2>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th></th><th>Long-term scheduler (Job scheduler)</th><th>Short-term scheduler (CPU scheduler)</th></tr>
+  <tr><td>หน้าที่</td><td>เลือกว่า process ไหนจะได้<strong>เข้าสู่ Ready queue</strong> (เข้า RAM)</td><td>เลือกว่าตัวไหนใน Ready queue จะได้<strong>ใช้ CPU ตัวต่อไป</strong></td></tr>
+  <tr><td>ความถี่</td><td>เรียกใช้<strong>ไม่บ่อย</strong> (วินาที/นาที) — ทำช้าก็ได้</td><td>เรียกใช้<strong>ถี่มาก</strong> (ทุกไมล์วินาที) — ต้องเร็ว!</td></tr>
+  <tr><td>พิเศษ</td><td>ควบคุม <strong>degree of multiprogramming</strong> (จำนวน process ใน RAM)</td><td>คือหัวใจของบท CPU Scheduling (บท 5)</td></tr>
+</table></div>
+<p>Process แบ่งได้ตามพฤติกรรม: <strong>I/O-bound</strong> (ใช้เวลากับ I/O มากกว่าคำนวณ — CPU burst สั้น ๆ ถี่ ๆ) กับ <strong>CPU-bound</strong> (โหดคำนวณ — burst ยาว ๆ นาน ๆ ที)</p>
+
+<h2 id="fork">6. fork() — สร้าง process แบบ "โคลนตัวเอง" 🔥</h2>
+<p>ใน UNIX parent process สร้างลูกด้วย <code>fork()</code> — มันจะ <strong>ก๊อปปี้ตัวเองออกมาเป็น child</strong> แล้วทั้งคู่รันต่อจากบรรทัดเดียวกัน (บรรทัดหลัง fork)</p>
+<div class="codewrap"><span class="codetag">fork.h</span><pre class="code"><code><span class="k">#include</span> <span class="s">&lt;sys/types.h&gt;</span>
+<span class="k">#include</span> <span class="s">&lt;unistd.h&gt;</span>
+<span class="f">pid_t</span> fork(<span class="k">void</span>);  <span class="c">// สร้าง child โดยก๊อปปี้ parent</span></code></pre></div>
+
+<p>เวทมนตร์อยู่ที่<strong>ค่า return ที่ต่างกันในสองโลก</strong>:</p>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>ใครเรียก</th><th>ค่าที่ fork() คืนให้</th><th>เงื่อนไข if ที่จะเข้า</th></tr>
+  <tr><td>ใน <strong>Parent</strong></td><td><strong>PID ของลูก</strong> (เลขบวก &gt; 0)</td><td><code>if (pid &gt; 0)</code></td></tr>
+  <tr><td>ใน <strong>Child</strong></td><td><strong>0</strong></td><td><code>else if (pid == 0)</code></td></tr>
+  <tr><td>สร้างไม่สำเร็จ</td><td><strong>ค่าลบ</strong> (&lt; 0)</td><td><code>if (pid &lt; 0)</code> → error</td></tr>
+</table></div>
+
+<figure class="fig">
+<svg viewBox="0 0 740 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="fork diagram">
+  <defs><marker id="ar5" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0,0 L7,3.2 L0,6.4 z" fill="#64748b"/></marker></defs>
+  <rect x="270" y="16" width="200" height="58" rx="12" fill="#eef0ff" stroke="#4f46e5"/>
+  <text x="370" y="40" text-anchor="middle" font-size="14" font-weight="800" fill="#3730a3">Parent</text>
+  <text x="370" y="60" text-anchor="middle" font-size="11.5" fill="#4f46e5">pid = fork();  ได้ค่า = PID ลูก (&gt;0)</text>
+  <rect x="60" y="140" width="270" height="70" rx="12" fill="#ecfdf5" stroke="#059669"/>
+  <text x="195" y="168" text-anchor="middle" font-size="13.5" font-weight="800" fill="#065f46">if (pid &gt; 0) → ฝั่ง Parent</text>
+  <text x="195" y="192" text-anchor="middle" font-size="11.5" fill="#047857">รันโค้ดสาขาบน</text>
+  <rect x="410" y="140" width="270" height="70" rx="12" fill="#fff7ed" stroke="#d97706"/>
+  <text x="545" y="168" text-anchor="middle" font-size="13.5" font-weight="800" fill="#92400e">if (pid == 0) → ฝั่ง Child</text>
+  <text x="545" y="192" text-anchor="middle" font-size="11.5" fill="#b45309">รันโค้ดสาขาล่าง · ได้ค่า fork() = 0</text>
+  <path d="M300 74 L200 138" stroke="#64748b" stroke-width="2" marker-end="url(#ar5)"/>
+  <path d="M440 74 L540 138" stroke="#64748b" stroke-width="2" marker-end="url(#ar5)"/>
+  <text x="370" y="235" text-anchor="middle" font-size="12" font-weight="700" fill="#64748b">fork() ถูกเรียกครั้งเดียวแต่ "คืนค่า 2 ครั้ง" — ครั้งหนึ่งใน parent, ครั้งหนึ่งใน child</text>
+</svg>
+<figcaption>fork() เรียกครั้งเดียว แต่คืนค่าสองครั้ง: 0 ในโลกของลูก / PID ของลูกในโลกของพ่อ</figcaption>
+</figure>
+
+<div class="callout note">
+  <div class="co-title">📌 สิ่งที่ลูกได้รับ (จำไว้เจอข้อหลอก)</div>
+  <p>ตัวแปร (เช่น <code>int i</code>) ถูก<strong>ก๊อปปี้</strong>ไปให้ลูก — แก้ในฝั่งไหน<em>ไม่กระทบ</em>อีกฝั่ง (คนละ copy) · แต่ข้อความพิมพ์ออกจอด้วยกัน · <strong>ลำดับการพิมพ์ parent/child เป็น non-deterministic</strong> — ไม่มี wait() อย่าเถียงว่าใครพิมพ์ก่อน!</p>
+</div>
+
+<h2 id="trace">7. ไล่โค้ด fork ทีละบรรทัด (ตัวอย่างจากวิดีโออาจารย์)</h2>
+
+<div class="codewrap"><span class="codetag">fork_example.c</span><pre class="code"><code><span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+<span class="k">#include</span> <span class="s">&lt;sys/types.h&gt;</span>
+<span class="k">#include</span> <span class="s">&lt;unistd.h&gt;</span>
+
+<span class="f">int</span> <span class="f">main</span>() {
+    <span class="f">pid_t</span> pid;
+    <span class="k">int</span> i = 0;
+    pid = <span class="f">fork</span>();                      <span class="c">// ← จุดแตกหน่อ</span>
+    <span class="k">if</span> (pid &gt; 0) {   <span class="c">/* parent */</span>
+        i = 1;
+        <span class="f">printf</span>(<span class="s">"I am parent i = %d\n"</span>, i);
+    }
+    <span class="k">else</span> {           <span class="c">/* child */</span>
+        i = 2;
+        <span class="f">printf</span>(<span class="s">"I am child i = %d\n"</span>, i);
+    }
+    <span class="k">return</span> 0;
+}</code></pre></div>
+
+<ol class="steps">
+  <li><span class="st-title">บรรทัด <code>pid = fork();</code></span>ก่อนบรรทัดนี้มี 1 process หลังบรรทัดนี้มี 2 process (parent + child) — ทั้งคู่ถือ copy ของตัวแปร pid กับ i ของตัวเอง</li>
+  <li><span class="st-title">ฝั่ง Parent</span>ได้ pid = PID ของลูก (&gt; 0) → เข้า if บน → ตั้ง <code>i = 1</code> → พิมพ์ <strong>"I am parent i = 1"</strong></li>
+  <li><span class="st-title">ฝั่ง Child</span>ได้ pid = 0 → เข้า else → ตั้ง <code>i = 2</code> → พิมพ์ <strong>"I am child i = 2"</strong></li>
+  <li><span class="st-title">ผลรวม</span>พิมพ์ออกมา <strong>2 บรรทัดเสมอ</strong> (ไม่ใช่ 1!) แต่<strong>ลำดับก่อนหลังสลับกันได้</strong>ตามใจ scheduler</li>
+</ol>
+
+<h3>ตัวอย่าง fork + loop จากวิดีโอ (มี exit ใน child)</h3>
+<div class="codewrap"><span class="codetag">loop_fork.c (โครงจากวิดีโอ 3.4)</span><pre class="code"><code><span class="k">for</span> (i = 0; i &lt; 5; i++) {          <span class="c">// parent วน 5 รอบ</span>
+    pid = <span class="f">fork</span>();
+    <span class="k">if</span> (pid == 0) {                  <span class="c">// ลูกเท่านั้น</span>
+        <span class="k">if</span> (i % 2 != 0)
+            <span class="f">printf</span>(<span class="s">"I am happy\n"</span>);  <span class="c">// ลูกที่เกิดตอน i คี่</span>
+        <span class="k">else</span>
+            <span class="f">printf</span>(<span class="s">"I am sad\n"</span>);    <span class="c">// ลูกที่เกิดตอน i คู่</span>
+        <span class="f">exit</span>(0);                     <span class="hl">← สำคัญ! ลูกจบตัวเองทันที</span>
+    }
+}
+<span class="k">while</span> (<span class="f">wait</span>(NULL) != -1);            <span class="c">// parent รอลูกทุกตัว</span>
+<span class="f">printf</span>(<span class="s">"I am parent goodbye\n"</span>);</code></pre></div>
+<p>ผลลัพธ์: <code>I am sad</code> ×3 (ลูกที่เกิดตอน i = 0, 2, 4) · <code>I am happy</code> ×2 (i = 1, 3) · และ <code>I am parent goodbye</code> <strong>1 ครั้ง เป็นบรรทัดสุดท้ายเสมอ</strong> (เพราะ wait รอให้ลูกครบ 5 ก่อน)</p>
+
+<div class="callout exam">
+  <div class="co-title">🚨 จุดหลอกคลาสสิกของอาจารย์: ถ้าลูกเลขคี่ "ลืม exit()"</div>
+  <p>ลูกที่พิมพ์ happy เสร็จ<strong>ไม่ได้ตาย</strong> — มันหลุดออกจาก if แล้ว<strong>วนลูป for ต่อ</strong>เหมือนพ่อ ไปสร้างลูก/หลานของตัวเองเพิ่ม! ผลคือเกิด process ซ้อนกันมั่ว และข้อความ <code>goodbye</code> พิมพ์ออกมา <strong>4 ครั้ง</strong> (จาก parent หลัก 1 + ลูกที่กลายเป็น "พ่อ" อีก 3 ตัว: C₁, C₃ และหลาน C₁₋₃) — เวลาไล่โค้ด <strong>ต้องถามตัวเองทุก fork ว่า "สายไหนรันบรรทัดนี้อยู่ และใครจบตัวเองบ้าง"</strong></p>
+</div>
+
+<h2 id="count">8. นับจำนวน Process — สูตร 2ⁿ + วิธีวาดต้นไม้</h2>
+<div class="formula">fork() ติดกัน n ครั้ง (ไม่มีเงื่อนไข/ไม่มี exit) → Process ทั้งหมด = 2ⁿ ตัว (ลูกใหม่ = 2ⁿ − 1 ตัว)<small>เช่น fork(); fork(); fork(); → ทั้งหมด 8 process (parent 1 + ลูกใหม่ 7)</small></div>
+<p>ถ้ามีเงื่อนไขพันกัน ให้วาด <strong>Process Tree</strong> — ทุกครั้งที่สายไหนใด ๆ ผ่าน <code>fork()</code> ให้แตกกิ่งออกมาหนึ่งกิ่ง แล้วเช็คว่ากิ่งไหนโดน <code>exit()</code> หรือหลุดลูป</p>
+
+<figure class="fig">
+<svg viewBox="0 0 680 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="process tree 3 forks">
+  <g font-size="13" font-weight="800">
+    <rect x="290" y="10" width="100" height="40" rx="10" fill="#eef0ff" stroke="#4f46e5"/><text x="340" y="36" text-anchor="middle" fill="#3730a3">P (ต้น)</text>
+    <rect x="60" y="95" width="110" height="40" rx="10" fill="#fff7ed" stroke="#d97706"/><text x="115" y="121" text-anchor="middle" fill="#92400e">C1</text>
+    <rect x="290" y="95" width="110" height="40" rx="10" fill="#fff7ed" stroke="#d97706"/><text x="345" y="121" text-anchor="middle" fill="#92400e">C2</text>
+    <rect x="520" y="95" width="110" height="40" rx="10" fill="#fff7ed" stroke="#d97706"/><text x="575" y="121" text-anchor="middle" fill="#92400e">C3</text>
+    <rect x="175" y="170" width="110" height="40" rx="10" fill="#fef2f2" stroke="#dc2626"/><text x="230" y="196" text-anchor="middle" fill="#b91c1c">C1.1 (หลาน)</text>
+    <rect x="455" y="170" width="110" height="40" rx="10" fill="#fef2f2" stroke="#dc2626"/><text x="510" y="196" text-anchor="middle" fill="#b91c1c">C2.1 (หลาน)</text>
+    <path d="M300 50 L130 93" stroke="#64748b" stroke-width="2"/>
+    <path d="M340 50 L345 93" stroke="#64748b" stroke-width="2"/>
+    <path d="M380 50 L560 93" stroke="#64748b" stroke-width="2"/>
+    <path d="M125 135 L215 168" stroke="#64748b" stroke-width="2"/>
+    <path d="M355 135 L510 168" stroke="#64748b" stroke-width="2"/>
+  </g>
+  <text x="340" y="118" font-size="10.5" fill="#64748b" text-anchor="middle" transform="translate(0,-6)">fork ครั้งที่ 2</text>
+</svg>
+<figcaption>fork ครั้งที่ 1 แตกเป็น 2 สาย (P, C1/C2/C3 ขึ้นกับโค้ด) — สายไหนมี fork ต่อก็แตกต่อ เขียนเป็นต้นไม้แล้วนับใบ + โคน = จำนวน process ทั้งหมด</figcaption>
+</figure>
+
+<h2 id="exec">9. exec() — เปลี่ยนร่าง ไม่ได้สร้างคนใหม่</h2>
+<p><code>exec()</code> เป็น<strong>ตระกูลฟังก์ชัน</strong> (execlp, execv ฯลฯ) ที่ทำหน้าที่ <strong>แทนที่ process image ปัจจุบันด้วยโปรแกรมใหม่ทั้งหมด</strong> — process เดิมยังเป็น PID เดิม แต่ "วิญญาณ" (โค้ด+data) ถูกเปลี่ยนไปเป็นโปรแกรมอื่นเฉย ๆ</p>
+<div class="codewrap"><span class="codetag">รูปแบบ execlp</span><pre class="code"><code><span class="f">execlp</span>(<span class="s">"ls"</span>, <span class="s">"ls"</span>, <span class="s">"-l"</span>, NULL);
+<span class="c">//      └file └arg0 └arg1  └NULL ปิดท้ายบังคับ</span></code></pre></div>
+<ul>
+  <li><strong>l</strong> = List — ส่งพารามิเตอร์เรียงทีละตัว (ส่วน v = Vector ส่งเป็น array)</li>
+  <li><strong>p</strong> = PATH — ให้ OS ตามหาโปรแกรมตาม environment variable PATH ไม่ต้องพิมพ์ full path (พิมพ์แค่ "ls" ก็พอ)</li>
+  <li><strong>arg0</strong> — ธรรมเนียม C ใส่ชื่อโปรแกรม (exec ไม่สนใจตัวนี้ แต่ต้องใส่ไว้)</li>
+  <li><strong>NULL</strong> — ตัวปิดท้าย บังคับใส่เสมอ</li>
+</ul>
+
+<div class="callout exam">
+  <div class="co-title">🚨 จุดหลอกสำคัญที่สุดของ exec</div>
+  <p><strong>โค้ดบรรทัดที่อยู่หลัง exec() (ถ้า exec สำเร็จ) จะไม่ถูกรันเด็ดขาด</strong> — เพราะ process image เดิมถูกทับหมดแล้ว! แต่ถ้า exec <strong>ล้มเหลว</strong> (เช่นพิมพ์ชื่อผิดเป็น "ly") โค้ดจะวิ่งไปบรรทัดถัดไปตามปกติ (เช่น พิมพ์ "I'm child")<br>แถมอีกจุด: <code>exec("cd", ...)</code> จะ error เพราะ <strong>cd เป็น shell built-in ไม่ใช่ไฟล์โปรแกรม</strong> หาไม่เจอใน PATH (ส่วน echo รันได้เพราะมีไฟล์ /usr/bin/echo)</p>
+</div>
+
+<h3>โครงสร้าง fork + exec (รูปแบบมาตรฐาน — shell ใช้แบบนี้)</h3>
+<div class="codewrap"><span class="codetag">fork_exec.c (จาก handout)</span><pre class="code"><code><span class="f">int</span> <span class="f">main</span>() {
+    <span class="f">pid_t</span> pid;
+    pid = <span class="f">fork</span>();
+    <span class="k">if</span> (pid &lt; 0) {                 <span class="c">/* error */</span>
+        <span class="f">fprintf</span>(stderr, <span class="s">"Fork Failed"</span>);
+        <span class="f">exit</span>(-1);
+    }
+    <span class="k">else if</span> (pid == 0) {           <span class="c">/* child */</span>
+        <span class="f">execlp</span>(<span class="s">"/bin/ls"</span>, <span class="s">"ls"</span>, NULL);   <span class="c">// ลูกเปลี่ยนร่างเป็น ls</span>
+    }
+    <span class="k">else</span> {                         <span class="c">/* parent */</span>
+        <span class="f">wait</span>(NULL);                 <span class="c">// พ่อรอลูกเสร็จก่อน</span>
+        <span class="f">printf</span>(<span class="s">"Child Complete"</span>);
+        <span class="f">exit</span>(0);
+    }
+}</code></pre></div>
+<p>Output: รายการไฟล์ใน directory (จาก ls) ตามด้วย <code>Child Complete</code> — ลำดับแน่นอนเพราะ parent <strong>wait()</strong> ก่อนพิมพ์</p>
+
+<h2 id="wait">10. exit(), wait(), waitpid() — ปิดงานให้เรียบร้อย</h2>
+<ul>
+  <li><strong>exit(status)</strong> — process ร้องขอให้ OS ทำลายตัวเอง พร้อมส่ง status กลับให้ parent (ส่งได้แค่ <strong>8-bit: 0–255</strong>) ทรัพยากรทั้งหมดถูก OS คืน</li>
+  <li><strong>wait(NULL)</strong> — parent หยุดรอจนกว่า<strong>ลูกตัวใดตัวหนึ่งจบ</strong> ไม่สนค่า status คืน PID ของลูกที่เพิ่งจบ · ถ้าไม่มีลูกเหลือให้รอ → คืน <strong>-1</strong> (เลยมี trick: <code>while (wait(NULL) != -1);</code> = รอลูกทุกตัว)</li>
+  <li><strong>waitpid(pid, &status, 0)</strong> — รอ<strong>ลูกตัวเจาะจง</strong>ตาม PID ที่ระบุ (เลข 0 คือโหมด blocking ปกติ) ทำให้ parent รายงานผล "เรียงลำดับ" ได้ ต่างจาก wait() ที่ได้ใครมาก่อนได้ก่อน</li>
+  <li><strong>WIFEXITED(status)</strong> / <strong>WEXITSTATUS(status)</strong> — แมโครตรวจว่าลูกจบแบบปกติไหม และดึงค่า exit จริงออกมา (พิมพ์ status ตรง ๆ จะได้เลขแปลก ๆ เช่น 32768 เพราะในนั้น OS แปะข้อมูลอื่นปนอยู่!)</li>
+</ul>
+
+<h3>สามสถานการณ์ท้ายบท — ออกถูก/ผิดแน่นอน</h3>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>สถานการณ์</th><th>ชื่อ</th><th>อาการ</th></tr>
+  <tr><td>ลูกยังรันอยู่ แต่พ่อตายก่อน</td><td><strong>Orphan process</strong> (ลูกกำพร้า)</td><td>OS ให้ <strong>init/systemd</strong> รับเลี้ยงต่อ — ดูด้วย <code>ps -l</code> จะเห็น <strong>PPID เปลี่ยน</strong>เป็นเลข init (เช่น 1 หรือ PID ของ shell ระบบ)</td></tr>
+  <tr><td>ลูกตายแล้ว แต่พ่อไม่ยอม wait()</td><td><strong>Zombie process</strong> (กระสือ/ซอมบี้)</td><td>ทรัพยากรถูกคืนแล้ว แต่<strong>รายการใน process table ยังค้าง</strong> สถานะ <code>Z</code> / <code>&lt;defunct&gt;</code></td></tr>
+  <tr><td>พ่อโดน terminate → ลูกหลานโดนลบตาม</td><td><strong>Cascading termination</strong></td><td>OS บางระบบลบลูกหลานทั้งตระกูลอัตโนมัติ (Unix นิยมให้กลายเป็น orphan แล้วให้ init รับแทน)</td></tr>
+</table></div>
+
+<div class="callout analogy">
+  <div class="co-title">👨‍👩‍👧 เปรียบเทียบจำง่าย</div>
+  <p>Orphan = พ่อแม่จากไปก่อนลูก ลูกโดนป้าแถวบ้าน (init) รับไปดูแล · Zombie = ลูกจากไปแล้ว แต่พ่อแม่ยังไม่ไปรับเอกสาร (wait) เลยค้างอยู่ในทะเบียน · Cascading = หัวหน้าถูกไล่ ลูกน้องทั้งทีมโดนไล่ตาม</p>
+</div>
+
+<h2 id="quiz">📝 แบบฝึกหัดท้ายบท</h2>
+
+<div class="quiz" data-q data-type="tf" data-answer="true" id="ch03q1">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 1</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">การเรียก fork() หนึ่งครั้งจะทำให้ได้ process เพิ่มมา 1 ตัว และค่าที่ fork() คืนใน child process คือ 0</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ถูก</span>fork() เรียกครั้งเดียวคืนค่าสองครั้ง: ฝั่ง parent ได้ PID ของลูก (&gt;0) ฝั่ง child ได้ 0 ส่วนค่าติดลบแปลว่าสร้างไม่สำเร็จ</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="8" data-tolerance="0" id="ch03q2">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 2</span><span class="q-tag safe">เติมตัวเลข</span></div>
+  <div class="q-ctx"><pre class="code"><code>fork();
+fork();
+fork();</code></pre></div>
+  <div class="q-text">ถ้าโค้ดข้างบนรันโดย process เดียว จะมี process ทั้งหมดกี่ตัว (รวมตัวเริ่มต้น)?</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 8</span>fork ติดกัน n=3 ครั้ง → ทั้งหมด 2³ = 8 process (parent เดิม 1 + ลูกใหม่ 7) วิธีคิด: หลัง fork ครั้งแรกเป็น 2, ครั้งที่สอง 2×2=4, ครั้งที่สาม 4×2=8</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="false" id="ch03q3">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 3</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">หลังจาก child process เรียก execlp("ls", "ls", NULL) สำเร็จ บรรทัด printf("I am child"); ที่อยู่ถัดจาก execlp จะถูกพิมพ์ออกมาหลังจาก ls ทำงานเสร็จ</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ผิด</span>exec ที่สำเร็จจะ<strong>ทับ process image เดิมทั้งหมด</strong> — โค้ดหลัง exec ไม่มีวันถูกรัน (printf นั้นจะรันก็ต่อเมื่อ exec <em>ล้มเหลว</em> เช่นชื่อโปรแกรมผิด)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="mc" data-answer="b" id="ch03q4">
+  <div class="quiz-head"><span class="q-ico">🔤</span><span class="q-title">ข้อ 4</span><span class="q-tag safe">ปรนัย</span></div>
+  <div class="q-text">ลูก process จบการทำงานไปแล้ว แต่ parent ไม่เคยเรียก wait() เลย — ลูกตัวนั้นกลายเป็นอะไร</div>
+  <div class="choices">
+    <div class="choice" data-val="a"><span class="mark">ก</span><span>Orphan process</span></div>
+    <div class="choice" data-val="b"><span class="mark">ข</span><span>Zombie process</span></div>
+    <div class="choice" data-val="c"><span class="mark">ค</span><span>Cascading termination</span></div>
+    <div class="choice" data-val="d"><span class="mark">ง</span><span>Suspended process</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ข — Zombie</span>ลูกตายแต่พ่อไม่ "เก็บศพ" (ไม่ wait) → รายการค้างใน process table สถานะ Z/&lt;defunct&gt; ส่วน Orphan คือลูกยังมีชีวิตแต่พ่อตายก่อน (init จะรับเลี้ยง)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="false" id="ch03q5">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 5</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">โค้ดที่มี fork() หนึ่งครั้งใน main โดยไม่มี wait() เลย — เราสามารถสรุปได้แน่นอนว่า parent จะพิมพ์ข้อความก่อน child เสมอ</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ผิด</span>ลำดับการรันหลัง fork เป็น <strong>non-deterministic</strong> ขึ้นอยู่กับ CPU scheduler — ถ้าไม่มีกลไกซิงก์เช่น wait() ห้ามสรุปใครก่อน-หลังเด็ดขาด (และจำไว้: โค้ดข้อสอบ compile ผ่านหมด ไม่มีตอบ Error)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="4" data-tolerance="0" id="ch03q6">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 6</span><span class="q-tag safe">เติมตัวเลข — จุดหลอกจากวิดีโอ!</span></div>
+  <div class="q-ctx"><pre class="code"><code>for (i = 0; i &lt; 5; i++) {
+    pid = fork();
+    if (pid == 0) {
+        if (i % 2 != 0) printf("I am happy\n");
+        else            printf("I am sad\n");
+        <span style="opacity:.35">// exit(0); ← ลูกเลขคี่ "ลืม" บรรทัดนี้ (เฉพาะเคสคี่)</span>
+    }
+}
+while (wait(NULL) != -1);
+printf("I am parent goodbye\n");</code></pre></div>
+  <div class="q-text">ถ้าลูกเลขคี่ (เกิดตอน i = 1, 3) พิมพ์ happy แล้ว<em>ไม่มี exit()</em> จะทำให้ข้อความ "I am parent goodbye" ถูกพิมพ์รวมกี่ครั้ง (ตามที่อาจารย์สาธิตในวิดีโอ)</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 4 ครั้ง</span>ลูกเลขคี่ C₁, C₃ พิมพ์เสร็จไม่ตาย หลุดไปวนลูป for ต่อแล้ว fork ลูกของตัวเอง (เกิดหลาน เช่น C₁₋₃) ตัวที่พิมพ์ goodbye คือ "พ่อ" ทุกตัวที่รอลูกจนครบ: parent หลัก + C₁ + C₃ + C₁₋₃ = <strong>4 ครั้ง</strong> นี่คือเหตุผลที่ลูกต้อง exit() ทุกครั้งที่ทำงานเสร็จในลูป</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="pager">
+  <a href="02-structure.html"><span class="dir">← บทก่อนหน้า</span><span class="name">บทที่ 2: OS Structure</span></a>
+  <a href="04-thread.html" class="next"><span class="dir">บทถัดไป →</span><span class="name">บทที่ 4: Thread & Multithreading</span></a>
+</div>
+
+<div class="center"><button class="btn ghost" id="doneBtn"></button></div>
+
+</main>
+</div>
+<button id="toTop" aria-label="กลับขึ้นด้านบน">↑</button>
+<script src="js/app.js"></script>
+</body>
+</html>

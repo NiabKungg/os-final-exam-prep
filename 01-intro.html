@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 1 — รู้จัก OS · Boot · Dual Mode · VM/Container | เว็บติว OS Final</title>
+<meta name="description" content="Operating Systems คืออะไร ขั้นตอน boot เครื่อง BIOS vs UEFI Dual Mode Operation Interrupt Virtual Machine vs Container สรุปละเอียดพร้อมภาพและแบบฝึกหัด">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="ch01">
+<div id="sidebar-root"></div>
+<div class="sidebar-backdrop"></div>
+
+<header class="topbar">
+  <button class="icon-btn" id="menuBtn" aria-label="เปิดเมนู">☰</button>
+  <a class="brand" href="index.html"><span class="brand-logo">OS</span><span>เว็บติว OS Final<span class="brand-sub">บทที่ 1 · Introduction</span></span></a>
+  <span class="spacer"></span>
+  <span class="progress-pill" id="quizPill"></span>
+  <button class="icon-btn" id="themeBtn">🌙</button>
+</header>
+
+<div class="layout">
+<main class="content">
+
+<div class="chip-row">
+  <span class="chip mid">ช่วงต้นเทอม · ทบทวน</span>
+  <span class="chip">วิดีโอ 1.1–1.6 · Handout No.1</span>
+</div>
+<h1>บทที่ 1 — รู้จัก OS, การบูตเครื่อง, Dual Mode และ VM/Container</h1>
+<p class="lead">บทนี้เป็นปูพื้นให้ทุกบทหลังจากนี้ ข้อสอบมักออกเป็นข้อถูก/ผิดและเติมคำสั้น ๆ เช่น ลำดับการบูต, mode bit เป็น 0 หรือ 1, VM ต่างจาก Container อย่างไร</p>
+
+<div class="toc">
+  <div class="toc-title">สารบัญบทนี้</div>
+  <ol>
+    <li><a href="#what">OS คืออะไร</a></li>
+    <li><a href="#kernel">Kernel vs System/App Programs</a></li>
+    <li><a href="#components">องค์ประกอบของ OS</a></li>
+    <li><a href="#boot">ขั้นตอนการบูตเครื่อง</a></li>
+    <li><a href="#dualmode">Dual Mode Operation</a></li>
+    <li><a href="#interrupt">Interrupt ทำงานยังไง</a></li>
+    <li><a href="#vm">Virtual Machine</a></li>
+    <li><a href="#container">Container & Docker</a></li>
+    <li><a href="#types">ประเภทของ OS</a></li>
+    <li><a href="#quiz">แบบฝึกหัดท้ายบท</a></li>
+  </ol>
+</div>
+
+<h2 id="what">1. OS คืออะไร — เริ่มจากภาพใหญ่ก่อน</h2>
+<p>ลองนึกภาพร้านอาหารที่มีลูกค้า (โปรแกรมของเรา) เข้ามาสั่งอาหารทุกชนิด แต่ในครัวมี<strong>เตาแค่เตาเดียว น้ำแค่ก๊อกเดียว พ่อครัวแค่คนเดียว</strong> — ใครจะเป็นคนจัดคิว แบ่งเตา บอกว่าใครได้ใช้อะไรก่อน-หลัง ใช้เท่าไร? คนที่ทำหน้าที่นั้นคือ <strong>"หัวหน้าร้าน"</strong> นั่นเอง</p>
+<p><strong>Operating System (OS) ก็คือหัวหน้าร้านของคอมพิวเตอร์</strong> — เป็นซอฟต์แวร์ที่ทำหน้าที่ <strong>จัดการทรัพยากรทั้งหมดของเครื่อง</strong> (CPU, หน่วยความจำ, อุปกรณ์ I/O, ไฟล์) และ <strong>ควบคุมว่าใครใช้ทรัพยากรไหน อย่างไร และเท่าไร</strong></p>
+<p>เป้าหมายหลักของ OS มี 3 ข้อ (จำไว้ ออกถูก/ผิดได้):</p>
+<ul>
+  <li><strong>Run user programs</strong> — ทำให้โปรแกรมของผู้ใช้รันได้ และทำให้ผู้ใช้แก้ปัญหาได้ง่ายขึ้น (user-friendly)</li>
+  <li><strong>Optimize hardware utilization</strong> — ใช้ฮาร์ดแวร์ให้คุ้มค่าที่สุด ไม่ปล่อยให้ CPU นั่งเบื่อ</li>
+  <li>เป็น<strong>ตัวกลาง</strong>ระหว่างผู้ใช้กับฮาร์ดแวร์</li>
+</ul>
+
+<figure class="fig">
+<svg viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ชั้นของระบบคอมพิวเตอร์">
+  <defs>
+    <linearGradient id="lg1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4f46e5"/><stop offset="1" stop-color="#0ea5e9"/>
+    </linearGradient>
+  </defs>
+  <rect x="40" y="20" width="620" height="52" rx="12" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="350" y="52" text-anchor="middle" font-size="17" font-weight="700" fill="#334155">👤 ผู้ใช้ (People)</text>
+  <path d="M350 72 L350 90" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
+  <defs><marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#94a3b8"/></marker></defs>
+  <rect x="40" y="90" width="620" height="52" rx="12" fill="#fdf2f8" stroke="#f9a8d4"/>
+  <text x="350" y="122" text-anchor="middle" font-size="17" font-weight="700" fill="#9d174d">🎮 Application Programs (เกม, Word, Chrome…)</text>
+  <path d="M350 142 L350 160" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
+  <rect x="40" y="160" width="620" height="52" rx="12" fill="url(#lg1)"/>
+  <text x="350" y="192" text-anchor="middle" font-size="18" font-weight="800" fill="#fff">🧠 Operating System (Kernel + System Programs)</text>
+  <path d="M350 212 L350 230" stroke="#94a3b8" stroke-width="2" marker-end="url(#arr)"/>
+  <rect x="40" y="230" width="620" height="52" rx="12" fill="#ecfdf5" stroke="#a7f3d0"/>
+  <text x="350" y="262" text-anchor="middle" font-size="17" font-weight="700" fill="#065f46">🔌 Hardware (CPU · RAM · Disk · I/O Devices)</text>
+</svg>
+<figcaption>OS เป็น "ชั้นกลาง" — โปรแกรมทุกตัวต้องขอบริการผ่าน OS เท่านั้น จึงจะแตะฮาร์ดแวร์ได้</figcaption>
+</figure>
+
+<h2 id="kernel">2. Kernel vs System Programs vs Application Programs</h2>
+<p>เวลาพูดถึง "OS" แบบแคบ ๆ เราหมายถึง <strong>Kernel</strong> เท่านั้น — ส่วนที่ทำงานพื้นฐานจริง ๆ ของ OS (ส่วนที่เหลือแบ่งเป็น 2 พวก):</p>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>ชั้น</th><th>คืออะไร</th><th>ตัวอย่าง</th></tr>
+  <tr><td><strong>Kernel</strong></td><td>หัวใจของ OS ทำหน้าที่พื้นฐานทั้งหมด รันในโหมดพิเศษ (kernel mode)</td><td>ตัวจัดคิว CPU, ตัวจัดการหน่วยความจำ</td></tr>
+  <tr><td><strong>System Programs</strong></td><td>โปรแกรมที่มากับ OS เพื่ออำนวยความสะดวก</td><td>shell (bash), file manager, compiler</td></tr>
+  <tr><td><strong>Application Programs</strong></td><td>โปรแกรมที่ผู้ใช้ติดตั้งเอง</td><td>เกม, Chrome, Excel</td></tr>
+</table></div>
+
+<div class="callout analogy">
+  <div class="co-title">🍽️ เปรียบเทียบ</div>
+  <p>Kernel = พ่อครัวในครัวหลัง (แตะของได้ทุกอย่าง) · System Program = พนักงานเสิร์ฟ (ตัวกลางรับออเดอร์) · Application = ลูกค้า (ขอบริการเท่านั้น ห้ามล้วงเข้าครัว!)</p>
+</div>
+
+<h2 id="components">3. องค์ประกอบ (Components) ของ OS</h2>
+<p>OS แบ่งงานกันทำเป็น Manager หลายตัว แต่ละตัวต้องทำ 3 อย่างเหมือนกัน: <strong>Monitor</strong> ทรัพยากรของตัวเอง, ทำตามกฎ "ใครได้อะไร เมื่อไร เท่าไร", <strong>Allocate</strong> ให้ตอนถึงคิว และ <strong>Deallocate</strong> คืนเมื่อใช้เสร็จ</p>
+<div class="memgrid">
+  <span class="memcell used">Memory Manager</span>
+  <span class="memcell used">Processor Manager</span>
+  <span class="memcell used">Device Manager</span>
+  <span class="memcell used">File Manager</span>
+  <span class="memcell">Network Manager</span>
+  <span class="memcell">Security Manager</span>
+  <span class="memcell">User Command Interface</span>
+</div>
+<p class="small">💡 Processor Manager คือตัวเดียวกับที่ทำเรื่อง Process และ CPU Scheduling ในบทที่ 3–5 · Memory Manager คือพระเอกของบท 10–12</p>
+
+<h2 id="boot">4. ขั้นตอนการบูตเครื่อง (Boot Process) 🔥</h2>
+<p><strong>Booting = การสตาร์ทคอมโดยการโหลด Kernel เข้าหน่วยความจำ</strong> ลำดับขั้นตอนเป็นข้อสอบโปรด เพราะเติมตัวเลขลำดับได้ มาไล่ทีละขั้น:</p>
+
+<ol class="steps">
+  <li><span class="st-title">Power On — กดปุ่มเปิดเครื่อง</span>ไฟฟ้าวิ่งเข้าชิ้นส่วน CPU เริ่มรันคำสั่งแรกจาก <strong>BIOS</strong> (หรือ <strong>UEFI</strong>) ซึ่งเก็บอยู่ในชิปบนเมนบอร์ด</li>
+  <li><span class="st-title">POST (Power-On Self-Test)</span>BIOS/UEFI ตรวจฮาร์ดแวร์ว่าพร้อมไหม — เช็ค RAM, CPU, ดิสก์, อุปกรณ์ต่อพ่วง (ถ้าพังจะบี๊บร้องไห้ใส่เรา)</li>
+  <li><span class="st-title">Boot Loader Selection</span>
+    <ul style="margin:4px 0 0">
+      <li><strong>BIOS</strong> → ไปหา <strong>MBR</strong> (Master Boot Record) บนดิสก์ boot drive — ในนั้นมีข้อมูล partition และ bootloader</li>
+      <li><strong>UEFI</strong> → ไปหา <strong>ESP</strong> (EFI System Partition) — พาร์ติชันพิเศษที่เก็บ bootloader + driver แล้วอ่าน <strong>BCD</strong> (Boot Configuration Data) เพื่อเลือก bootloader เริ่มต้น</li>
+    </ul>
+  </li>
+  <li><span class="st-title">Bootloader Execution</span>BIOS โหลดและรัน bootloader จาก MBR / UEFI โหลดจาก ESP</li>
+  <li><span class="st-title">OS Load</span>bootloader หาและโหลด <strong>OS Kernel</strong> เข้า RAM</li>
+  <li><span class="st-title">OS Initialization</span>OS ทำหน้าที่ต่อจนจบ — เริ่มบริการต่าง ๆ แล้วส่งมอบเครื่องให้ผู้ใช้ใช้งาน</li>
+</ol>
+
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>ประเด็น</th><th>BIOS (เก่า)</th><th>UEFI (ใหม่)</th></tr>
+  <tr><td>โหมดรัน</td><td>16-bit real mode</td><td>32/64-bit — <strong>เร็วกว่า</strong>, ใช้ RAM ใหญ่ได้</td></tr>
+  <tr><td>ตารางพาร์ติชัน</td><td>MBR — จำกัดขนาด/จำนวนพาร์ติชัน</td><td><strong>GPT</strong> — ยืดหยุ่น รองรับดิสก์ใหญ่</td></tr>
+  <tr><td>ที่เก็บ bootloader</td><td>MBR</td><td>ESP</td></tr>
+  <tr><td>Secure Boot</td><td>ไม่มี</td><td><strong>มี</strong> — เช็คลายเซ็นดิจิทัลของ bootloader กันมัลแวร์</td></tr>
+  <tr><td>ความเร็วบูต</td><td>ช้ากว่า</td><td>เร็วกว่า (เข้าถึง bootloader โดยตรง)</td></tr>
+</table></div>
+
+<figure class="fig">
+<svg viewBox="0 0 760 190" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="ลำดับ boot">
+  <g font-size="13.5" font-weight="700">
+    <rect x="8" y="55" width="96" height="58" rx="10" fill="#eef0ff" stroke="#4f46e5"/><text x="56" y="79" text-anchor="middle" fill="#3730a3">Power On</text><text x="56" y="97" text-anchor="middle" fill="#6366f1" font-size="11">กดปุ่ม</text>
+    <rect x="126" y="55" width="96" height="58" rx="10" fill="#eef0ff" stroke="#4f46e5"/><text x="174" y="79" text-anchor="middle" fill="#3730a3">POST</text><text x="174" y="97" text-anchor="middle" fill="#6366f1" font-size="11">ตรวจฮาร์ดแวร์</text>
+    <rect x="244" y="12" width="106" height="58" rx="10" fill="#fff7ed" stroke="#d97706"/><text x="297" y="36" text-anchor="middle" fill="#92400e">BIOS</text><text x="297" y="54" text-anchor="middle" fill="#b45309" font-size="11">หา bootloader ใน MBR</text>
+    <rect x="244" y="98" width="106" height="58" rx="10" fill="#fff7ed" stroke="#d97706"/><text x="297" y="122" text-anchor="middle" fill="#92400e">UEFI</text><text x="297" y="140" text-anchor="middle" fill="#b45309" font-size="11">หา bootloader ใน ESP</text>
+    <rect x="382" y="55" width="112" height="58" rx="10" fill="#eef0ff" stroke="#4f46e5"/><text x="438" y="79" text-anchor="middle" fill="#3730a3">Bootloader</text><text x="438" y="97" text-anchor="middle" fill="#6366f1" font-size="11">รัน bootloader</text>
+    <rect x="526" y="55" width="100" height="58" rx="10" fill="#eef0ff" stroke="#4f46e5"/><text x="576" y="79" text-anchor="middle" fill="#3730a3">Load Kernel</text><text x="576" y="97" text-anchor="middle" fill="#6366f1" font-size="11">โหลด OS เข้า RAM</text>
+    <rect x="658" y="55" width="94" height="58" rx="10" fill="#ecfdf5" stroke="#059669"/><text x="705" y="79" text-anchor="middle" fill="#065f46">OS Init</text><text x="705" y="97" text-anchor="middle" fill="#059669" font-size="11">พร้อมใช้งาน</text>
+    <path d="M104 84 L124 84" stroke="#94a3b8" stroke-width="2"/><path d="M222 60 L242 48" stroke="#94a3b8" stroke-width="2"/><path d="M222 108 L242 122" stroke="#94a3b8" stroke-width="2"/><path d="M350 42 L380 70" stroke="#94a3b8" stroke-width="2"/><path d="M350 126 L380 98" stroke="#94a3b8" stroke-width="2"/><path d="M494 84 L524 84" stroke="#94a3b8" stroke-width="2"/><path d="M626 84 L656 84" stroke="#94a3b8" stroke-width="2"/>
+  </g>
+</svg>
+<figcaption>ลำดับบูต: Power On → POST → (BIOS/MBR หรือ UEFI/ESP) → Bootloader → โหลด Kernel → OS พร้อมใช้</figcaption>
+</figure>
+
+<div class="callout exam">
+  <div class="co-title">🎯 จุดหลอกข้อสอบ</div>
+  <p>• BIOS คู่กับ <strong>MBR</strong>, UEFI คู่กับ <strong>ESP</strong> + <strong>GPT</strong> — อย่าสลับ!<br>• POST เกิด<strong>ก่อน</strong>หา bootloader เสมอ<br>• Booting นิยาม = "starting a computer by <strong>loading the kernel</strong>"</p>
+</div>
+
+<h2 id="dualmode">5. Dual Mode Operation 🔥</h2>
+<p>ถ้าทุกโปรแกรมแตะฮาร์ดแวร์ได้ตรง ๆ โปรแกรมดี ๆ ตัวหนึ่งเขียนพลาดหรือไวรัสตัวหนึ่งสั่งลบดิสก์ทั้งลูกได้เลย OS จึงมี "ประตูรั้ว" 2 โหมด โดยใช้ฮาร์ดแวร์ช่วยเฝ้า:</p>
+<ul>
+  <li><strong>Mode Bit</strong> — บิตพิเศษที่ฮาร์ดแวร์เก็บไว้บอกว่าตอนนี้เครื่องกำลังรันอะไร:
+    <ul>
+      <li><code>0</code> = <strong>Kernel mode</strong> (monitor mode / supervisor mode) — ทำอะไรก็ได้ ใช้คำสั่งพิเศษ (privileged instructions) ได้</li>
+      <li><code>1</code> = <strong>User mode</strong> — ทำได้แค่งานทั่วไป ห้ามแตะของสำคัญ</li>
+    </ul>
+  </li>
+  <li><strong>Privileged instructions</strong> — คำสั่งอันตราย (เช่น เปิด/ปิด interrupt, เขียน I/O ตรง) ใช้ได้<strong>เฉพาะ kernel mode</strong></li>
+  <li>เมื่อเกิด <strong>interrupt หรือ fault</strong> ฮาร์ดแวร์จะ<strong>สลับไป kernel mode อัตโนมัติ</strong></li>
+</ul>
+
+<figure class="fig">
+<svg viewBox="0 0 720 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="dual mode flow">
+  <defs><marker id="arr2" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0,0 L7,3.2 L0,6.4 z" fill="#64748b"/></marker></defs>
+  <rect x="30" y="30" width="200" height="70" rx="12" fill="#ecfdf5" stroke="#059669"/>
+  <text x="130" y="60" text-anchor="middle" font-size="15" font-weight="800" fill="#065f46">User Process</text>
+  <text x="130" y="82" text-anchor="middle" font-size="12" fill="#047857">mode bit = 1 (user mode)</text>
+  <rect x="300" y="30" width="180" height="70" rx="12" fill="#fff7ed" stroke="#d97706"/>
+  <text x="390" y="60" text-anchor="middle" font-size="15" font-weight="800" fill="#92400e">System Call / Trap</text>
+  <text x="390" y="82" text-anchor="middle" font-size="12" fill="#b45309">ขอบริการ OS</text>
+  <rect x="550" y="30" width="150" height="70" rx="12" fill="#eef0ff" stroke="#4f46e5"/>
+  <text x="625" y="60" text-anchor="middle" font-size="15" font-weight="800" fill="#3730a3">Kernel Mode</text>
+  <text x="625" y="82" text-anchor="middle" font-size="12" fill="#4f46e5">mode bit = 0 · ทำงานแทน</text>
+  <path d="M230 65 L298 65" stroke="#64748b" stroke-width="2.5" marker-end="url(#arr2)"/>
+  <path d="M480 65 L548 65" stroke="#64748b" stroke-width="2.5" marker-end="url(#arr2)"/>
+  <path d="M625 100 C 625 190, 130 190, 130 102" stroke="#64748b" stroke-width="2.5" stroke-dasharray="6 5" fill="none" marker-end="url(#arr2)"/>
+  <text x="378" y="205" text-anchor="middle" font-size="12.5" font-weight="700" fill="#64748b">ทำเสร็จ → คืน mode bit = 1 แล้วส่งผลลัพธ์กลับให้ user process</text>
+</svg>
+<figcaption>โปรแกรมผู้ใช้ขอบริการผ่าน system call (trap) → ฮาร์ดแวร์สลับเป็น kernel mode (bit=0) → OS ทำงานให้ → คืนสู่ user mode (bit=1)</figcaption>
+</figure>
+
+<div class="callout analogy">
+  <div class="co-title">🏦 เปรียบเทียบ</div>
+  <p>User mode = ลูกค้ายืนหน้าเคาน์เตอร์ธนาคาร (เข้าถึงได้แค่โซนลูกค้า) · System call = การยื่นบัตรคิวขอบริการ · Kernel mode = พนักงานเดินเข้าห้องหลังเข้าถึงตู้เซฟได้ แต่ทำเฉพาะตามที่ลูกค้าขอเท่านั้น</p>
+</div>
+
+<h2 id="interrupt">6. OS กับฮาร์ดแวร์ทำงานร่วมกันผ่าน Interrupt</h2>
+<p>จุดสำคัญ: <strong>OS เป็น "interrupt driven"</strong> — ไม่มีงานก็นั่งเฉย ๆ รอให้มีเหตุการณ์มาเรียก ไม่ใช่นั่งถามหางานทุกวินาที (นั่นทำให้ CPU ทำงานอย่างอื่นไปพลางได้)</p>
+<ul>
+  <li><strong>I/O devices กับ CPU ทำงานพร้อมกันได้</strong> (concurrently) — แต่ละอุปกรณ์มี <strong>device controller</strong> ดูแลของตัวเอง</li>
+  <li>เมื่ออุปกรณ์ทำงานเสร็จ controller จะ <strong>ยิง interrupt</strong> บอก CPU ว่า "เสร็จแล้วนะ"</li>
+  <li>เกิด interrupt → ฮาร์ดแวร์<strong>เซฟตำแหน่งคำสั่งที่กำลังรันค้างไว้</strong> → ไปรันที่ <strong>Interrupt Service Routine (ISR)</strong> ตามที่อยู่ใน <strong>Interrupt Vector</strong> (ตารางเก็บที่อยู่ของ ISR ทุกชนิด)</li>
+</ul>
+<div class="callout warn">
+  <div class="co-title">⚠️ Trap ต่างจาก Interrupt ยังไง (ออกถูก/ผิดบ่อย!)</div>
+  <p><strong>Interrupt</strong> = มาจากฮาร์ดแวร์ (อุปกรณ์เรียก) · <strong>Trap</strong> = interrupt ที่มาจาก<strong>ซอฟต์แวร์</strong> — เกิดได้ 2 กรณี: โปรแกรม error (<em>exception</em> เช่น หารศูนย์) หรือโปรแกรม<strong>ขอบริการ OS ผ่าน system call</strong> สองอย่างนี้เข้า kernel mode เหมือนกัน แต่ต้นทางต่างกัน</p>
+</div>
+
+<h2 id="vm">7. Virtual Machine (VM) คืออะไร</h2>
+<p><strong>VM = จำลอง "เครื่องคอมพิวเตอร์ทั้งเครื่อง" เป็นซอฟต์แวร์</strong> แล้วติดตั้ง OS เต็มตัวลงไปในเครื่องจำลองนั้นได้อีกที (เช่น เครื่อง Windows จริง รัน Ubuntu จำลองอยู่ข้างใน) ทำให้ 1 เครื่องจริง มีได้หลาย "เครื่องเสมือน" ที่แยกกันสนิท</p>
+<p>ของที่ใช้กันบ่อย: VMware, VirtualBox, และ <strong>JVM (Java Virtual Machine)</strong> ที่ทุกคนในสายคอมเจอแน่นอน — JVM จำลองเครื่องสำหรับ "รัน bytecode ของ Java" โดยเฉพาะ</p>
+<p>ข้อดี: แยกฉนวน (isolation) ปลอดภัย ทดลองอะไรก็ได้ไม่พังเครื่องจริง · ข้อเสีย: หนัก เพราะต้องจำลองทั้งเครื่อง + OS เต็มตัว</p>
+
+<h2 id="container">8. Container & Docker</h2>
+<p>ปัญหาคลาสสิกของโปรแกรมเมอร์: <strong>"ในเครื่องผมรันได้นะ!" (It works on my machine)</strong> และ <strong>Dependency hell</strong> (ติดตั้งไลบรารีสู้กันจนเครื่องพัง) — Container ถือกำเนิดมาแก้สองปัญหานี้</p>
+<p><strong>Container = การห่อโปรแกรม + ทุก dependency ที่ต้องใช้ ใส่กล่องเดียวมาตรฐานเดียว</strong> แล้วกล่องนี้จะรันเหมือนกันทุกเครื่อง เพราะมันแชร์ kernel ของ OS แม่แทนที่จะจำลอง OS ใหม่ทั้งตัว</p>
+<p>คำศัพท์ Docker ที่ต้องรู้ (ออกเติมคำได้):</p>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>คำ</th><th>ความหมาย</th><th>เปรียบเทียบ</th></tr>
+  <tr><td><strong>Dockerfile</strong></td><td>ไฟล์ข้อความบอกขั้นตอน "วิธีประกอบ" image</td><td>สูตรทำขนม</td></tr>
+  <tr><td><strong>Docker Image</strong></td><td>Template แบบ read-only ที่ประกอบจาก Dockerfile (มีโค้ด+runtime+libs)</td><td>พิมพ์เขียว/แม่พิมพ์</td></tr>
+  <tr><td><strong>Docker Container</strong></td><td>Image ที่ถูก "รัน" ขึ้นมาจริง 1 instance — แยกจากกันและจาก host</td><td>ขนมที่อบออกมาจากแม่พิมพ์</td></tr>
+  <tr><td><strong>Docker Engine</strong></td><td>ตัวหลักที่จัดการ container/image/network/volume</td><td>เตาอบ</td></tr>
+  <tr><td><strong>Docker Hub</strong></td><td>คลาวด์ registry แชร์/ดาวน์โหลด image</td><td>เว็บแจกสูตร+ขนมสำเร็จ</td></tr>
+  <tr><td><strong>Volume</strong></td><td>กลไกเก็บข้อมูลให้อยู่ต่อแม้ container ถูกลบ (persist data)</td><td>ตู้เก็บขนมนอกเตา</td></tr>
+  <tr><td><strong>Network</strong></td><td>เชื่อม container คุยกันและคุยกับโลกภายนอก</td><td>—</td></tr>
+</table></div>
+
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>ปัจจัย</th><th>Containerization 📦</th><th>Virtualization 💻</th></tr>
+  <tr><td>OS</td><td>ทุก container ใช้ OS แม่ (host OS) ร่วมกัน</td><td>แต่ละ VM มี OS ของตัวเอง</td></tr>
+  <tr><td>การจำลอง</td><td>ไม่ต้องจำลองทั้งเครื่อง</td><td>ต้องจำลองทั้งเครื่อง</td></tr>
+  <tr><td>Portability</td><td><strong>พกพาง่ายกว่า</strong></td><td>พกพายากกว่า</td></tr>
+  <tr><td>Weight</td><td><strong>เบา</strong></td><td>หนัก</td></tr>
+  <tr><td>Booting Time</td><td><strong>เร็ว</strong></td><td>ช้า</td></tr>
+</table></div>
+
+<div class="callout analogy">
+  <div class="co-title">🏠 เปรียบเทียบโคตรเข้าใจง่าย</div>
+  <p><strong>VM = สร้างบ้านหลังใหม่ทั้งหลัง</strong> (มีที่ดิน ไฟฟ้า ประปา ครบ — แพง ช้า แต่แยกจริง) · <strong>Container = แบ่งห้องเช่าในบ้านหลังเดิม</strong> (ใช้ไฟฟ้า-ประปาร่วมกัน = kernel เดียวกัน — ถูก เร็ว แต่แยกไม่สนิทเท่า)</p>
+</div>
+
+<h2 id="types">9. ประเภทของ OS</h2>
+<p>แบ่งได้ 4 มุม ข้อสอบชอบให้จับคู่ตัวอย่างกับประเภท:</p>
+
+<h3>9.1 ตามวิธีป้อนข้อมูล (How data is entered)</h3>
+<ul>
+  <li><strong>Batch System</strong> — งานถูกเข้าคิวแล้ว<strong>รันต่อเนื่องเป็นชุด ๆ ไม่มีคนแทรกแซง</strong> (จุดเริ่ม OS ยุคแรก) มี 2 แบบ:
+    <ul>
+      <li><em>Single-programmed batch</em> — รันทีละงาน งานเสร็จค่อยงานใหม่ (CPU ว่างตอนรอ I/O เปล่า ๆ)</li>
+      <li><em>Multi-programmed batch</em> — มีหลายงานอยู่ใน RAM พร้อมกัน งานนึงรอ I/O สลับไปรันงานอื่นเลย (CPU ไม่ว่างเปล่า) — บรรพบุรุษของ multiprogramming ที่โผล่อีกทีในบท memory</li>
+    </ul>
+  </li>
+  <li><strong>Interactive System</strong> — ผู้ใช้คุยกับเครื่องสด ๆ ต้องมี <strong>time-sharing</strong> (แบ่งเวลา CPU ให้หลายงาน) เกิดมาเพราะโปรแกรมเมอร์อยากแก้ bug ไว ๆ ไม่ต้องรอคิว batch</li>
+  <li><strong>Hybrid System</strong> — ผสมทั้ง batch (รันเบื้องหลังตอนเครื่องว่าง) และ interactive</li>
+</ul>
+
+<h3>9.2 ตามจำนวนผู้ใช้/งานที่รองรับ</h3>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>แบบ</th><th>ตัวอย่าง</th></tr>
+  <tr><td>Single-user, single-tasking</td><td><strong>MS-DOS</strong></td></tr>
+  <tr><td>Single-user, multi-tasking</td><td>OS บนเดสก์ท็อป/แล็ปท็อป (Windows, macOS)</td></tr>
+  <tr><td>Multi-user, multi-tasking</td><td>OS ฝั่ง <strong>Server</strong> (Linux Server, Windows Server)</td></tr>
+</table></div>
+
+<h3>9.3 ระบบวัตถุประสงค์เฉพาะ (Special Purpose)</h3>
+<ul>
+  <li><strong>Real-Time System</strong> — ต้องตอบสนอง<strong>ภายในเวลาที่กำหนด</strong>
+    <ul>
+      <li><em>Hard real-time</em> — พลาด deadline = ความพังทลาย ไม่มีดิสก์ (เก็บข้อมูลใน RAM/ROM เท่านั้น) <strong>ใช้ time-sharing ไม่ได้</strong> เช่น VxWorks, RTXC (ระบบควบคุมเครื่องบิน, เบรก ABS)</li>
+      <li><em>Soft real-time</em> — ช้าไปหน่อยยังรับได้ แค่คุณภาพลด เช่น มัลติมีเดีย, VR</li>
+    </ul>
+  </li>
+  <li><strong>Embedded System</strong> — คอมเฉพาะทางฝังในเครื่องใหญ่ ทำงานเฉพาะอย่าง ทรัพยากรจำกัด (เครื่องซักผ้า, รถยนต์, IoT)</li>
+</ul>
+
+<h3>9.4 ตามสถาปัตยกรรมคอมพิวเตอร์</h3>
+<ul>
+  <li><strong>Single Processor</strong> — CPU ตัวเดียว</li>
+  <li><strong>Parallel Systems</strong> (Multiprocessor, <strong>tightly-coupled</strong>) — หลาย CPU อยู่ในเครื่องเดียวกัน เช่น dual-core แชร์ bus/-clock/หน่วยความจำ</li>
+  <li><strong>Distributed Systems</strong> (<strong>loosely-coupled</strong>) — หลายเครื่องแยกกัน คุยกันผ่าน network แต่ละเครื่องมี resource ตัวเอง
+    <ul>
+      <li><em>Network OS</em> — แต่ละเครื่องมี OS ตัวเอง แค่เปิดบริการแชร์ผ่านเน็ต เช่น Windows Server, Ubuntu Server</li>
+      <li><em>Distributed OS</em> — หลายเครื่องถูก OS เดียวจัดการเหมือนเป็นเครื่องเดียว เช่น Sprite, Amoeba</li>
+    </ul>
+  </li>
+</ul>
+
+<div class="callout exam">
+  <div class="co-title">🎯 จุดหลอกข้อสอบ</div>
+  <p>• Parallel = <strong>tightly-coupled</strong> / Distributed = <strong>loosely-coupled</strong> — จับคู่คำพวกนี้บ่อยมาก<br>• Hard real-time <strong>เข้ากันไม่ได้</strong>กับ time-sharing<br>• MS-DOS คือ single-user <strong>single-tasking</strong> / JVM คือ single-process <strong>multi-threaded</strong> (เชื่อมบท Thread)</p>
+</div>
+
+<h2 id="quiz">📝 แบบฝึกหัดท้ายบท</h2>
+
+<div class="quiz" data-q data-type="tf" data-answer="true" id="ch01q1">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 1</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">เมื่อเกิด interrupt หรือ fault ฮาร์ดแวร์จะสลับเข้าสู่ kernel mode (monitor mode) โดยอัตโนมัติ</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ถูก</span>นี่คือกลไกความปลอดภัยหลัก — เมื่อ interrupt/fault เกิดขึ้น ฮาร์ดแวร์เซฟสถานะแล้วตั้ง mode bit = 0 (kernel mode) เพื่อให้ OS จัดการเหตุการณ์ได้เต็มสิทธิ์ จากนั้นค่อยคืน user mode (bit = 1)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="true" id="ch01q2">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 2</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">Trap เป็น interrupt ที่เกิดจากซอฟต์แวร์ อาจเกิดจาก program error หรือการเรียกใช้ system call</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ถูก</span>Interrupt มาจากฮาร์ดแวร์ ส่วน Trap มาจากซอฟต์แวร์ 2 ทาง: exception (เช่น หารศูนย์) และ system call ขอบริการ OS</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="false" id="ch01q3">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 3</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">Container แต่ละตัวมี OS (kernel) ของตัวเอง แยกจาก host OS สนิทเหมือน VM</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ผิด</span>ทุก container <strong>แชร์ kernel ของ host OS ร่วมกัน</strong> นี่คือเหตุผลที่มันเบาและบูตเร็วกว่า VM (VM ต่างหากที่มี OS ของตัวเองทุกตัว)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="true" id="ch01q4">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 4</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">UEFI ใช้ตารางพาร์ติชันแบบ GPT และเก็บ bootloader ไว้ใน ESP ส่วน BIOS ใช้ MBR</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ถูก</span>จับคู่: BIOS ↔ MBR (16-bit real mode) / UEFI ↔ ESP + GPT (32/64-bit, มี Secure Boot, บูตเร็วกว่า)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="false" id="ch01q5">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 5</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">Hard real-time system เข้ากันได้ดีกับการทำ time-sharing เพราะแบ่งเวลาให้ทุกงานได้ใช้ CPU อย่างเป็นธรรม</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ผิด</span>Hard real-time <strong>เข้ากันไม่ได้</strong>กับ time-sharing เพราะมันรับประกัน deadline ไม่ได้ งานแบบนี้จำกัด storage มาก (ใช้ RAM/ROM สั้น ๆ) ตัวอย่าง OS คือ VxWorks, RTXC</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="0" data-tolerance="0" id="ch01q6">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 6</span><span class="q-tag safe">เติมคำตอบ</span></div>
+  <div class="q-text">โหมดที่ privileged instructions ใช้ได้คือ kernel mode ซึ่ง mode bit มีค่าเท่ากับเท่าไร</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 0</span>mode bit = <strong>0 → kernel mode</strong> (monitor mode), mode bit = <strong>1 → user mode</strong> จำยากหน่อยแต่นี่คือข้อเท็จจริงที่ออกบ่อยมาก</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="pager">
+  <a href="index.html"><span class="dir">← กลับ</span><span class="name">หน้าแรก</span></a>
+  <a href="02-structure.html" class="next"><span class="dir">บทถัดไป →</span><span class="name">บทที่ 2: OS Structure & System Call</span></a>
+</div>
+
+<div class="center"><button class="btn ghost" id="doneBtn"></button></div>
+
+</main>
+</div>
+<button id="toTop" aria-label="กลับขึ้นด้านบน">↑</button>
+<script src="js/app.js"></script>
+</body>
+</html>

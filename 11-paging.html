@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 11 — Paging & Address Translation 🔥 | เว็บติว OS Final</title>
+<meta name="description" content="Paging แปลง logical address เป็น physical address ทีละขั้น page table TLB Effective Access Time Two-level paging ตัวอย่างทุกตัวเลขจากวิดีโออาจารย์ พร้อมจุดหลอกข้อสอบ">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="ch11">
+<div id="sidebar-root"></div>
+<div class="sidebar-backdrop"></div>
+
+<header class="topbar">
+  <button class="icon-btn" id="menuBtn" aria-label="เปิดเมนู">☰</button>
+  <a class="brand" href="index.html"><span class="brand-logo">OS</span><span>เว็บติว OS Final<span class="brand-sub">บทที่ 11 · Paging 🔥</span></span></a>
+  <span class="spacer"></span>
+  <span class="progress-pill" id="quizPill"></span>
+  <button class="icon-btn" id="themeBtn">🌙</button>
+</header>
+
+<div class="layout">
+<main class="content">
+
+<div class="chip-row">
+  <span class="chip final">หัวใจของ Final</span>
+  <span class="chip hot">รีวิวรุ่นพี่: "คนส่วนมากคำนวณ Paging กันไม่ทัน" 🔥🔥</span>
+  <span class="chip">วิดีโอ 12.3.1–12.3.2 · Handout No.8</span>
+</div>
+<h1>บทที่ 11 — Paging: สกิลคำนวณที่ตัดสิน "ทันสอบหรือไม่ทัน"</h1>
+<p class="lead">Paging แบ่ง RAM เป็นก้อนเท่า ๆ กันแล้วจับคู่ผ่าน page table — โจทย์เกือบทุกข้อในหัวข้อนี้ถามแค่ 3 อย่าง: <strong>(1) หา page/offset จาก address (2) แปลงเป็น physical address (3) คำนวณ EAT กับ TLB</strong> — ฝึกให้ไว ให้ได้แต่ละข้อไม่เกิน 1 นาที</p>
+
+<div class="toc">
+  <div class="toc-title">สารบัญบทนี้</div>
+  <ol>
+    <li><a href="#idea">แนวคิด Paging: Frame, Page, Page Table</a></li>
+    <li><a href="#bits">โครงสร้าง address: บิต p กับ d 🔥</a></li>
+    <li><a href="#translate">แปลง Logical → Physical ทีละขั้น 🔥</a></li>
+    <li><a href="#mistake1">3 จุดพลาดคลาสสิกของการแปลง</a></li>
+    <li><a href="#tlb">TLB และสูตร EAT 🔥</a></li>
+    <li><a href="#protect">Protection: Valid/Invalid bit</a></li>
+    <li><a href="#twolevel">Two-Level Paging — ตัวอย่าง 8KB vs 4MB 🔥</a></li>
+    <li><a href="#quiz">แบบฝึกหัดท้ายบท</a></li>
+  </ol>
+</div>
+
+<h2 id="idea">1. แนวคิด Paging — ตัด external fragmentation ขาด</h2>
+<p>Paging คือการจัดสรรหน่วยความจำแบบ <strong>non-contiguous</strong> (ไม่ต้องติดกัน!):</p>
+<ul>
+  <li><strong>Frame</strong> — แบ่ง physical memory (RAM) เป็นบล็อกขนาดคงที่ ขนาดเป็นกำลังสอง 2<sup>n</sup> bytes (เช่น 512–8,192 bytes ในทางปฏิบัติ)</li>
+  <li><strong>Page</strong> — แบ่ง logical memory (โปรแกรม) เป็นบล็อก<strong>ขนาดเท่า frame เป๊ะ ๆ</strong></li>
+  <li><strong>Page table</strong> — ตารางจับคู่ "เพจที่ i ของโปรแกรม อยู่ใน frame ไหนของ RAM"</li>
+  <li>รันโปรแกรมขนาด n เพจ = หา frame ว่าง n อัน กระจายวางก็ได้ (ไม่ต้องติดกันเลย!)</li>
+</ul>
+<div class="callout exam">
+  <div class="co-title">🎯 เช็คความเข้าใจ</div>
+  <p>Paging <strong>ไม่มี External Fragmentation</strong> เพราะ frame ว่างอะไรก็ใช้ได้ · แต่ยังมี <strong>Internal Fragmentation</strong> — เกิดเฉพาะ<strong>เพจสุดท้าย</strong>ของโปรแกรมถ้าขนาดไม่ลงตัวกับ page size</p>
+</div>
+
+<h2 id="bits">2. โครงสร้าง Logical Address — บิต p กับ d 🔥</h2>
+<p>Address ที่ CPU ปล่อยออกมา (ยาว m บิต) ถูกซอยเป็น 2 ส่วนโดยฮาร์ดแวร์:</p>
+<figure class="fig">
+<svg viewBox="0 0 640 150" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="address structure">
+  <text x="320" y="26" text-anchor="middle" font-size="13" font-weight="800" fill="#475569">Logical address ยาว m บิต (พื้นที่ 2^m bytes)</text>
+  <rect x="80" y="44" width="300" height="54" rx="10" fill="#eef0ff" stroke="#4f46e5" stroke-width="2"/>
+  <text x="230" y="78" text-anchor="middle" font-size="15" font-weight="800" fill="#3730a3">Page number (p) — m−n บิต</text>
+  <rect x="380" y="44" width="180" height="54" rx="10" fill="#fff7ed" stroke="#d97706" stroke-width="2"/>
+  <text x="470" y="78" text-anchor="middle" font-size="15" font-weight="800" fill="#92400e">Offset (d) — n บิต</text>
+  <text x="320" y="130" text-anchor="middle" font-size="12.5" fill="#64748b" font-weight="700">p = ใช้เปิด page table หา frame · d = ระยะภายในเพจ (ใช้ตรง ๆ ไม่แปลงอะไรทั้งสิ้น)</text>
+</svg>
+<figcaption>ตัวเลขคงเส้นคงวา: Page size = 2ⁿ bytes → offset ต้องใช้ n บิตพอดี · บิตที่เหลือ (m−n) เป็น page number → โปรแกรมมีได้สูงสุด 2^(m−n) เพจ</figcaption>
+</figure>
+
+<p><strong>ตัวอย่างจากวิดีโอ:</strong> Logical address space = 5 บิต (2⁵ = 32 bytes), Page size = 4 bytes:</p>
+<ol class="steps">
+  <li><span class="st-title">หา n (บิต offset)</span>4 = 2² → ต้องมี 2 บิตพอสำหรับนับ offset 0–3</li>
+  <li><span class="st-title">หาบิต page number</span>m − n = 5 − 2 = <strong>3 บิต</strong> → เพจได้สูงสุด 2³ = <strong>8 เพจ</strong> (เพจ 0 ถึง 7 — นับจากศูนย์!)</li>
+  <li><span class="st-title">ตรวจความสมเหตุสมผล</span>8 เพจ × 4 bytes = 32 bytes ตรงกับขนาดที่โจทย์ให้ ✅</li>
+</ol>
+<div class="callout analogy">
+  <div class="co-title">🪑 อุปมาของอาจารย์ (จากวิดีโอ)</div>
+  <p>ซื้อเก้าอี้มา 32 ตัว จัดใส่ห้อง 8 ห้อง ห้องละ 4 ตัว — เวลาอ้างอิงเก้าอี้ตัวไหน ไม่ได้พูดเลขรวม แต่พูดว่า <strong>"ขอเก้าอี้ตัวที่ 3 ในห้องเบอร์ 1"</strong> = (Page 1, Offset 3) — สองเลขนี้คือทั้งชีวิตของ Paging!</p>
+</div>
+
+<h2 id="translate">3. แปลง Logical → Physical Address ทีละขั้น 🔥🔥</h2>
+<div class="formula">Physical Address = (Frame Number × Page Size) + Offset<small>เปิด page table ด้วย p → ได้ frame → frame คูณ page size = ตำแหน่งเริ่ม frame ใน RAM → บวก offset เข้าไป</small></div>
+
+<p><strong>โจทย์จากวิดีโอ:</strong> Page size = 4 bytes, page table กำหนดว่า:</p>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>Page</th><th class="c">→ Frame</th></tr>
+  <tr><td class="c">0</td><td class="c"><strong>5</strong></td></tr>
+  <tr><td class="c">1</td><td class="c"><strong>4</strong></td></tr>
+  <tr><td class="c">2</td><td class="c"><strong>1</strong></td></tr>
+  <tr><td class="c">3</td><td class="c"><strong>7</strong></td></tr>
+</table></div>
+
+<h3>📍 ตัวอย่างที่ 1: หาตำแหน่งของตัวอักษร 'C' — logical (p=0, d=2)</h3>
+<ol class="steps">
+  <li><span class="st-title">เปิด page table ด้วย p = 0</span>เพจ 0 อยู่ใน <strong>frame 5</strong></li>
+  <li><span class="st-title">นำ offset d = 2 มาใช้ตรง ๆ</span>offset ไม่ผ่านการแปลงใด ๆ</li>
+  <li><span class="st-title">แทนสูตร</span>PA = (5 × 4) + 2 = 20 + 2 = <strong>22</strong> ✅ → 'C' อยู่ที่ byte ที่ 22 ใน RAM</li>
+</ol>
+
+<h3>📍 ตัวอย่างที่ 2: หาตำแหน่งของ 'K' — logical (p=2, d=2)</h3>
+<ol class="steps">
+  <li><span class="st-title">เปิด page table ด้วย p = 2</span>เพจ 2 อยู่ใน <strong>frame 1</strong></li>
+  <li><span class="st-title">PA = (1 × 4) + 2</span>= 4 + 2 = <strong>6</strong> ✅</li>
+</ol>
+
+<figure class="fig">
+<svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="paging translation">
+  <defs><marker id="ar11" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0,0 L7,3.2 L0,6.4 z" fill="#64748b"/></marker></defs>
+  <text x="110" y="24" text-anchor="middle" font-size="13" font-weight="800" fill="#4f46e5">Logical Memory (8 pages × 4B)</text>
+  <g font-size="11" font-weight="700">
+    <g><rect x="60" y="34" width="100" height="26" rx="5" fill="#eef0ff" stroke="#4f46e5"/><text x="110" y="51" text-anchor="middle" fill="#3730a3">Page 0: A B C D</text></g>
+    <g><rect x="60" y="62" width="100" height="26" rx="5" fill="#eef0ff" stroke="#4f46e5"/><text x="110" y="79" text-anchor="middle" fill="#3730a3">Page 1: E F G H</text></g>
+    <g><rect x="60" y="90" width="100" height="26" rx="5" fill="#fff7ed" stroke="#d97706"/><text x="110" y="107" text-anchor="middle" fill="#92400e">Page 2: I J K L</text></g>
+    <g><rect x="60" y="118" width="100" height="26" rx="5" fill="#eef0ff" stroke="#4f46e5"/><text x="110" y="135" text-anchor="middle" fill="#3730a3">Page 3: M N O P</text></g>
+  </g>
+  <rect x="250" y="34" width="130" height="110" rx="12" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="315" y="54" text-anchor="middle" font-size="12.5" font-weight="800" fill="#334155">Page Table</text>
+  <g font-size="11.5" font-weight="800">
+    <text x="268" y="76" fill="#475569">0 →</text><text x="330" y="76" fill="#0369a1">frame 5</text>
+    <text x="268" y="96" fill="#475569">1 →</text><text x="330" y="96" fill="#0369a1">frame 4</text>
+    <rect x="258" y="104" width="114" height="18" rx="4" fill="#fef9c3"/>
+    <text x="268" y="118" fill="#92400e">2 →</text><text x="330" y="118" fill="#0369a1">frame 1</text>
+    <text x="268" y="138" fill="#475569">3 →</text><text x="330" y="138" fill="#0369a1">frame 7</text>
+  </g>
+  <text x="610" y="24" text-anchor="middle" font-size="13" font-weight="800" fill="#059669">Physical Memory (frames × 4B)</text>
+  <g font-size="11" font-weight="700">
+    <g><rect x="560" y="34" width="100" height="26" rx="5" fill="#ecfdf5" stroke="#059669"/><text x="610" y="51" text-anchor="middle" fill="#065f46">Frame 1: I J K L</text></g>
+    <g><rect x="560" y="90" width="100" height="26" rx="5" fill="#ecfdf5" stroke="#059669"/><text x="610" y="107" text-anchor="middle" fill="#065f46">Frame 4: E F G H</text></g>
+    <g><rect x="560" y="118" width="100" height="26" rx="5" fill="#ecfdf5" stroke="#059669"/><text x="610" y="135" text-anchor="middle" fill="#065f46">Frame 5: A B C D</text></g>
+  </g>
+  <path d="M162 103 L248 112" stroke="#d97706" stroke-width="2.5" marker-end="url(#ar11)"/>
+  <path d="M382 113 C 460 113 480 46 556 46" stroke="#d97706" stroke-width="2.5" stroke-dasharray="6 4" marker-end="url(#ar11)"/>
+  <text x="470" y="88" text-anchor="middle" font-size="12" font-weight="800" fill="#b45309">K = Page2 + offset2 → frame1 + 2 = PA 6 ✅</text>
+  <text x="380" y="285" text-anchor="middle" font-size="12" fill="#475569" font-weight="700">เพจกระจายวางไม่ติดกันก็ได้ — page table รู้ว่าใครอยู่ frame ไหนเสมอ</text>
+</svg>
+<figcaption>เพจ 2 (I J K L) ถูกวางใน frame 1 — เจอ 'K' ที่ offset 2 → physical address = 1×4+2 = 6</figcaption>
+</figure>
+
+<div class="callout tip">
+  <div class="co-title">💡 ถ้าโจทย์ให้ address เป็นเลขฐานสอง</div>
+  <p>แค่<strong>ซอยบิต</strong>: บิตหลัง (ต่ำ) n ตัว = offset, บิตหน้า (สูง) ที่เหลือ = page number เช่น address 13 ในระบบ 5 บิต/เพจ 4 bytes = บินารี <strong>01101</strong> → p = 011 (3), d = 01 (1) → เปิดตารางด้วยเพจ 3 แล้วบวก offset 1</p>
+</div>
+
+<h2 id="mistake1">4. 3 จุดพลาดคลาสสิก (อาจารย์เน้นในวิดีโอ)</h2>
+<div class="card">
+  <ol style="margin:4px 0">
+    <li><strong>บวก frame + offset ตรง ๆ</strong> — frame 5, offset 2 แล้วตอบ 5+2=7 ❌ ต้อง <strong>(5 × 4) + 2 = 22</strong> ✅ (frame คือ "หมายเลขก้อน" ต้องคูณขนาดก้อนก่อน!)</li>
+    <li><strong>นับเพจเริ่มที่ 1</strong> — เพจเริ่มที่ <strong>Page 0</strong> เสมอ (8 เพจคือ 0–7 ไม่ใช่ 1–8)</li>
+    <li><strong>ปัดจำนวนเพจลง</strong> — โปรแกรม 42 bytes / เพจ 4 bytes = 10.5 → ต้อง <strong>ปัดขึ้น 11 เพจ</strong> (10 เพจเก็บได้ 40 bytes ข้อมูลขาด!) เพจสุดท้ายใช้จริง 2 bytes → <strong>Internal frag = 4−2 = 2 bytes</strong></li>
+  </ol>
+</div>
+
+<h2 id="tlb">5. TLB และสูตร Effective Access Time 🔥🔥</h2>
+<p>เพราะ page table อยู่ใน RAM — เข้าถึงข้อมูล 1 ครั้ง = ไป RAM <strong>2 ครั้ง</strong> (1: อ่าน page table หา frame, 2: อ่านข้อมูลจริง) แก้ด้วย <strong>TLB (Translation Look-aside Buffer)</strong> — แคชฮาร์ดแวร์ความเร็วสูง เก็บคู่ (page # → frame #) ล่าสุด ค้นแบบขนาน (associative)</p>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>กรณี</th><th>ไป RAM กี่ครั้ง</th><th>เวลา</th></tr>
+  <tr><td>TLB <strong>Hit</strong> (โอกาส α)</td><td class="c">1 ครั้ง</td><td>ค้น TLB (ε) + อ่านข้อมูล (1) = 1 + ε</td></tr>
+  <tr><td>TLB <strong>Miss</strong> (โอกาส 1−α)</td><td class="c">2 ครั้ง</td><td>ค้น TLB (ε) + อ่าน page table (1) + อ่านข้อมูล (1) = 2 + ε</td></tr>
+</table></div>
+<div class="formula">EAT = α(1 + ε) + (1 − α)(2 + ε) = 2 + ε − α<small>α = hit ratio · ε = TLB search time · สูตรลัดตัวหลังใช้ได้เมื่อ memory access = 1 μs ต่อครั้ง</small></div>
+
+<h3>โจทย์จากวิดีโอ: ε = 0.1 μs, α = 80%, memory access = 1 μs</h3>
+<ol class="steps">
+  <li><span class="st-title">กรณี Hit (0.8)</span>0.1 + 1.0 = 1.1 μs</li>
+  <li><span class="st-title">กรณี Miss (0.2)</span>0.1 + 1.0 + 1.0 = 2.1 μs</li>
+  <li><span class="st-title">ถ่วงน้ำหนัก</span>EAT = (0.8 × 1.1) + (0.2 × 2.1) = 0.88 + 0.42 = <strong>1.3 μs</strong> ✅ (สูตรลัด: 2 + 0.1 − 0.8 = 1.3 — ตรงกัน)</li>
+</ol>
+<p class="small">เทียบกับไม่มี TLB เลย = 2 μs ทุกครั้ง → TLB hit 80% ช่วยลดเหลือ 1.3 μs</p>
+
+<h2 id="protect">6. Protection — Valid / Invalid bit</h2>
+<ul>
+  <li>แต่ละแถวใน page table มี <strong>valid–invalid bit</strong>: <strong>v (valid)</strong> = เพจนี้อยู่ใน address space ของ process (ใช้ได้ตามกฎหมาย) · <strong>i (invalid)</strong> = ห้ามอ้างอิง</li>
+  <li>Registers ช่วยเฝ้า: <strong>PTBR</strong> ชี้ตำแหน่ง page table ใน RAM · <strong>PTLR</strong> บอกความยาวตาราง (ตรวจเบื้องต้นว่าไม่อ้างเพจเกินขอบเขต)</li>
+</ul>
+<div class="callout warn">
+  <div class="co-title">🚨 จุดหลอก: Valid bit ดูแล "ทั้งเพจ" ไม่ได้ดู "ทีละไบต์"</div>
+  <p>ถ้าเพจสุดท้ายของโปรแกรม 42 bytes มี valid = v ระบบจะยอมให้อ้าง offset <em>ใด ๆ</em> ในเพจนั้น (แม้เกิน 42) เพราะมันเช็คแค่ว่า "เพจนี้เป็นของจริง" — ไม่รู้ว่าโปรแกรมจบที่ offset ไหน นี่คือเหตุผลที่ internal fragmentation ยังอยู่รอดใน paging</p>
+</div>
+
+<h2 id="twolevel">7. Two-Level Paging — ทำไมและคำนวณยังไง 🔥</h2>
+<h3>ปัญหา: Page table เปลือง RAM สุดโง่เง่า</h3>
+<p>ระบบ 32-bit, page size 4 KB (2¹² → offset 12 บิต):</p>
+<ol class="steps">
+  <li><span class="st-title">บิต page number</span>32 − 12 = <strong>20 บิต</strong> → จำนวนช่อง = 2²⁰ = <strong>1,048,576 ช่อง</strong></li>
+  <li><span class="st-title">สมมติ 1 ช่อง = 4 bytes</span>ขนาด page table = 1M × 4B = <strong>4 MB ต่อ process หนึ่ง!</strong></li>
+  <li><span class="st-title">ปัญหา</span>โปรแกรมเล็กแค่ 1 MB ก็ต้องแบก page table 4 MB ให้ทุก process — สิ้นเปลืองมหาศาล (และตารางต้องอยู่ต่อเนื่องใน RAM อีก)</li>
+</ol>
+
+<h3>ทางแก้: ซอย page table เป็นสองชั้น (Hierarchical Paging)</h3>
+<p>ซอยบิต 32 ตัวเป็น 3 ส่วน: <strong>p₁ = 10 บิต | p₂ = 10 บิต | d = 12 บิต</strong> — p₁ เปิด outer table หาว่า inner table ตัวที่เท่าไร, p₂ เปิด inner table หา frame</p>
+<p><strong>ตัวอย่างที่ 1 จากวิดีโอ: โหลดโปรแกรม 1 MB</strong></p>
+<ol class="steps">
+  <li><span class="st-title">นับเพจที่ต้องใช้</span>1 MB = 1024 KB ÷ 4 KB/เพจ = <strong>256 เพจ</strong></li>
+  <li><span class="st-title">นับ inner table ที่ต้องสร้าง</span>1 inner table จุ 2¹⁰ = 1024 ช่อง — 256 ช่องใช้ inner แค่ <strong>1 ตาราง</strong></li>
+  <li><span class="st-title">รวมพื้นที่</span>Outer 1 ตาราง (1024 × 4B = 4 KB) + Inner 1 ตาราง (4 KB) = <strong>8 KB</strong> ✅ เทียบกับ single-level ที่เสีย 4 MB!</li>
+</ol>
+<p><strong>ตัวอย่างที่ 2 จากวิดีโอ: โหลดโปรแกรม 8 MB</strong></p>
+<ol class="steps">
+  <li><span class="st-title">นับเพจ</span>8 MB = 8192 KB ÷ 4 KB = <strong>2048 เพจ</strong></li>
+  <li><span class="st-title">inner tables</span>2048 ÷ 1024 = <strong>2 ตาราง</strong></li>
+  <li><span class="st-title">รวมพื้นที่</span>Outer 4 KB + Inner 2 × 4 KB = <strong>12 KB</strong> ✅</li>
+</ol>
+<p class="small">หมายเหตุ: ยังมีแนวทางอื่นใน handout เช่น Hashed page table และ Inverted page table — รู้จักชื่อพอ</p>
+
+<div class="callout exam">
+  <div class="co-title">🎯 สรุปสูตรบรรทัดเดียวที่ต้องใช้ทั้งบท</div>
+  <div class="formula" style="white-space:normal">บิต offset = log₂(page size) · บิต page# = บิต address − บิต offset · จำนวนเพจ = ceil(ขนาดโปรแกรม ÷ page size) · PA = frame × pageSize + offset · EAT = 2 + ε − α · inner tables = ceil(จำนวนเพจ ÷ 1024)</div>
+</div>
+
+<h2 id="quiz">📝 แบบฝึกหัดท้ายบท (จับเวลาข้อละ 1 นาที!)</h2>
+
+<div class="quiz" data-q data-type="num" data-answer="22" data-tolerance="0" id="ch11q1">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 1</span><span class="q-tag safe">เติมตัวเลข — จากวิดีโอ</span></div>
+  <div class="q-ctx">Page size = 4 bytes · Page table: 0→5, 1→4, 2→1, 3→7</div>
+  <div class="q-text">Logical address (p = 0, d = 2) physical address คือเท่าไร</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 22</span>เพจ 0 → frame 5 → PA = (5 × 4) + 2 = 22 (ห้ามบวก 5+2!)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="6" data-tolerance="0" id="ch11q2">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 2</span><span class="q-tag safe">เติมตัวเลข — จากวิดีโอ</span></div>
+  <div class="q-text">ข้อมูลเดียวกับข้อ 1 — logical address (p = 2, d = 2) ตำแหน่งของ 'K' physical address คือเท่าไร</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 6</span>เพจ 2 → frame 1 → PA = (1 × 4) + 2 = 6</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="11" data-tolerance="0" id="ch11q3">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 3</span><span class="q-tag safe">เติมตัวเลข — จุดพลาดการปัดเลข!</span></div>
+  <div class="q-text">โปรแกรมขนาด 42 bytes กำหนด page size = 4 bytes — ต้องใช้กี่เพจ (จำนวนเพจรวมหมด)</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 11 เพจ</span>42/4 = 10.5 → ปัดขึ้น (ceil) เป็น 11 เพจ — เพจที่ 11 ใช้จริง 2 bytes เกิด internal fragmentation = 4−2 = 2 bytes (ปัดลง 10 ข้อมูลจะขาด 2 bytes!)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="1.3" data-tolerance="0.05" id="ch11q4">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 4</span><span class="q-tag safe">เติมตัวเลข — EAT จากวิดีโอ</span></div>
+  <div class="q-text">TLB search time ε = 0.1 μs, hit ratio α = 80%, memory access time = 1 μs — Effective Access Time = กี่ μs</div>
+  <input type="text" inputmode="decimal" placeholder="เช่น 1.5">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 1.3 μs</span>EAT = 0.8×(1.1) + 0.2×(2.1) = 0.88+0.42 = 1.3 μs หรือใช้สูตรลัด 2 + ε − α = 2 + 0.1 − 0.8 = 1.3</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="false" id="ch11q5">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 5</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">ในระบบ 32-bit ที่ใช้ page size 4 KB แบบ single-level page table โปรแกรมขนาด 1 MB จะใช้พื้นที่ page table เพียง 1 MB เพราะตารางมีขนาดสัดส่วนกับโปรแกรม</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ผิด</span>single-level page table มีขนาด<em>ตามพื้นที่ address space</em> ไม่ใช่ขนาดโปรแกรม — 32-bit/4KB → 2²⁰ ช่อง × 4B = <strong>4 MB ทุก process</strong> ไม่ว่าโปรแกรมจะเล็กแค่ไหน (ทางแก้คือ two-level → โปรแกรม 1MB ใช้แค่ 8KB)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="12" data-tolerance="0" id="ch11q6">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 6</span><span class="q-tag safe">เติมตัวเลข — Two-level จากวิดีโอ</span></div>
+  <div class="q-text">ระบบ 32-bit, page size 4 KB, ใช้ two-level paging (p₁=10, p₂=10, d=12) และ 1 ช่องตาราง = 4 bytes — โหลดโปรแกรมขนาด 8 MB ต้องใช้พื้นที่เก็บ page table รวมกี่ KB</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 12 KB</span>8 MB ÷ 4 KB = 2048 เพจ → inner table 2 ตาราง (2×4KB) + outer 1 ตาราง (4KB) = 12 KB (เทียบโปรแกรม 1MB → 256 เพจ → 1 inner → รวม 8 KB)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="false" id="ch11q7">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 7</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">Valid bit ของเพจสุดท้ายสามารถช่วยป้องกันการอ้างอิง offset ที่เกินขนาดโปรแกรมจริงภายในเพจนั้นได้</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ผิด</span>valid/invalid ทำงานระดับ "ทั้งเพจ" — ถ้าเพจสุดท้าย valid ระบบยอมให้แตะ offset ใดก็ได้ในเพจแม้เกินขนาดโปรแกรม นี่คือสาเหตุที่ internal fragmentation ไม่หายไปจาก paging</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="pager">
+  <a href="10-realmem.html"><span class="dir">← บทก่อนหน้า</span><span class="name">บทที่ 10: Real Memory</span></a>
+  <a href="12-virtualmem.html" class="next"><span class="dir">บทถัดไป →</span><span class="name">บทที่ 12: Virtual Memory & Page Replacement</span></a>
+</div>
+
+<div class="center"><button class="btn ghost" id="doneBtn"></button></div>
+
+</main>
+</div>
+<button id="toTop" aria-label="กลับขึ้นด้านบน">↑</button>
+<script src="js/app.js"></script>
+</body>
+</html>

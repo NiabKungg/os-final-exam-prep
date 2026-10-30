@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 4 — Thread & Multithreading | เว็บติว OS Final</title>
+<meta name="description" content="Thread concept User vs Kernel thread Multithreading Models Many-to-One One-to-One Many-to-Many Pthreads Java Thread Cancellation Thread Pool สรุปพร้อมภาพและแบบฝึกหัด">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="ch04">
+<div id="sidebar-root"></div>
+<div class="sidebar-backdrop"></div>
+
+<header class="topbar">
+  <button class="icon-btn" id="menuBtn" aria-label="เปิดเมนู">☰</button>
+  <a class="brand" href="index.html"><span class="brand-logo">OS</span><span>เว็บติว OS Final<span class="brand-sub">บทที่ 4 · Thread</span></span></a>
+  <span class="spacer"></span>
+  <span class="progress-pill" id="quizPill"></span>
+  <button class="icon-btn" id="themeBtn">🌙</button>
+</header>
+
+<div class="layout">
+<main class="content">
+
+<div class="chip-row">
+  <span class="chip mid">ช่วงต้นเทอม · ทบทวน</span>
+  <span class="chip">วิดีโอ 5.1–5.4, 6.2 · Handout No.4</span>
+</div>
+<h1>บทที่ 4 — Thread และการเขียนโปรแกรมแบบ Multi-Threaded</h1>
+<p class="lead">ถ้า Process คือ "พนักงานหนึ่งคน" Thread คือ "มือสองข้างของพนักงานคนเดียวกัน" — ถูกกว่า ไวกว่า แชร์ของกันสะดวกกว่า แต่ต้องระวังชนกัน (จุดเริ่มของเรื่อง Synchronization บท 7–8)</p>
+
+<div class="toc">
+  <div class="toc-title">สารบัญบทนี้</div>
+  <ol>
+    <li><a href="#concept">Thread คืออะไร</a></li>
+    <li><a href="#categories">OS × Process × Thread</a></li>
+    <li><a href="#types">User Thread vs Kernel Thread</a></li>
+    <li><a href="#models">Multithreading Models</a></li>
+    <li><a href="#pthreads">Pthreads & Java Threads</a></li>
+    <li><a href="#cancel">Thread Cancellation & Pool</a></li>
+    <li><a href="#javasched">Java Thread Scheduling</a></li>
+    <li><a href="#quiz">แบบฝึกหัดท้ายบท</a></li>
+  </ol>
+</div>
+
+<h2 id="concept">1. Thread คืออะไร</h2>
+<p><strong>Thread = ลำดับคำสั่งที่รันได้อย่างอิสระภายใน process เดียวกัน</strong> แต่ละ thread มีของส่วนตัวน้อยนิด (<strong>program counter, registers, stack</strong>) แต่<strong>แชร์ของใหญ่ร่วมกัน</strong> (code section, data section, heap, ไฟล์ที่เปิด) กับ thread พี่น้องใน process เดียวกัน</p>
+<p>ชื่อเล่น: <strong>lightweight process</strong> — เพราะสร้าง/สลับ/ทำลายถูกกว่า process มาก (สลับ thread ใช้เวลาน้อยกว่าสลับ process) และ thread คือ <strong>หน่วยที่ OS จัดคิวเข้า CPU</strong> จริง ๆ ในระบบสมัยใหม่</p>
+
+<figure class="fig">
+<svg viewBox="0 0 760 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="single vs multithreaded process">
+  <text x="185" y="24" text-anchor="middle" font-size="14.5" font-weight="800" fill="#475569">Single-threaded Process</text>
+  <rect x="60" y="40" width="250" height="180" rx="14" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <g font-size="12.5" font-weight="700" fill="#334155">
+    <rect x="80" y="56" width="210" height="34" rx="8" fill="#fff" stroke="#cbd5e1"/><text x="185" y="78" text-anchor="middle">code · data · files</text>
+    <rect x="80" y="102" width="210" height="34" rx="8" fill="#fff" stroke="#cbd5e1"/><text x="185" y="124" text-anchor="middle">registers</text>
+    <rect x="80" y="148" width="210" height="34" rx="8" fill="#fff" stroke="#cbd5e1"/><text x="185" y="170" text-anchor="middle">stack</text>
+    <rect x="80" y="194" width="210" height="14" rx="6" fill="#e2e8f0"/>
+  </g>
+  <text x="575" y="24" text-anchor="middle" font-size="14.5" font-weight="800" fill="#4f46e5">Multithreaded Process</text>
+  <rect x="450" y="40" width="250" height="180" rx="14" fill="#eef0ff" stroke="#a5b4fc"/>
+  <g font-size="12.5" font-weight="700">
+    <rect x="470" y="56" width="210" height="34" rx="8" fill="#fff" stroke="#a5b4fc"/><text x="575" y="78" text-anchor="middle" fill="#334155">code · data · files (แชร์กัน)</text>
+    <rect x="470" y="102" width="98" height="34" rx="8" fill="#fff" stroke="#a5b4fc"/><text x="519" y="124" text-anchor="middle" fill="#4f46e5">T1: PC reg stack</text>
+    <rect x="582" y="102" width="98" height="34" rx="8" fill="#fff" stroke="#a5b4fc"/><text x="631" y="124" text-anchor="middle" fill="#4f46e5">T2: PC reg stack</text>
+    <rect x="470" y="148" width="98" height="34" rx="8" fill="#fff" stroke="#a5b4fc"/><text x="519" y="170" text-anchor="middle" fill="#4f46e5">T3: PC reg stack</text>
+    <rect x="582" y="148" width="98" height="34" rx="8" fill="#fff" stroke="#a5b4fc"/><text x="631" y="170" text-anchor="middle" fill="#4f46e5">T4: PC reg stack</text>
+  </g>
+  <text x="575" y="206" text-anchor="middle" font-size="11.5" fill="#64748b" font-weight="600">แต่ละ thread มีของส่วนตัวแค่ PC + registers + stack</text>
+</svg>
+<figcaption>ซ้าย: process ธรรมดามี execution state เดียว · ขวา: multithreaded — ส่วนใหญ่แชร์กัน มีแค่ PC/registers/stack ที่แยกกัน</figcaption>
+</figure>
+
+<h3>ทำไมต้องใช้ thread? (เหตุผลของ cooperating processes ก็ใกล้เคียงกัน)</h3>
+<ul>
+  <li><strong>เร็วขึ้น / ทำงานขนาน</strong> — คำนวณชิ้นใหญ่แบ่งให้หลาย thread ทำพร้อมกัน</li>
+  <li><strong>Responsive</strong> — UI ไม่ค้าง (thread หนึ่งรอดาวน์โหลด อีก thread ยังตอบสนองผู้ใช้)</li>
+  <li><strong>ประหยัด</strong> — สร้าง/สลับถูกกว่า process</li>
+  <li><strong>แชร์ข้อมูลสะดวก</strong> — thread ใน process เดียวกันเห็น heap เดียวกันเลย (ไม่ต้องขอ IPC)</li>
+</ul>
+
+<h3>OS แต่ละยุคจัด process/thread ยังไง (ออกจับคู่บ่อย)</h3>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>ประเภท</th><th>ตัวอย่าง</th></tr>
+  <tr><td>Single-process, single-threaded</td><td><strong>MS-DOS</strong></td></tr>
+  <tr><td>Single-process, multi-threaded</td><td><strong>JVM</strong></td></tr>
+  <tr><td>Multiprocessing, single-threaded</td><td>Traditional UNIX</td></tr>
+  <tr><td>Multiprocessing, multi-threaded</td><td><strong>Modern OS: Windows, Linux, macOS</strong></td></tr>
+</table></div>
+
+<h2 id="types">2. User Thread (ULT) vs Kernel Thread (KLT)</h2>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th></th><th>User-Level Thread (ULT)</th><th>Kernel-Level Thread (KLT)</th></tr>
+  <tr><td>ใครจัดการ</td><td><strong>thread library</strong> ฝั่งผู้ใช้ — kernel ไม่รู้จักเลย</td><td><strong>Kernel</strong> เป็นคนจัดการโดยตรง</td></tr>
+  <tr><td>ไลบรารี/ตัวอย่าง</td><td>POSIX Pthreads, Win32 threads, Java threads (โดยทั่วไป implement บนไลบรารีของ host OS)</td><td>Modern OS: Windows, Linux, Solaris</td></tr>
+  <tr><td>จุดเด่น</td><td>สร้าง/สลับเร็วมาก (ไม่ต้องข้ามเข้า kernel)</td><td>ถ้า thread หนึ่ง block ตัวอื่นยังรันได้ (kernel มองเห็นและจัดการได้)</td></tr>
+</table></div>
+
+<h2 id="models">3. Multithreading Models 🔥</h2>
+<p>เชื่อม ULT กับ KLT ยังไง — มี 3 โมเดล ออกถูก/ผิดและจับคู่ตัวอย่างบ่อย:</p>
+
+<h3>3.1 Many-to-One</h3>
+<p>Thread ผู้ใช้หลายตัว ถูก map ไป<strong>kernel thread ตัวเดียว</strong> — เร็วเพราะจัดการฝั่ง user ล้วน แต่ถ้า thread ไหน block เกิด system call ทั้ง process จะหยุดหมด และขนานจริงบนหลาย CPU ไม่ได้ · <em>ตัวอย่าง: Early Unix System</em></p>
+
+<h3>3.2 One-to-One</h3>
+<p>Thread ผู้ใช้ 1 ตัว = kernel thread 1 ตัว — ขนานจริง ตัวไหน block ตัวอื่นไม่พัง แต่สร้าง kernel thread เยอะมี overhead · <em>ตัวอย่าง: Windows (ตั้งแต่ NT), Linux, Solaris 9+</em></p>
+
+<h3>3.3 Many-to-Many</h3>
+<p>ผู้ใช้หลายตัว map ไป kernel หลายตัว (ไม่จำเป็นต้องเท่ากัน) — OS สร้าง kernel thread ให้พอดีจำนวน · <em>ตัวอย่าง: Solaris รุ่นก่อน 9, Tru64 UNIX</em></p>
+
+<figure class="fig">
+<svg viewBox="0 0 780 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="threading models">
+  <defs><marker id="ar6" markerWidth="8" markerHeight="8" refX="6" refY="2.8" orient="auto"><path d="M0,0 L6,2.8 L0,5.6 z" fill="#94a3b8"/></marker></defs>
+  <g font-size="12.5" font-weight="800">
+    <text x="130" y="22" text-anchor="middle" fill="#dc2626">Many-to-One</text>
+    <text x="390" y="22" text-anchor="middle" fill="#4f46e5">One-to-One</text>
+    <text x="650" y="22" text-anchor="middle" fill="#0d9488">Many-to-Many</text>
+  </g>
+  <g fill="#fde68a" stroke="#d97706">
+    <circle cx="80" cy="60" r="14"/><circle cx="80" cy="100" r="14"/><circle cx="80" cy="140" r="14"/>
+    <circle cx="340" cy="60" r="14"/><circle cx="340" cy="100" r="14"/><circle cx="340" cy="140" r="14"/>
+    <circle cx="600" cy="60" r="14"/><circle cx="600" cy="100" r="14"/><circle cx="600" cy="140" r="14"/>
+  </g>
+  <g fill="#bfdbfe" stroke="#2563eb">
+    <circle cx="180" cy="100" r="14"/>
+    <circle cx="440" cy="60" r="14"/><circle cx="440" cy="100" r="14"/><circle cx="440" cy="140" r="14"/>
+    <circle cx="700" cy="80" r="14"/><circle cx="700" cy="130" r="14"/>
+  </g>
+  <g stroke="#94a3b8" stroke-width="1.8" fill="none">
+    <path d="M94 70 L166 94" marker-end="url(#ar6)"/><path d="M94 100 L166 100" marker-end="url(#ar6)"/><path d="M94 130 L166 106" marker-end="url(#ar6)"/>
+    <path d="M354 60 L426 60" marker-end="url(#ar6)"/><path d="M354 100 L426 100" marker-end="url(#ar6)"/><path d="M354 140 L426 140" marker-end="url(#ar6)"/>
+    <path d="M614 68 L686 82" marker-end="url(#ar6)"/><path d="M614 100 L686 96" marker-end="url(#ar6)"/><path d="M614 132 L686 124" marker-end="url(#ar6)"/><path d="M614 148 L686 134" marker-end="url(#ar6)"/>
+  </g>
+  <g font-size="11" font-weight="700" fill="#64748b">
+    <text x="130" y="185" text-anchor="middle">ULT หลาย → KLT ตัวเดียว</text>
+    <text x="130" y="203" text-anchor="middle">Early Unix · block ตัวเดียว = หยุดทั้ง process</text>
+    <text x="390" y="185" text-anchor="middle">ULT 1 : 1 KLT ทุกตัว</text>
+    <text x="390" y="203" text-anchor="middle">Windows NT+, Linux, Solaris 9+</text>
+    <text x="650" y="185" text-anchor="middle">ULT หลาย → KLT หลาย (ยืดหยุ่น)</text>
+    <text x="650" y="203" text-anchor="middle">Solaris &lt;9, Tru64 UNIX</text>
+  </g>
+  <text x="390" y="252" text-anchor="middle" font-size="12" fill="#475569" font-weight="700">เหลือง = User threads · ฟ้า = Kernel threads</text>
+</svg>
+<figcaption>สามโมเดลการ map user thread → kernel thread</figcaption>
+</figure>
+
+<h2 id="pthreads">4. เขียนโปรแกรม: Pthreads (C) และ Java</h2>
+
+<h3>Pthreads — โครงที่ต้องจำ (จาก handout)</h3>
+<div class="codewrap"><span class="codetag">pthread_sum.c (ตัดให้เห็นโครง)</span><pre class="code"><code><span class="k">int</span> sum;  <span class="c">// ตัวแปรนี้ "แชร์" ระหว่าง thread!</span>
+
+<span class="f">int</span> <span class="f">main</span>(<span class="k">int</span> argc, <span class="k">char</span> *argv[]) {
+    <span class="f">pthread_t</span> tid;              <span class="c">// id ของ thread</span>
+    <span class="f">pthread_attr_t</span> attr;
+    <span class="f">pthread_attr_init</span>(&amp;attr);   <span class="c">// default attributes</span>
+    <span class="f">pthread_create</span>(&amp;tid, &amp;attr, runner, argv[1]);  <span class="c">// สร้าง thread ให้รันฟังก์ชัน runner</span>
+    <span class="f">pthread_join</span>(tid, NULL);    <span class="c">// รอ thread จบ (เหมือน wait ของ process!)</span>
+    <span class="f">printf</span>(<span class="s">"sum = %d\n"</span>, sum);
+}
+
+<span class="k">void</span> *<span class="f">runner</span>(<span class="k">void</span> *param) {
+    <span class="k">int</span> upper = <span class="f">atoi</span>(param);
+    sum = 0;
+    <span class="k">for</span> (<span class="k">int</span> i = 1; i &lt;= upper; i++) sum += i;
+    <span class="f">pthread_exit</span>(NULL);         <span class="c">// จบ thread (เหมือน exit ของ process)</span>
+}</code></pre></div>
+<p>จับคู่ความคิด: <code>pthread_create</code> ≈ fork · <code>pthread_join</code> ≈ wait · <code>pthread_exit</code> ≈ exit — แต่ thread <strong>แชร์หน่วยความจำกันจริง</strong> (sum แก้แล้ว main เห็นเลย)</p>
+
+<h3>Java — 2 วิธีสร้าง thread</h3>
+<div class="codewrap"><span class="codetag">วิธีที่ 1: extends Thread</span><pre class="code"><code><span class="k">class</span> <span class="f">Worker1</span> <span class="k">extends</span> Thread {
+    <span class="k">public void</span> <span class="f">run</span>() {
+        System.out.println(<span class="s">"I Am a Worker Thread"</span>);
+    }
+}
+<span class="c">// ใช้: Worker1 runner = new Worker1(); runner.start();</span></code></pre></div>
+<div class="codewrap"><span class="codetag">วิธีที่ 2: implements Runnable (นิยมกว่า — ไม่เผา slot extends)</span><pre class="code"><code><span class="k">class</span> <span class="f">Worker2</span> <span class="k">implements</span> Runnable {
+    <span class="k">public void</span> <span class="f">run</span>() {
+        System.out.println(<span class="s">"I Am a Worker Thread"</span>);
+    }
+}
+<span class="c">// ใช้: Thread thrd = new Thread(new Worker2()); thrd.start();</span></code></pre></div>
+<div class="callout note">
+  <div class="co-title">📌 join() คือ "รอฉันก่อน"</div>
+  <p><code>task.join();</code> — main thread จะหยุดรอ task จบก่อน จึงพิมพ์ "Worker done" <strong>หลัง</strong>"Worker working" เสมอ (เทียบกับ wait() ของ process ในบท 3)</p>
+</div>
+
+<h2 id="cancel">5. Thread Cancellation และ Thread Pool</h2>
+<ul>
+  <li><strong>Thread Cancellation</strong> = ยุติ thread ก่อนงานเสร็จ มี 2 สไตล์:
+    <ul>
+      <li><strong>Asynchronous cancellation</strong> — ยิงปิด<em>ทันที</em> เสี่ยงข้อมูลกึ่งกลางพัง (คำสั่งค้างครึ่งจบ)</li>
+      <li><strong>Deferred cancellation</strong> — บอกเป้าหมายว่า "ควรตายแล้วนะ" แล้วให้เป้าหมายเช็คเองเป็นระยะ (<code>Thread.currentThread().isInterrupted()</code>) แล้วเคลียร์งานปิดอย่างสวยงาม</li>
+    </ul>
+  </li>
+  <li><strong>Thread Pool</strong> = สร้าง thread เตรียมไว้ใน "บ่อ" ตั้งแต่เริ่ม งานเข้ามาก็หยิบไปใช้ ใช้เสร็จคืนบ่อ — ดีกว่าสร้างใหม่ทุกงาน (เร็วกว่า + คุมจำนวน thread ได้)
+    <ul>
+      <li>Java มี 3 แบบ: <strong>Single thread executor</strong> (บ่อขนาด 1) · <strong>Fixed thread executor</strong> (ขนาดคงที่) · <strong>Cached thread pool</strong> (ขนาดไม่จำกัด สร้างเพิ่มอัตโนมัติ)</li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="javasched">6. Java Thread Scheduling</h2>
+<ul>
+  <li>Java spec <strong>ไม่บังคับมาตรฐาน scheduling</strong> — แล้วแต่ implementation ของแต่ละ JVM (แต่โดยทั่วไปใช้แบบ <strong>preemptive + priority-based</strong>)</li>
+  <li>Priority อยู่ช่วง <strong>1–10, default = 5</strong>, ตั้งด้วย <code>myThread.setPriority(6);</code> — เลข<strong>มาก = สิทธิสูง</strong> (ต่างจาก Unix ที่เลขน้อย = สูง!)</li>
+  <li>Thread รันจนกว่า: มีตัว priority สูงกว่ามาแย่ง / เรียก <code>yield()</code> / run() จบ / หมดเวลา time-slice (บนระบบที่มี time-slicing)</li>
+  <li>เส้นทางเดียวกัน (same priority) → scheduler สุ่มเลือก</li>
+</ul>
+<div class="callout exam">
+  <div class="co-title">🎯 ประโยคทองของอาจารย์ (ออกถูก/ผิดได้)</div>
+  <p>การตั้ง priority <strong>ไม่การันตีลำดับการทำงาน 100%</strong> — การเขียนโปรแกรมที่ถูกต้อง <strong>ห้ามฝากความถูกต้องของ logic ไว้กับ CPU scheduler</strong> แต่ต้องควบคุมผ่านกลไก <strong>Synchronization</strong> (บท 7–8 กำลังรออยู่)</p>
+</div>
+
+<h2 id="quiz">📝 แบบฝึกหัดท้ายบท</h2>
+
+<div class="quiz" data-q data-type="tf" data-answer="false" id="ch04q1">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 1</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">แต่ละ thread ใน process เดียวกันมี code section, data section และ heap แยกกันคนละชุด</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ผิด</span>code/data/heap <strong>แชร์กัน</strong>ทั้ง process — สิ่งที่แยกเฉพาะตัวคือ PC, registers และ stack เท่านั้น</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="mc" data-answer="c" id="ch04q2">
+  <div class="quiz-head"><span class="q-ico">🔤</span><span class="q-title">ข้อ 2</span><span class="q-tag safe">ปรนัย</span></div>
+  <div class="q-text">ข้อใดคือข้อจำกัดสำคัญของโมเดล Many-to-One</div>
+  <div class="choices">
+    <div class="choice" data-val="a"><span class="mark">ก</span><span>สร้าง user thread ได้จำกัดแค่ 2 ตัว</span></div>
+    <div class="choice" data-val="b"><span class="mark">ข</span><span>จำเป็นต้องมีหลาย CPU เสมอ</span></div>
+    <div class="choice" data-val="c"><span class="mark">ค</span><span>ถ้า thread หนึ่ง block ด้วย system call ทั้ง process จะหยุด และไม่ขนานจริงบนหลาย CPU</span></div>
+    <div class="choice" data-val="d"><span class="mark">ง</span><span>ใช้ได้เฉพาะภาษา Java</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ค</span>เพราะ kernel เห็นแค่ kernel thread ตัวเดียว — thread ไหนติด system call ทั้ง process หยุดตาม และแม้เครื่องมีหลาย CPU ก็รันขนานจริงไม่ได้ (ตัวอย่าง: Early Unix)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="true" id="ch04q3">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 3</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">Deferred cancellation ปลอดภัยกว่า Asynchronous cancellation เพราะให้ thread เป้าหมายเช็คสถานะการถูกยกเลิกเองเป็นระยะ แล้วปิดงานอย่างเป็นระเบียบ</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ถูก</span>Asynchronous ยิงปิดทันทีอาจตัดงานกลางคัน (เช่น อัปเดตข้อมูลครึ่ง ๆ กลาง ๆ) ส่วน Deferred ให้เป้าหมายเช็ค isInterrupted() เองแล้ว cleanup ก่อนจบ</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="5" data-tolerance="0" id="ch04q4">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 4</span><span class="q-tag safe">เติมตัวเลข</span></div>
+  <div class="q-text">ค่า default ของ thread priority ใน Java คือเท่าไร (ช่วง priority คือ 1–10)</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 5</span>Java: 1–10, default 5, เลขมาก = สิทธิสูง · เทียบข้ามระบบ: Unix-based ตัวเลข<strong>น้อย</strong> = สิทธิสูง — อย่าจำสลับ!</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="false" id="ch04q5">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 5</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">การตั้งค่า priority ของ Java thread สูงเป็นพิเศษเป็นวิธีที่เชื่อถือได้ในการการันตีลำดับการทำงานของโปรแกรม</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ผิด</span>อาจารย์เน้นย้ำ: priority ไม่การันตี 100% (แล้วแต่ JVM/OS) — ความถูกต้องของโปรแกรมต้องมาจาก <strong>Synchronization</strong> เท่านั้น ห้ามฝากไว้กับ scheduler</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="pager">
+  <a href="03-process.html"><span class="dir">← บทก่อนหน้า</span><span class="name">บทที่ 3: Process & fork</span></a>
+  <a href="05-scheduling.html" class="next"><span class="dir">บทถัดไป →</span><span class="name">บทที่ 5: CPU Scheduling (คำนวณ!)</span></a>
+</div>
+
+<div class="center"><button class="btn ghost" id="doneBtn"></button></div>
+
+</main>
+</div>
+<button id="toTop" aria-label="กลับขึ้นด้านบน">↑</button>
+<script src="js/app.js"></script>
+</body>
+</html>

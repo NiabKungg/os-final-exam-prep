@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 5 — CPU Scheduling (FCFS · SJF · SRTF · Priority · RR · MLFQ) | เว็บติว OS Final</title>
+<meta name="description" content="CPU Scheduling ครบทุกอัลกอริทึม วิธีวาด Gantt หา Turnaround Time Waiting Time แบบ step-by-step ตามเทคนิคของอาจารย์ พร้อมจุดหลอกข้อสอบ">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="ch05">
+<div id="sidebar-root"></div>
+<div class="sidebar-backdrop"></div>
+
+<header class="topbar">
+  <button class="icon-btn" id="menuBtn" aria-label="เปิดเมนู">☰</button>
+  <a class="brand" href="index.html"><span class="brand-logo">OS</span><span>เว็บติว OS Final<span class="brand-sub">บทที่ 5 · CPU Scheduling</span></span></a>
+  <span class="spacer"></span>
+  <span class="progress-pill" id="quizPill"></span>
+  <button class="icon-btn" id="themeBtn">🌙</button>
+</header>
+
+<div class="layout">
+<main class="content">
+
+<div class="chip-row">
+  <span class="chip mid">ทบทวน + ใช้ต่อใน Final</span>
+  <span class="chip hot">ข้อสอบมีการคำนวณแน่นอน 🔥</span>
+  <span class="chip">วิดีโอ 6.1.1–6.1.4, 6.2</span>
+</div>
+<h1>บทที่ 5 — CPU Scheduling: วาด Gantt หา TAT/WT ให้ไวเหมือนอาจารย์</h1>
+<p class="lead">บทนี้คือแหล่งคะแนนจากโจทย์คำนวณ ถ้าฝึกจนลื่นมือ ข้อละไม่ถึง 2 นาที ได้คะแนนแน่นอน เทคนิคทองของอาจารย์: <strong>"หา Turnaround Time ให้เสร็จก่อน แล้วค่อยเอามาลบ Burst Time เพื่อได้ Waiting Time"</strong></p>
+
+<div class="toc">
+  <div class="toc-title">สารบัญบทนี้</div>
+  <ol>
+    <li><a href="#basic">พื้นฐาน + สูตรที่ต้องใช้</a></li>
+    <li><a href="#fcfs">FCFS</a></li>
+    <li><a href="#sjf">SJF</a></li>
+    <li><a href="#srtf">SRTF (preemptive)</a></li>
+    <li><a href="#priority">Priority + Starvation/Aging</a></li>
+    <li><a href="#rr">Round Robin</a></li>
+    <li><a href="#mlfq">Multilevel & Feedback Queue</a></li>
+    <li><a href="#java">Java Thread Scheduling</a></li>
+    <li><a href="#mistakes">5 จุดพลาดที่ทำให้เสียคะแนน</a></li>
+    <li><a href="#quiz">แบบฝึกหัดท้ายบท</a></li>
+  </ol>
+</div>
+
+<h2 id="basic">1. พื้นฐานและสูตรที่ต้องท่องขึ้นใจ</h2>
+<p><strong>CPU Scheduler</strong> = ตัวเลือกว่า process ไหนใน Ready queue จะได้ใช้ CPU ตัวต่อไป แบ่ง 2 นิสัยใหญ่ ๆ:</p>
+<ul>
+  <li><strong>Non-preemptive</strong> — ให้ใช้แล้วใช้จนเสร็จ/ขอออกเอง ไม่มีใครชิงได้</li>
+  <li><strong>Preemptive</strong> — OS ขัดกลางคันได้ (หมดเวลา, มีงานสำคัญกว่ามาแย่ง)</li>
+</ul>
+<p>เกณฑ์วัดว่าอัลกอริทึมไหนดี: ให้ CPU ทำงานเต็มเปี่ยม (max CPU utilization), ทำงานเสร็จเยอะ (max throughput), และลด 3 เวลานี้ — turnaround, waiting, response</p>
+
+<div class="formula">Turnaround Time (TAT) = Completion Time − Arrival Time<small>เวลารวมตั้งแต่งานมาถึงระบบจนเสร็จ</small></div>
+<div class="formula">Waiting Time (WT) = Turnaround Time − Burst Time<small>เวลาที่นั่งเปล่าใน Ready queue — เทคนิคอาจารย์: คิด TAT ก่อนแล้วลบ BT เสมอ โดยเฉพาะงาน preemptive ที่งานโดนแทรกหลายรอบ!</small></div>
+
+<div class="callout tip">
+  <div class="co-title">💡 ทำไมต้องใช้ WT = TAT − BT (ไม่ไล่นับจาก Gantt)</div>
+  <p>ในอัลกอริทึม preemptive งานหนึ่งโดนแทรกหลายรอบ ถ้าไล่นับช่วงรอจาก Gantt ทีละช่วง มักนับเกิน/ขาด — แต่ถามว่า "งานอยู่ในระบบนานเท่าไร (TAT)" กับ "มันใช้ CPU จริงเท่าไร (BT)" ง่ายกว่ามาก เอามาลบกัน = เวลาเหลือที่ไม่ได้ใช้ CPU = เวลารอ แม่นและเร็วกว่าเสมอ</p>
+</div>
+
+<h2 id="fcfs">2. FCFS — First-Come, First-Served (Non-preemptive)</h2>
+<p>มาก่อนรันก่อน จนเสร็จเลย โจทย์ตัวอย่างจากวิดีโอ:</p>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>Process</th><th class="c">Arrival Time</th><th class="c">Burst Time</th></tr>
+  <tr><td>P1</td><td class="c">0</td><td class="c">24</td></tr>
+  <tr><td>P2</td><td class="c">2</td><td class="c">3</td></tr>
+  <tr><td>P3</td><td class="c">4</td><td class="c">3</td></tr>
+</table></div>
+<p><strong>ขั้นตอน:</strong> P1 มาก่อนและตอนเวลา 0 ไม่มีใครแย่ง → รัน 0→24 · ต่อ P2 ที่รอมาตั้งแต่เวลา 2 → รัน 24→27 · ต่อ P3 → รัน 27→30</p>
+
+<div class="gantt">
+  <div class="gantt-row">
+    <div class="gantt-cell gantt-p1" style="width:80%">P1</div>
+    <div class="gantt-cell gantt-p2" style="width:10%">P2</div>
+    <div class="gantt-cell gantt-p3" style="width:10%">P3</div>
+  </div>
+  <div class="gantt-scale"><span class="gantt-tick" style="width:80%;text-align:left">0</span><span class="gantt-tick" style="width:10%;text-align:left">24</span><span class="gantt-tick" style="width:10%;text-align:left">27</span><span class="gantt-tick">30</span></div>
+</div>
+
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>Process</th><th class="c">TAT = Completion − Arrival</th><th class="c">WT = TAT − BT</th></tr>
+  <tr><td>P1</td><td class="c">24 − 0 = 24</td><td class="c">24 − 24 = <strong>0</strong></td></tr>
+  <tr><td>P2</td><td class="c">27 − 2 = 25</td><td class="c">25 − 3 = <strong>22</strong></td></tr>
+  <tr><td>P3</td><td class="c">30 − 4 = 26</td><td class="c">26 − 3 = <strong>23</strong></td></tr>
+  <tr class="hl-row"><td>เฉลี่ย</td><td class="c">(24+25+26)/3 = 25</td><td class="c">(0+22+23)/3 = <strong>15</strong></td></tr>
+</table></div>
+
+<div class="callout warn">
+  <div class="co-title">🚚 Convoy Effect — จุดอ่อนของ FCFS</div>
+  <p>อาจารย์เปรียบเทียบในวิดีโอ: ถ้าสลับให้งานสั้นมาก่อน (P2 มาเวลา 0, P3 มาเวลา 2, P1 มาเวลา 4) ค่าเฉลี่ย Waiting Time จะเหลือเพียง <strong>1</strong>! เห็นไหมว่าเมื่อ "งานใหญ่ตัวเดียว" มาขวางหน้า งานเล็กทั้งบ้านต้องต่อแถวรอเหมือน <strong>คอนวอยรถบรรทุกบล็อกไฮเวย์</strong> — นี่คือปัญหาของ FCFS</p>
+</div>
+
+<h2 id="sjf">3. SJF — Shortest Job First (Non-preemptive)</h2>
+<p>เมื่อ CPU ว่าง เลือกงานที่ <strong>Burst Time สั้นที่สุด</strong>ใน Ready queue ณ ตอนนั้น (ถ้าสั้นเท่ากันเลือกตัวที่มาถึงก่อน)</p>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>Process</th><th class="c">Arrival</th><th class="c">Burst</th></tr>
+  <tr><td>P1</td><td class="c">0</td><td class="c">7</td></tr>
+  <tr><td>P2</td><td class="c">2</td><td class="c">4</td></tr>
+  <tr><td>P3</td><td class="c">4</td><td class="c">1</td></tr>
+  <tr><td>P4</td><td class="c">5</td><td class="c">4</td></tr>
+</table></div>
+<ol class="steps">
+  <li><span class="st-title">เวลา 0</span>มีแค่ P1 → รันจนจบที่ 7 (non-preemptive จึงใครมาทีหลังก็รอ P1 เสร็จก่อน)</li>
+  <li><span class="st-title">เวลา 7</span>คิวมี P2(4), P3(1), P4(4) → สั้นสุดคือ P3 → รัน 7→8</li>
+  <li><span class="st-title">เวลา 8</span>เหลือ P2(4), P4(4) เท่ากัน → เลือก<strong>มาถึงก่อน</strong>คือ P2 → รัน 8→12</li>
+  <li><span class="st-title">เวลา 12</span>P4 → รัน 12→16</li>
+</ol>
+
+<div class="gantt">
+  <div class="gantt-row">
+    <div class="gantt-cell gantt-p1" style="width:43.75%">P1</div>
+    <div class="gantt-cell gantt-p3" style="width:6.25%">P3</div>
+    <div class="gantt-cell gantt-p2" style="width:25%">P2</div>
+    <div class="gantt-cell gantt-p4" style="width:25%">P4</div>
+  </div>
+  <div class="gantt-scale"><span class="gantt-tick" style="width:43.75%;text-align:left">0</span><span class="gantt-tick" style="width:6.25%;text-align:left">7</span><span class="gantt-tick" style="width:25%;text-align:left">8</span><span class="gantt-tick" style="width:25%;text-align:left">12</span><span class="gantt-tick">16</span></div>
+</div>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>Process</th><th class="c">TAT</th><th class="c">WT = TAT − BT</th></tr>
+  <tr><td>P1</td><td class="c">7−0 = 7</td><td class="c">7−7 = <strong>0</strong></td></tr>
+  <tr><td>P2</td><td class="c">12−2 = 10</td><td class="c">10−4 = <strong>6</strong></td></tr>
+  <tr><td>P3</td><td class="c">8−4 = 4</td><td class="c">4−1 = <strong>3</strong></td></tr>
+  <tr><td>P4</td><td class="c">16−5 = 11</td><td class="c">11−4 = <strong>7</strong></td></tr>
+  <tr class="hl-row"><td>เฉลี่ย</td><td class="c">(7+10+4+11)/4 = 8</td><td class="c">(0+6+3+7)/4 = <strong>4</strong></td></tr>
+</table></div>
+<div class="callout note">
+  <div class="co-title">📌 ข้อเท็จจริงสำคัญ</div>
+  <p>SJF คือ <strong>optimal</strong> — ให้ค่าเฉลี่ย waiting time ต่ำที่สุดจากชุดงานหนึ่ง ๆ แต่ใช้จริงยาก เพราะ OS รู้ทันไหมว่างานจะกิน CPU นานแค่ไหน (ต้อง "ทำนาย" ความยาว CPU burst ถัดไป)</p>
+</div>
+
+<h2 id="srtf">4. SRTF — Shortest Remaining Time First (Preemptive SJF) 🔥</h2>
+<p>กติกา: <strong>ทุกครั้งที่มีงานใหม่มาถึง เทียบ "เวลาที่เหลือ" ของงานที่รันอยู่ กับ Burst ของงานใหม่</strong> — ถ้างานใหม่สั้นกว่า จะขัดทันที ใช้ข้อมูลเดิม:</p>
+<ol class="steps">
+  <li><span class="st-title">เวลา 0–2</span>P1 รันไป 2 หน่วย (เหลือ 5) — จู่ ๆ P2 มาถึง (BT=4)</li>
+  <li><span class="st-title">เวลา 2 — เทียบ!</span>เหลือของ P1 = 5 vs P2 = 4 → P2 สั้นกว่า → <strong>ขัด P1</strong> → รัน P2</li>
+  <li><span class="st-title">เวลา 4</span>P2 รันไป 2 (เหลือ 2) — P3 มาถึง (BT=1) → 1 &lt; 2 → <strong>ขัด P2</strong> → รัน P3</li>
+  <li><span class="st-title">เวลา 5</span>P3 เสร็จพอดี + P4 มาถึง (BT=4) คิวตอนนี้: P1(5), P2(2), P4(4) → สั้นสุด P2(2) → รันจนจบที่ 7</li>
+  <li><span class="st-title">เวลา 7</span>เหลือ P1(5), P4(4) → รัน P4 จบที่ 11 → แล้ว P1 รันเศษ 5 จบที่ 16</li>
+</ol>
+
+<div class="gantt">
+  <div class="gantt-row">
+    <div class="gantt-cell gantt-p1" style="width:12.5%">P1</div>
+    <div class="gantt-cell gantt-p2" style="width:12.5%">P2</div>
+    <div class="gantt-cell gantt-p3" style="width:6.25%">P3</div>
+    <div class="gantt-cell gantt-p2" style="width:12.5%">P2</div>
+    <div class="gantt-cell gantt-p4" style="width:25%">P4</div>
+    <div class="gantt-cell gantt-p1" style="width:31.25%">P1</div>
+  </div>
+  <div class="gantt-scale"><span class="gantt-tick" style="width:12.5%;text-align:left">0</span><span class="gantt-tick" style="width:12.5%;text-align:left">2</span><span class="gantt-tick" style="width:6.25%;text-align:left">4</span><span class="gantt-tick" style="width:12.5%;text-align:left">5</span><span class="gantt-tick" style="width:25%;text-align:left">7</span><span class="gantt-tick" style="width:31.25%;text-align:left">11</span><span class="gantt-tick">16</span></div>
+</div>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>Process</th><th class="c">Completion</th><th class="c">TAT = C − A</th><th class="c">WT = TAT − BT</th></tr>
+  <tr><td>P1</td><td class="c">16</td><td class="c">16</td><td class="c">16−7 = <strong>9</strong></td></tr>
+  <tr><td>P2</td><td class="c">7</td><td class="c">5</td><td class="c">5−4 = <strong>1</strong></td></tr>
+  <tr><td>P3</td><td class="c">5</td><td class="c">1</td><td class="c">1−1 = <strong>0</strong></td></tr>
+  <tr><td>P4</td><td class="c">11</td><td class="c">6</td><td class="c">6−4 = <strong>2</strong></td></tr>
+  <tr class="hl-row"><td>เฉลี่ย WT</td><td colspan="2" class="c">—</td><td class="c">(9+1+0+2)/4 = <strong>3</strong></td></tr>
+</table></div>
+<div class="callout exam">
+  <div class="co-title">🎯 จุดหลอกของ SRTF</div>
+  <p>เวลางานใหม่มาถึง <strong>ต้องใช้ Remaining Time</strong> (Burst ที่หักส่วนที่รันไปแล้ว) ของงานเดิมไปเทียบ ไม่ใช่ Burst ดั้งเดิม! เช่น ตอนเวลา 4 ต้องเทียบ "P2 เหลือ 2" ไม่ใช่ "P2 = 4"</p>
+</div>
+
+<h2 id="priority">5. Priority Scheduling</h2>
+<p>แต่ละงานมีเลขสิทธิ ให้ CPU กับงาน<strong>สิทธิสูงสุดก่อน</strong> (มีแบบ preemptive และ non-preemptive) จุดที่โดนหลอกบ่อยคือทิศทางของเลข:</p>
+<div class="memgrid">
+  <span class="memcell bad">Unix-based: เลขน้อย = สิทธิสูง</span>
+  <span class="memcell used">Java Thread: เลขมาก (สูงสุด 10) = สิทธิสูง</span>
+</div>
+<ul>
+  <li><strong>ปัญหา: Starvation</strong> (อดตาย) — งานสิทธิต่ำอาจไม่ได้รันเลยเพราะมีงานสิทธิสูงแทรกไม่หยุด</li>
+  <li><strong>วิธีแก้: Aging</strong> — ยิ่งรอนาน ยิ่งเพิ่ม priority ให้ จนถึงเวลาหนึ่งก็ได้รัน</li>
+  <li>มุมมองหนึ่ง: SJF ก็คือ priority scheduling ที่ใช้ "predicted next CPU burst" เป็น priority</li>
+</ul>
+
+<h2 id="rr">6. Round Robin (RR) — Preemptive, เน้นตอบสนองไว</h2>
+<p>ให้แต่ละงานรันไม่เกิน <strong>Time Quantum (q)</strong> (มัก 10–100 ms) หมดเวลายังไม่เสร็จ → ถูกขัดแล้วไปต่อท้ายคิว · โจทย์วิดีโอ (ข้อมูลเดียวกับ FCFS, q = 4):</p>
+<ol class="steps">
+  <li><span class="st-title">เวลา 0–4</span>P1 รันได้ 4 (เหลือ 20) โดนตัด → ไปต่อคิว</li>
+  <li><span class="st-title">เวลา 4–7</span>P2 ต้องการแค่ 3 (น้อยกว่า q) → รันจนเสร็จ</li>
+  <li><span class="st-title">เวลา 7–10</span>P3 เช่นกัน เสร็จที่ 10</li>
+  <li><span class="st-title">เวลา 10–30</span>เหลือ P1 ตัวเดียว รันรอบละ 4 จนครบ 24 → จบที่ 30</li>
+</ol>
+<div class="gantt">
+  <div class="gantt-row">
+    <div class="gantt-cell gantt-p1" style="width:13.34%">P1</div>
+    <div class="gantt-cell gantt-p2" style="width:10%">P2</div>
+    <div class="gantt-cell gantt-p3" style="width:10%">P3</div>
+    <div class="gantt-cell gantt-p1" style="width:66.66%">P1</div>
+  </div>
+  <div class="gantt-scale"><span class="gantt-tick" style="width:13.34%;text-align:left">0</span><span class="gantt-tick" style="width:10%;text-align:left">4</span><span class="gantt-tick" style="width:10%;text-align:left">7</span><span class="gantt-tick" style="width:66.66%;text-align:left">10</span><span class="gantt-tick">30</span></div>
+</div>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>Process</th><th class="c">TAT = C − A</th><th class="c">WT = TAT − BT</th></tr>
+  <tr><td>P1</td><td class="c">30−0 = 30</td><td class="c">30−24 = <strong>6</strong></td></tr>
+  <tr><td>P2</td><td class="c">7−2 = 5</td><td class="c">5−3 = <strong>2</strong></td></tr>
+  <tr><td>P3</td><td class="c">10−4 = 6</td><td class="c">6−3 = <strong>3</strong></td></tr>
+  <tr class="hl-row"><td>เฉลี่ย WT</td><td class="c">—</td><td class="c">(6+2+3)/3 = <strong>11/3 ≈ 3.67</strong></td></tr>
+</table></div>
+<p class="small">ข้อสังเกตจาก handout: ถ้าคิวมี n งานกับ quantum q จะไม่มีงานรอเกิน (n−1)·q หน่วยเวลา</p>
+
+<div class="callout warn">
+  <div class="co-title">⚖️ ขนาด quantum สำคัญกับ Overhead</div>
+  <p><strong>q ใหญ่มาก → RR กลายเป็น FCFS</strong> · <strong>q เล็กมาก → context switch ถี่เกิน overhead บานปลาย</strong> (เสียเวลาสลับงานมากกว่าทำงานจริง) — จำเชื่อมกับบท 3: ช่วง context switch คือ overhead ที่ไม่ได้ทำงานมีประโยชน์เลย</p>
+</div>
+
+<h2 id="mlfq">7. Multilevel Queue และ Multilevel Feedback Queue (MLFQ)</h2>
+<ul>
+  <li><strong>Multilevel Queue</strong> — แยก Ready queue เป็นหลายคิว เช่น foreground ใช้ RR / background ใช้ FCFS แต่<strong>งานอยู่คิวไหน = อยู่ตลอดชีวิต ย้ายไม่ได้</strong> ระหว่างคิวจัดลำดับแบบ fixed priority (คิวหน้าจบก่อนคิวหลัง — เสี่ยง starvation) หรือแบ่งเวลา (เช่น 80% foreground, 20% background)</li>
+  <li><strong>MLFQ</strong> — เพิ่มความยืดหยุ่น: <strong>งานย้ายข้ามคิวได้</strong> ใช้ทำ aging หรือจัดกลุ่มตามพฤติกรรม</li>
+</ul>
+<p>โมเดลตัวอย่างในวิดีโอ (3 คิว):</p>
+<ol class="steps">
+  <li><span class="st-title">Q₀: RR ที่ quantum 8 ms</span>งานใหม่เข้าที่นี่ก่อนเสมอ ทำไม่เสร็จใน 8 ms → ถูกเทลง Q₁</li>
+  <li><span class="st-title">Q₁: RR ที่ quantum 16 ms</span>ได้เวลาเพิ่มอีก 16 ms ยังไม่เสร็จอีก → เทลง Q₂</li>
+  <li><span class="st-title">Q₂: FCFS</span>รันจนเสร็จ แต่ Q₂ จะได้รันก็ต่อเมื่อ Q₀ กับ Q₁ ว่างหมดแล้ว</li>
+</ol>
+<div class="callout analogy">
+  <div class="co-title">🏥 เปรียบเทียบ</div>
+  <p>เหมือน รพ. — ผู้ป่วยใหม่เข้าห้องฉุกเฉิน (Q₀) โดนตรวจย่อ 8 นาที ถ้าเรื่องยาวมากจะโดนย้ายไปคลินิกพิเศษ (Q₁) อีก 16 นาที สุดท้ายถ้ายังไม่จบไปรอทำตามคิวปกติ (Q₂) แต่ถ้าเคสฉุกเฉิน (Q₀) เข้ามาใหม่เมื่อไร ได้สิทธิ์ก่อนเสมอ</p>
+</div>
+
+<h2 id="java">8. Java Thread Scheduling</h2>
+<ul>
+  <li>Java spec ไม่ fix มาตรฐาน — ขึ้นกับ JVM แต่ทั่วไปคือ <strong>preemptive + priority-based</strong></li>
+  <li>Priority <strong>1–10, default 5</strong>, ตั้งด้วย <code>setPriority()</code>; ตัวสูงกว่าได้เลือกก่อน, ระดับเดียวกันสุ่มเลือก</li>
+  <li>รันจนกว่า: มีตัว priority สูงกว่ามา / <code>yield()</code> / run() จบ / หมด time-slice</li>
+  <li><strong>อย่าฝาก correctness ไว้กับ scheduler!</strong> ต้องใช้ Synchronization ควบคุมเอง</li>
+</ul>
+
+<h2 id="mistakes">9. สรุป 5 จุดพลาด (จากเน้นของอาจารย์ในวิดีโอ)</h2>
+<div class="card">
+  <ol style="margin:4px 0">
+    <li><strong>ลบ Arrival Time ไม่ครบ</strong> — เอาเวลาเริ่มรันจาก Gantt ตอบเป็น WT ทันที (ถูกต้อง: ใช้ WT = TAT − BT)</li>
+    <li><strong>WT ใน preemptive นับช่วงรอไม่ครบ</strong> — งานโดนแทรกหลายรอบ ไล่นับมือพลาดง่าย → ใช้สูตร TAT − BT เสมอ</li>
+    <li><strong>ตีความ priority ผิดฝั่ง</strong> — Unix เลขน้อย = สูง / Java เลขมาก = สูง</li>
+    <li><strong>SRTF ลืมหัก Remaining Time</strong> — ต้องใช้เวลาที่เหลือเทียบ ไม่ใช่ burst ดั้งเดิม</li>
+    <li><strong>เลือก quantum ผิด</strong> — ใหญ่ไปกลายเป็น FCFS เล็กไป overhead โต</li>
+  </ol>
+</div>
+
+<h2 id="quiz">📝 แบบฝึกหัดท้ายบท (คำนวณจริง!)</h2>
+
+<div class="quiz" data-q data-type="tf" data-answer="true" id="ch05q1">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 1</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">Waiting Time คำนวณได้จาก Turnaround Time ลบด้วย Burst Time และวิธีนี้ปลอดภัยกว่าการไล่นับช่วงรอจาก Gantt chart ในอัลกอริทึมแบบ preemptive</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ถูก</span>นี่คือเทคนิคที่อาจารย์แนะนำในวิดีโอ — งานที่โดนแทรกหลายรอบการไล่นับช่วงรอมือเป็นแหล่งรั่วไหลของคะแนน ให้หา TAT = Completion − Arrival ก่อนแล้วลบ BT</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="4" data-tolerance="0" id="ch05q2">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 2</span><span class="q-tag safe">เติมตัวเลข — ตัวอย่างจากวิดีโอ</span></div>
+  <div class="q-ctx">P1 (Arrival 0, BT 7), P2 (Arrival 2, BT 4), P3 (Arrival 4, BT 1), P4 (Arrival 5, BT 4) จัดด้วย <strong>SJF (non-preemptive)</strong> ได้ลำดับ P1(0–7), P3(7–8), P2(8–12), P4(12–16)</div>
+  <div class="q-text">ค่าเฉลี่ย Waiting Time เท่ากับเท่าไร</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 4</span>WT: P1 = 7−7 = 0, P2 = 10−4 = 6, P3 = 4−1 = 3, P4 = 11−4 = 7 → (0+6+3+7)/4 = <strong>4</strong></div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="3" data-tolerance="0" id="ch05q3">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 3</span><span class="q-tag safe">เติมตัวเลข — ข้อมูลเดิม เปลี่ยนเป็น SRTF</span></div>
+  <div class="q-text">จากข้อมูลข้อ 2 แต่ใช้ <strong>SRTF</strong> ได้ Gantt: P1(0–2), P2(2–4), P3(4–5), P2(5–7), P4(7–11), P1(11–16) — ค่าเฉลี่ย Waiting Time เท่ากับเท่าไร</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 3</span>หา TAT ก่อน: P1 = 16−0 = 16, P2 = 7−2 = 5, P3 = 5−4 = 1, P4 = 11−5 = 6 → WT = TAT−BT: 9, 1, 0, 2 → เฉลี่ย (9+1+0+2)/4 = <strong>3</strong> สังเกตว่าดีกว่า SJF (4) เพราะแทรกงานสั้นได้ทันที</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="mc" data-answer="b" id="ch05q4">
+  <div class="quiz-head"><span class="q-ico">🔤</span><span class="q-title">ข้อ 4</span><span class="q-tag safe">ปรนัย</span></div>
+  <div class="q-text">ใน MLFQ โมเดลของวิดีโอ (Q₀=RR q8, Q₁=RR q16, Q₂=FCFS) งานที่เพิ่มเข้ามาใหม่และรันไม่เสร็จใน 8 ms จะถูกส่งไปที่ไหน</div>
+  <div class="choices">
+    <div class="choice" data-val="a"><span class="mark">ก</span><span>ถูกส่งกลับไปต่อท้ายคิว Q₀ เพื่อได้เวลาอีก 8 ms</span></div>
+    <div class="choice" data-val="b"><span class="mark">ข</span><span>ถูกย้ายลงไปที่คิว Q₁ ซึ่งให้เวลา 16 ms</span></div>
+    <div class="choice" data-val="c"><span class="mark">ค</span><span>ถูกย้ายตรงไปที่ Q₂ เพราะเป็นงานยาว</span></div>
+    <div class="choice" data-val="d"><span class="mark">ง</span><span>ถูก suspend ออกจากหน่วยความจำ</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ข</span>งานใหม่เริ่มที่ Q₀ (8 ms) ไม่เสร็จ → ลง Q₁ (อีก 16 ms) ยังไม่เสร็จอีก → ค่อยลง Q₂ ทำแบบ FCFS จนจบ (และคิวล่างรันได้เมื่อคิวบนว่างหมด)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="false" id="ch05q5">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 5</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">ใน Round Robin หากกำหนด Time Quantum ใหญ่มาก ๆ อัลกอริทึมจะกลายพฤติกรรมใกล้เคียง SJF</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ผิด</span>q ใหญ่มาก → ทุกงานรันจนเสร็จก่อนหมดเวลา = กลายเป็น <strong>FCFS</strong> ไม่ใช่ SJF (ส่วน q เล็กมาก → context switch บ่อย overhead สูง)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="22,22.0" data-tolerance="0.01" id="ch05q6">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 6</span><span class="q-tag safe">เติมตัวเลข — ระวังจุดหลอก!</span></div>
+  <div class="q-ctx">P1 (Arrival 0, BT 24), P2 (Arrival 2, BT 3), P3 (Arrival 4, BT 3) จัดด้วย <strong>FCFS</strong>: P1 รัน 0–24, P2 รัน 24–27, P3 รัน 27–30</div>
+  <div class="q-text">Waiting Time ของ <strong>P2</strong> เท่ากับเท่าไร (ข้อนี้เป็นจุดที่คนลืมหัก Arrival Time มากที่สุด!)</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 22</span>ดูแล้วเผลอตอบ 24 (เวลาเริ่มรัน)! แต่ P2 <strong>มาถึงเวลา 2</strong> ไม่ใช่ 0 → TAT = 27−2 = 25 → WT = 25−3 = <strong>22</strong> หรือคิดตรง ๆ: รอจากเวลา 2 ถึงเวลา 24 = 22 หน่วย</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="pager">
+  <a href="04-thread.html"><span class="dir">← บทก่อนหน้า</span><span class="name">บทที่ 4: Thread</span></a>
+  <a href="06-ipc.html" class="next"><span class="dir">บทถัดไป →</span><span class="name">บทที่ 6: IPC — Signal, Pipe, Shared Memory</span></a>
+</div>
+
+<div class="center"><button class="btn ghost" id="doneBtn"></button></div>
+
+</main>
+</div>
+<button id="toTop" aria-label="กลับขึ้นด้านบน">↑</button>
+<script src="js/app.js"></script>
+</body>
+</html>

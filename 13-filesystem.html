@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>บทที่ 13 — File System | เว็บติว OS Final</title>
+<meta name="description" content="File System FAT32 NTFS ext4 exFAT APFS Contiguous Linked Indexed allocation inode UNIX combined scheme hard link symbolic link directory mounting สิทธิ์ RWX พร้อมโจทย์คำนวณ">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="ch13">
+<div id="sidebar-root"></div>
+<div class="sidebar-backdrop"></div>
+
+<header class="topbar">
+  <button class="icon-btn" id="menuBtn" aria-label="เปิดเมนู">☰</button>
+  <a class="brand" href="index.html"><span class="brand-logo">OS</span><span>เว็บติว OS Final<span class="brand-sub">บทที่ 13 · File System</span></span></a>
+  <span class="spacer"></span>
+  <span class="progress-pill" id="quizPill"></span>
+  <button class="icon-btn" id="themeBtn">🌙</button>
+</header>
+
+<div class="layout">
+<main class="content">
+
+<div class="chip-row">
+  <span class="chip final">ช่วง Final</span>
+  <span class="chip hot">มีโจทย์คำนวณ inode + สิทธิ์</span>
+  <span class="chip">วิดีโอ 14.1–14.3 · Handout No.10</span>
+</div>
+<h1>บทที่ 13 — File System: จัดเก็บ จัดสรร และปกป้องไฟล์</h1>
+<p class="lead">File system คือผู้จัดการข้อมูลบน storage — เรื่องถูก/ผิดมีเยอะ (เทียบ FAT32/NTFS/ext4, hard vs symbolic link) และเรื่องคำนวณมี 2 ตัวหลัก: <strong>ขนาดไฟล์สูงสุดแบบ inode</strong> และ <strong>แปลงสิทธิ์ rwx ↔ เลขฐานแปด</strong></p>
+
+<div class="toc">
+  <div class="toc-title">สารบัญบทนี้</div>
+  <ol>
+    <li><a href="#fs">File System รับผิดชอบอะไร</a></li>
+    <li><a href="#popular">5 ระบบไฟล์ยอดนิยม</a></li>
+    <li><a href="#alloc">3 วิธีจัดสรรพื้นที่ไฟล์ 🔥</a></li>
+    <li><a href="#inode">UNIX inode (Combined Scheme) — คำนวณขนาดไฟล์สูงสุด 🔥</a></li>
+    <li><a href="#dir">Directory, Hard Link vs Symbolic Link</a></li>
+    <li><a href="#mount">Mounting</a></li>
+    <li><a href="#perm">สิทธิ์ RWX ↔ เลข 761 🔥</a></li>
+    <li><a href="#quiz">แบบฝึกหัดท้ายบท</a></li>
+  </ol>
+</div>
+
+<h2 id="fs">1. File System รับผิดชอบอะไร</h2>
+<p>File system = องค์ประกอบสำคัญของ OS ที่จัดการข้อมูลบน storage (HDD, SSD, USB) โดยดึงความซับซ้อนระดับฮาร์ดแวร์ออกไป หน้าที่: <strong>ตั้งชื่อ+โครงสร้างไฟล์</strong>, เก็บข้อมูล, ดึง/แก้ไขข้อมูล, จัดการ metadata และ <strong>ความปลอดภัย/สิทธิ์การเข้าถึง</strong></p>
+
+<h2 id="popular">2. 5 ระบบไฟล์ยอดนิยม (ตารางที่ควรพกเข้าสอบ)</h2>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>ระบบไฟล์</th><th class="c">ไฟล์สูงสุด</th><th class="c">Volume สูงสุด</th><th class="c">Journaling</th><th>จุดเด่น/ใช้ที่ไหน</th></tr>
+  <tr><td><strong>FAT32</strong> (1996)</td><td class="c"><strong>4 GB</strong> 😅</td><td class="c">8 TB</td><td class="c">ไม่มี</td><td>เข้ากันได้กับ<em>ทุก</em> OS/เครื่องเกม — USB flash, memory card</td></tr>
+  <tr><td><strong>NTFS</strong> (1993)</td><td class="c">16 TB</td><td class="c">256 TB</td><td class="c">✅ มี</td><td>OS Windows — มีสิทธิ์/เข้ารหัส/quota/compression · Mac/Linux อ่านได้แต่เขียนต้องใช้โปรแกรมช่วย</td></tr>
+  <tr><td><strong>ext4</strong> (2008)</td><td class="c">16 TB</td><td class="c">1 EB</td><td class="c">✅ มี</td><td>Linux หลัก ต่อยอดจาก ext3 — Windows/Mac ไม่รองรับตรง ๆ</td></tr>
+  <tr><td><strong>exFAT</strong> (2006)</td><td class="c">16 EB</td><td class="c">128 PB</td><td class="c">ไม่มี</td><td>แก้ขีดจำกัด 4GB ของ FAT32 — SD card, external drive ข้าม OS (แต่ไม่มี journaling = ทนพังไม่ค่อยเก่ง)</td></tr>
+  <tr><td><strong>APFS</strong> (2017)</td><td class="c">8 EB</td><td class="c">8 EB</td><td class="c">✅ + Snapshots</td><td>Apple ทั้งหมด (macOS/iOS) — เน้น flash, เข้ารหัสทั้งดิสก์, snapshot backup</td></tr>
+</table></div>
+<div class="callout exam">
+  <div class="co-title">🎯 จุดหลอก</div>
+  <p>• <strong>FAT32 ไฟล์เดี่ยวตันที่ 4 GB เด็ดขาด</strong> (ฟิลด์ขนาดไฟล์ 32 บิต) — ดิสก์เหลือเยอะก็ไม่ช่วย!<br>• <strong>Journaling</strong> = สมุดบันทึกการเปลี่ยนแปลง ทำให้ recover ไวหลังไฟดับ — NTFS/ext4/APFS มี, FAT32/exFAT ไม่มี</p>
+</div>
+
+<h2 id="alloc">3. 3 วิธีจัดสรรพื้นที่ให้ไฟล์ 🔥</h2>
+<p>เล่นแบบเดียวกับบท memory แต่คราวนี้บนดิสก์ — จำเทียบกันได้เลย:</p>
+
+<h3>3.1 Contiguous Allocation — วางต่อกันเป็นผืนเดียว</h3>
+<ul>
+  <li>Directory เก็บแค่ <strong>เริ่มบล็อกที่เท่าไร + ยาวกี่บล็อก</strong> (2 ค่าจบ)</li>
+  <li>✅ <strong>เร็วมาก</strong> — อ่านเรียง ๆ ไม่ต้องเสียเวลา seek หัวอ่าน</li>
+  <li>❌ <strong>External Fragmentation</strong> (เหมือน variable partition เป๊ะ!) + <strong>ขยายไฟล์ยาก</strong> — บล็อกถัดไปถูกจองก็ต้องย้ายไฟล์ทั้งก้อน</li>
+</ul>
+
+<h3>3.2 Linked Allocation — บล็อกกระจาย + ชี้ต่อกันเป็นสายโซ่</h3>
+<ul>
+  <li>แต่ละบล็อกมี <strong>pointer</strong> ชี้บล็อกถัดไป — directory เก็บ start + end</li>
+  <li>✅ ไม่มี external fragmentation · ขยายไฟล์ง่าย (ต่อสายโซ่ใหม่)</li>
+  <li>❌ <strong>Random access ช้ามาก</strong> (อยากอ่านบล็อกที่ 100 ต้องไล่สายโซ่จาก 1) · บล็อกเสียพื้นที่ให้ pointer · <strong>pointer ตัวไหนพัง = ท่อนหลังของไฟล์หายหมด</strong></li>
+  <li>ตัวช่วย: <strong>FAT (File Allocation Table)</strong> — ดึง pointer ทั้งหมดมารวมไว้ในตารางเดียว (อยู่ใน RAM) ทำให้ไล่โซ่ได้เร็วโดยไม่ต้องเปิดดิสก์ทีละบล็อก (นี่คือที่มาของชื่อ FAT filesystem!)</li>
+</ul>
+
+<h3>3.3 Indexed Allocation — รวม pointer ไว้ในบล็อกพิเศษ</h3>
+<ul>
+  <li>ทุก pointer ของไฟล์รวมอยู่ใน <strong>Index Block</strong> — directory ชี้มาที่ index block จุดเดียว</li>
+  <li>✅ <strong>Random access เร็ว</strong> (อ่าน index ครั้งเดียวรู้หมด) · ไม่มี external fragmentation</li>
+  <li>❌ เปลืองบล็อกเก็บ index — <strong>ไฟล์เล็กแค่ไหนก็เสีย index block หนึ่งบล็อกเสมอ</strong> · ไฟล์ใหญ่มากต้องใช้ multi-level index</li>
+</ul>
+
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th>วิธี</th><th class="c">อ่านเรียง (sequential)</th><th class="c">สุ่ม (random access)</th><th>Fragmentation</th><th>ขยายไฟล์</th></tr>
+  <tr><td>Contiguous</td><td class="c">🟢 เร็วสุด</td><td class="c">🟢 เร็ว</td><td>External ❌</td><td class="c">ยาก ❌</td></tr>
+  <tr><td>Linked</td><td class="c">🟡 ปานกลาง</td><td class="c">🔴 ช้ามาก</td><td>ไม่ค่อยมี</td><td class="c">ง่าย ✅</td></tr>
+  <tr><td>Indexed</td><td class="c">🟡 ปานกลาง</td><td class="c">🟢 เร็ว</td><td>ไม่ค่อยมี</td><td class="c">ง่าย ✅ (เปลือง index)</td></tr>
+</table></div>
+
+<h2 id="inode">4. UNIX inode (Combined Scheme) — โจทย์คำนวณสำคัญ 🔥</h2>
+<p>UNIX ผสมทุกอย่างใน <strong>inode</strong> ที่มี <strong>pointer 15 ตัว</strong>:</p>
+<div class="memgrid">
+  <span class="memcell used">Direct 12 ตัว → ชี้ data block ตรง ๆ</span>
+  <span class="memcell used">Single indirect 1 ตัว</span>
+  <span class="memcell used">Double indirect 1 ตัว</span>
+  <span class="memcell used">Triple indirect 1 ตัว</span>
+</div>
+<p><strong>ตัวอย่างจากวิดีโอ (block size 4 KB, pointer 4 bytes):</strong></p>
+<ol class="steps">
+  <li><span class="st-title">หาจำนวน pointer ต่อ 1 index block</span>4 KB ÷ 4 bytes = <strong>1024 ช่อง</strong> (ตัวเลขทองที่ต้องหาก่อนเสมอ)</li>
+  <li><span class="st-title">Direct 12 ตัว</span>12 × 4 KB = <strong>48 KB</strong> — ไฟล์เล็กเข้าถึงได้เร็วสุดไม่ต้องผ่าน index</li>
+  <li><span class="st-title">Single indirect</span>1024 × 4 KB = <strong>4 MB</strong></li>
+  <li><span class="st-title">Double indirect</span>1024 × 1024 × 4 KB = <strong>4 GB</strong></li>
+  <li><span class="st-title">Triple indirect</span>1024³ × 4 KB = <strong>4 TB</strong></li>
+</ol>
+<div class="formula">ขนาดไฟล์สูงสุด ≈ 48 KB + 4 MB + 4 GB + 4 TB ≈ 4 TB<small>ข้อผิดพลาดยอดฮิต: ลืมบวก direct 48 KB หรือ ลืมหา "1024 ช่องต่อบล็อก" ก่อน</small></div>
+<p class="small">💡 handout ยังมีตัวอย่าง two-level index ของระบบ block 512 bytes: สูงสุด 512³ bytes — หลักคิดเหมือนกัน: entries ต่อบล็อก × ขนาดบล็อก ยกกำลังชั้น</p>
+
+<h2 id="dir">5. Directory และ Link</h2>
+<p><strong>Directory</strong> = ตารางแปลง "ชื่อไฟล์ → ข้อมูลไฟล์" (symbol table) มี operation: ค้นหา, สร้าง, ลบ, ลิสต์, เปลี่ยนชื่อ, เดินทางท่องระบบ</p>
+<ul>
+  <li><strong>Tree structure</strong> — ไฟล์มี parent เดียว ปลอดภัยแต่<strong>แชร์ไฟล์ไม่ได้</strong></li>
+  <li><strong>Acyclic graph</strong> — ไม่มีวงวน แต่ยอมให้แชร์ (มีหลาย parent) ผ่าน <strong>link</strong> — ยืดหยุ่นแต่ปวดหัวเรื่อง: ไฟล์เดียวมีหลายชื่อ (aliasing) และถ้าลบแล้วใครเสียใคร</li>
+</ul>
+
+<h3>Hard Link vs Symbolic (Soft) Link — คู่ที่ออกทุกปี 🔥</h3>
+<div class="tbl-wrap"><table class="tbl">
+  <tr><th></th><th>Hard Link <code>ln original new</code></th><th>Symbolic Link <code>ln -s original new</code></th></tr>
+  <tr><td>ชี้ไปที่</td><td><strong>inode เดียวกันโดยตรง</strong> + เพิ่ม reference count</td><td>สร้าง<em>ไฟล์ใหม่</em>ที่เก็บ<strong>"path" ของต้นทาง</strong> (shortcut)</td></tr>
+  <tr><td>ลบต้นฉบับแล้ว</td><td>✅ ข้อมูลยังอยู่ — ตายเมื่อ reference count = 0 (ลบ link ทุกตัว)</td><td>❌ กลายเป็น <strong>broken/dangling link</strong> (ชี้หาอะไรที่ไม่มีแล้ว)</td></tr>
+  <tr><td>ข้าม partition/file system</td><td class="c">❌ ห้าม</td><td class="c">✅ ได้</td></tr>
+  <tr><td>ทำกับ directory</td><td class="c">❌ ห้าม (ส่วนใหญ่ เพื่อกัน cycle)</td><td class="c">✅ ได้</td></tr>
+</table></div>
+<div class="callout analogy">
+  <div class="co-title">🏠 เปรียบเทียบ</div>
+  <p><strong>Hard link</strong> = ลงทะเบียนบ้านเพิ่มอีกชื่อ — บ้านหลังเดิม อยู่ต่อจนคนทะเบียนหมด · <strong>Symbolic link</strong> = กระดาษโน้ตเขียนว่า "บ้านอยู่ซอย 5" — โยนบ้านทิ้งกระดาษก็ชี้อากาศ (dangling)</p>
+</div>
+<p class="small">💡 ปัญหาการลบไฟล์แชร์ใน acyclic graph มี 2 แนวทาง: ลบเมื่อใดก็ได้ (เสี่ยง dangling pointer) หรือ <strong>เก็บ reference count</strong> ลบจริงเมื่อนับ = 0 (แนวทาง hard link) — และต้องระวังตรวจ cycle (แก้ง่าย ๆ คือ bypass ทาง link ตอนท่องระบบ)</p>
+
+<h2 id="mount">6. Mounting</h2>
+<ul>
+  <li><strong>Mounting</strong> = ติดระบบไฟล์จากอุปกรณ์ (พาร์ติชัน, USB, network fs) เข้ากับ directory tree ของระบบ ณ <strong>mount point</strong> (เช่น <code>/mnt/usb</code>)</li>
+  <li>คำสั่ง: <code>mount /dev/sdb1 /mnt/usb</code> · ก่อนถอดอุปกรณ์ต้อง <code>umount /mnt/usb</code> เพื่อให้การเขียนค้าง ๆ เสร็จสมบูรณ์ (ไม่งั้นข้อมูลพัง!)</li>
+</ul>
+
+<h2 id="perm">7. สิทธิ์ RWX ↔ ตัวเลขฐานแปด 🔥</h2>
+<p>สิทธิ์แบ่ง 3 กลุ่ม: <strong>Owner / Group / Others</strong> — กลุ่มละ 3 บิต (r w x) ค่าบิต = กำลังสอง:</p>
+<div class="memgrid">
+  <span class="memcell used">R = 2² = 4</span>
+  <span class="memcell used">W = 2¹ = 2</span>
+  <span class="memcell used">X = 2⁰ = 1</span>
+</div>
+<h3>ตัวอย่างจาก handout: 761</h3>
+<ol class="steps">
+  <li><span class="st-title">Owner = 7</span>4+2+1 = <strong>rwx</strong> — อ่าน/เขียน/รัน ครบ</li>
+  <li><span class="st-title">Group = 6</span>4+2+0 = <strong>rw-</strong> — อ่าน+เขียนได้ รันไม่ได้</li>
+  <li><span class="st-title">Others = 1</span>0+0+1 = <strong>--x</strong> — รันได้อย่างเดียว</li>
+</ol>
+<p class="small">ตั้งค่าด้วย <code>chmod 761 filename</code> — ข้อผิดพลาดที่มักเจอ: ตี 6 เป็น r-x (จริง ๆ r-x = 4+1 = <strong>5</strong>)</p>
+
+<div class="callout tip">
+  <div class="co-title">💡 เทคนิคแปลงเร็ว</div>
+  <p>7 = ทุกอย่าง (rwx) · 6 = rw- · 5 = r-x · 4 = r-- · 0 = --- (ไม่มีสิทธิ์) — เจอเลขไหนให้บวก 4/2/1 กลับ เจอตัวอักษรให้รวมค่าเป็นเลขกลับ ทำได้ 5 วินาที</p>
+</div>
+
+<h2 id="quiz">📝 แบบฝึกหัดท้ายบท</h2>
+
+<div class="quiz" data-q data-type="tf" data-answer="false" id="ch13q1">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 1</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">FAT32 สามารถเก็บไฟล์ขนาด 6 GB ได้ ถ้าพาร์ติชันมีพื้นที่ว่างเหลือมากพอ</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ผิด</span>ไฟล์เดี่ยวใน FAT32 <strong>ตันที่ 4 GB เด็ดขาด</strong> (ฟิลด์ขนาดไฟล์ใน directory entry กว้าง 32 บิต = 2³² bytes) — เกี่ยวกับพื้นที่ว่างไม่เลย ต้องย้ายไป exFAT/NTFS</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="mc" data-answer="c" id="ch13q2">
+  <div class="quiz-head"><span class="q-ico">🔤</span><span class="q-title">ข้อ 2</span><span class="q-tag safe">ปรนัย</span></div>
+  <div class="q-text">วิธีจัดสรรแบบใดที่ support "random access ได้เร็ว" และ "ไม่เกิด external fragmentation" พร้อมกัน</div>
+  <div class="choices">
+    <div class="choice" data-val="a"><span class="mark">ก</span><span>Contiguous allocation</span></div>
+    <div class="choice" data-val="b"><span class="mark">ข</span><span>Linked allocation (แบบลิงก์รายบล็อก)</span></div>
+    <div class="choice" data-val="c"><span class="mark">ค</span><span>Indexed allocation</span></div>
+    <div class="choice" data-val="d"><span class="mark">ง</span><span>Contiguous และ Linked</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ค</span>Indexed รวม pointer ไว้ใน index block เดียว เปิดครั้งเดียวรู้ตำแหน่งทุกบล็อก → random เร็ว + บล็อกกระจายได้จึงไม่ค่อยมี fragmentation ข้อแลกคือเปลืองบล็อก index (แม้ไฟล์จิ๋ว)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="num" data-answer="48" data-tolerance="0" id="ch13q3">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 3</span><span class="q-tag safe">เติมตัวเลข — inode จากวิดีโอ</span></div>
+  <div class="q-ctx">UNIX inode: direct pointers 12 ตัว · block size = 4 KB · pointer = 4 bytes</div>
+  <div class="q-text">ไฟล์ที่ใหญ่ที่สุดที่เข้าถึงได้ด้วย direct pointers อย่างเดียวมีขนาดกี่ KB</div>
+  <input type="text" inputmode="numeric" placeholder="ตอบตัวเลข">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: 48 KB</span>12 × 4 KB = 48 KB — ไฟล์ไม่เกินนี้ใช้ direct อย่างเดียว เร็วสุด (ต่อ: single indirect = 1024×4KB = 4MB, double = 4GB, triple = 4TB)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="true" id="ch13q4">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 4</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">หากไฟล์ต้นฉบับถูกลบ hard link ที่ชี้ไปยังไฟล์เดียวกันยังเข้าถึงข้อมูลได้ปกติ ตราบใดที่ยังมี link หลงเหลืออยู่</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ถูก</span>hard link ชี้ตรงไป inode เดียวกัน — "ลบไฟล์" คือลด reference count ลงหนึ่ง ข้อมูลถูกคืนเมื่อ count = 0 เท่านั้น (ต่างจาก symbolic link ที่จะกลายเป็น broken link ทันที)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="text" data-answer="rw-" id="ch13q5">
+  <div class="quiz-head"><span class="q-ico">✏️</span><span class="q-title">ข้อ 5</span><span class="q-tag safe">เติมคำตอบ</span></div>
+  <div class="q-text">สิทธิ์ระดับ Group มีค่าเป็น 6 (จาก 761) — เขียนเป็นรูปแบบ rwx ได้ว่าอะไร (ตอบ 3 ตัวอักษร เช่น rwx)</div>
+  <input type="text" placeholder="ตอบ 3 ตัว">
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: rw-</span>6 = 4 + 2 = Read + Write, ไม่มี Execute → "rw-" (จำไว้: r-x คือ 5 ไม่ใช่ 6!)</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="quiz" data-q data-type="tf" data-answer="false" id="ch13q6">
+  <div class="quiz-head"><span class="q-ico">✅</span><span class="q-title">ข้อ 6</span><span class="q-tag">ถูก/ผิด · ถูก +2 ผิด −1 ไม่ตอบ 0</span></div>
+  <div class="q-text">Hard link สามารถสร้างข้าม partition และสร้างให้กับ directory ได้เหมือน symbolic link</div>
+  <div class="choices">
+    <div class="choice" data-val="true"><span class="mark">ก</span><span>ถูก</span></div>
+    <div class="choice" data-val="false"><span class="mark">ข</span><span>ผิด</span></div>
+  </div>
+  <div class="q-verdict"></div>
+  <div class="q-explain"><span class="ex-title">เฉลย: ผิด</span>hard link <strong>ห้ามข้าม file system/partition</strong> และ <strong>ห้ามชี้ directory</strong> (กัน cycle) — สองเคสนี้ต้องใช้ symbolic link (ln -s) เท่านั้น</div>
+  <div class="q-actions"><button class="btn act-check">ตรวจคำตอบ</button><button class="btn ghost act-reset" style="display:none">ลองอีกครั้ง</button></div>
+</div>
+
+<div class="pager">
+  <a href="12-virtualmem.html"><span class="dir">← บทก่อนหน้า</span><span class="name">บทที่ 12: Virtual Memory</span></a>
+  <a href="exam.html" class="next"><span class="dir">บทถัดไป →</span><span class="name">ห้องซ้อมข้อสอบ 📝</span></a>
+</div>
+
+<div class="center"><button class="btn ghost" id="doneBtn"></button></div>
+
+</main>
+</div>
+<button id="toTop" aria-label="กลับขึ้นด้านบน">↑</button>
+<script src="js/app.js"></script>
+</body>
+</html>
