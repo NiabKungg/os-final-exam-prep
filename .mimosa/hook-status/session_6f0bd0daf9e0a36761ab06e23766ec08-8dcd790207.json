@@ -1,14 +1,14 @@
 {
   "schemaVersion": "mimosa-hook-status/v1",
-  "recordedAt": "2026-10-29T15:59:02.908Z",
+  "recordedAt": "2026-10-30T08:52:01.671Z",
   "sessionId": "session_6f0bd0daf9e0a36761ab06e23766ec08",
   "event": "PostToolUse",
-  "toolName": "Edit",
-  "file": "css/style.css",
-  "outcome": "clear",
-  "coverage": "complete",
+  "toolName": "Write",
+  "file": "/tmp/os_server_nocache.py",
+  "outcome": "inconclusive",
+  "coverage": "partial",
   "findingCount": 0,
-  "durationMs": 2,
+  "durationMs": 4,
   "hostState": "hook_complete",
   "reportHint": ".mimosa/reports/"
 }

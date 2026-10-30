@@ -52,7 +52,7 @@
           <span class="num">${it.num}</span><span>${it.name}</span></a>`;
       }
     }
-    sbRoot.innerHTML = html;
+    sbRoot.innerHTML = '<aside class="sidebar">' + html + "</aside>";
   }
 
   const sidebar = document.querySelector(".sidebar");
@@ -183,6 +183,7 @@
     store[id] = { ok: correct, skip: skipped };
     saveStore();
     updatePill();
+    document.dispatchEvent(new CustomEvent("quizchecked", { detail: { id, correct, skipped } }));
   }
 
   function resetQuiz(q) {
