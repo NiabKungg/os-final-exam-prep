@@ -178,6 +178,11 @@ ol.st > li:last-child::after { display: none; }
 ul { margin: 5px 0; padding-left: 20px; }
 li { margin: 2.5px 0; }
 kbd { background: #e2e8f0; border-radius: 4px; padding: 0 5px; font-family: monospace; font-size: .85em; }
+/* ---------- Socrative compact tables ---------- */
+table.sqz { font-size: 10.6px; }
+table.sqz td, table.sqz th { padding: 3px 7px; vertical-align: top; }
+table.sqz td.small { font-size: 9.8px; color: var(--soft); }
+
 /* ---------- PRINT ---------- */
 @media print {
   body { background: #fff; font-size: 11.6px; }
@@ -222,7 +227,8 @@ kbd { background: #e2e8f0; border-radius: 4px; padding: 0 5px; font-family: mono
   <div><b>I.</b> Virtual Memory & Page Replacement (การเลือกเพจออกเมื่อ RAM เต็ม) <span class="hot">🔥🔥</span></div>
   <div><b>J.</b> File System (ระบบไฟล์)</div>
   <div><b>K.</b> ความรู้จาก Quizizz ทั้ง 4 ชุด</div>
-  <div><b>L.</b> แผ่นสูตรเร็วท้ายเล่ม (1 หน้า)</div>
+  <div><b>L.</b> คลังข้อสอบซ้อม Socrative (16 ชุด) 🔥</div>
+  <div><b>M.</b> แผ่นสูตรเร็วท้ายเล่ม (1 หน้า)</div>
 </div>
 
 <!-- ================= PART A: PROCESS ================= -->
@@ -1612,8 +1618,731 @@ flowchart LR
 <div class="qk"><b>ความรู้:</b> mount อุปกรณ์เดียวได้<b>หลาย mount point</b> (รองรับ bind mount) — "ไม่สามารถ" เป็นเท็จ</div></div>
 </div>
 
-<!-- ================= PART L: QUICK FORMULAS ================= -->
-<h2 class="part">L. แผ่นสูตรเร็วท้ายเล่ม (อ่าน 3 นาทีก่อนเข้าห้อง)</h2>
+
+<!-- ================= PART L: SOCRATIVE ================= -->
+<h2 class="part">L. คลังข้อสอบซ้อม Socrative ในห้องเรียน (16 ชุด · 376 ข้อ) 🔥</h2>
+<div class="intro">
+  <div class="it">📖 รู้จักส่วนนี้ก่อนอ่าน</div>
+  <p><b>ความหมาย:</b> คลังคำถาม-เฉลยจากการซ้อม Socrative สด ๆ ในห้องเรียนครบทั้ง 16 ชุด เรียงตามลำดับบท — ทุกข้อมีคำตอบถูกต้อง และข้อคำนวณมีวิธีคิดกำกับในคอลัมน์เฉลย</p>
+  <p><b>ความสำคัญกับข้อสอบ:</b> นี่คือ "สไตล์การถามจริง" ของอาจารย์ — แนวถูก/ผิด, ปรนัย A–E และเติมคำตอบ รวมถึงโจทย์โค้ด/กราฟ/ตารางที่ให้รวมก่อนตอบหลายข้อ (แถบข้อมูลสีฟ้า 📊/💻 ต้องอ่านก่อนตอบข้อในช่วงนั้น)</p>
+  <p><b>ใช้จริง:</b> อ่านเร็ว ๆ ชุดละ 3 นาที — โฟกัสข้อคำนวณ (Scheduling · Paging · Segmentation · Page Fault · inode/Disk) ที่อาจารย์ออกซ้ำทุกปี และข้อ True/False ที่เป็นกับดักคำต่อคำ</p>
+</div>
+<h3>L1. Introduction to OS <span style="font-weight:600;color:var(--muted);font-size:.8em">— ชุดที่ 1 · 40 ข้อ</span></h3>
+<div class="tbl-wrap"><table class="t sqz">
+<tr style="break-inside:avoid;page-break-inside:avoid"><th style="width:34px">ข้อ</th><th>คำถาม</th><th style="width:120px">คำตอบ</th><th>เฉลย / ความรู้</th></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">1</td><td><div>ระบบปฏิบัติการคือฮาร์ดแวร์ตัวหนึ่งในระบบคอมพิวเตอร์</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (ระบบปฏิบัติการเป็นซอฟต์แวร์ระบบ ไม่ใช่ฮาร์ดแวร์)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">2</td><td><div>ระบบปฏิบัติการจะควบคุมฮาร์ดแวร์เท่านั้น</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (OS ควบคุมและจัดการทั้งฮาร์ดแวร์และซอฟต์แวร์/โปรแกรมประยุกต์)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">3</td><td><div>หน้าที่หนึ่งของระบบปฏิบัติการคือการทำให้โปรแกรมทำงานร่วมกันได้</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">4</td><td><div>หน้าที่หนึ่งของระบบปฏิบัติการคือการให้ผู้ใช้ใช้งานคอมพิวเตอร์ตามสิทธิที่ได้รับ</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">5</td><td><div>ในวิชานี้หน่วยประมวลผลจะรวมถึง GPU ด้วย</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (ในบริบทพื้นฐานของวิชานี้ หน่วยประมวลผลหลักหมายถึง CPU)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">6</td><td><div>ในวิชานี้หน่วยความจำจะหมายถึง RAM เท่านั้น</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (ในเนื้อหาวิชานี้ หน่วยความจำหลักหรือ Main Memory อ้างถึง RAM เท่านั้น)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">7</td><td><div>การติดตามการใช้งานทรัพยากรเป็นหน้าที่ที่ต้องมีในแต่ละองค์ประกอบของระบบปฏิบัติการ</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">8</td><td><div>องค์ประกอบบางตัวของระบบปฏิบัติการไม่จำเป็นต้องมีการควบคุมการเข้าถึงทรัพยากรที่มันดูแล</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (ทุกองค์ประกอบที่ดูแลทรัพยากรจำเป็นต้องมีการควบคุมการเข้าถึงเสมอ)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">9</td><td><div>ส่วนของระบบปฏิบัติการที่ทำหน้าที่ที่สำคัญในการจัดการระบบคอมพิวเตอร์คือ</div></td><td><b>D</b> kernel</td><td class="small">D. kernel</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">10</td><td><div>โปรแกรมที่ใช้โหลดเคอร์เนลขึ้นมาทำงานมีชื่อเรียกรวม ๆ ว่า</div></td><td><b>C</b> bootloader</td><td class="small">C. bootloader</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">11</td><td><div>ชื่อของโปรแกรม boot loader ที่เป็นที่นิยมใช้บนระบบปฏิบัติการ Linux</div></td><td><b>E</b> GRUB</td><td class="small">E. GRUB</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">12</td><td><div>โปรแกรมที่ใช้โหลด boot loader ถ้าใช้ BIOS โปรแกรมดังกล่าวจะถูกเก็บอยู่ใน</div></td><td><b>B</b> MBR</td><td class="small">B. MBR (Master Boot Record)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">13</td><td><div>โปรแกรมที่ใช้โหลด boot loader ถ้าใช้ UEFI โปรแกรมดังกล่าวจะถูกเก็บอยู่ใน</div></td><td><b>E</b> ESP</td><td class="small">E. ESP (EFI System Partition)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">14</td><td><div>เมื่อเราเปิดเครื่องคอมพิวเตอร์โปรแกรมแรกที่จะถูกโหลดเข้ามารันคือ</div></td><td><b>D</b> UEFI</td><td class="small">D. UEFI (หรือ BIOS ในเครื่องรุ่นเดิม)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">15</td><td><div>โปรแกรม BIOS มักจะถูกเก็บไว้ใน ของเครื่องคอมพิวเตอร์</div></td><td><b>B</b> ROM</td><td class="small">B. ROM</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">16</td><td><div>ถ้าใช้ UEFI การแสดงรายการของ OS ที่ติดตั้งอยู่ในเครื่องสามารถทำได้โดยไม่ต้องไปอ่านข้อมูลจาก MBR</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (UEFI บันทึก Boot Entries ไว้ใน NVRAM/ESP)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">17</td><td><div>ข้อดีประการเดียวที่ BIOS เหนือกว่า UEFI คือมันทำงานเร็วกว่า</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (UEFI ทำงานเร็วกว่าและรองรับคุณสมบัติสมัยใหม่มากกว่า)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">18</td><td><div>จะต้องมีการกันเนื้อที่หน่วยความจำส่วนหนึ่งไว้ให้ระบบปฏิบัติการใช้</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (สงวนไว้สำหรับ OS Kernel และตารางข้อมูลของระบบ)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">19</td><td><div>ใน Dual Mode Operation คำสั่งที่จะถูกเรียกใช้เมื่อเครื่องอยู่ใน kernel mode เท่านั้นเรียกว่า</div></td><td><b>D</b> Privileged Instruction</td><td class="small">D. Privileged Instruction</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">20</td><td><div>คำสั่งอ่านข้อมูลวันที่และเวลาปัจจุบันของระบบไม่จำเป็นต้องเป็น Privileged Instruction</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (การอ่านค่าไม่อันตรายต่อความมั่นคงของระบบ จึงไม่ต้องเป็น privileged instruction)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">21</td><td><div>การที่เราติดตั้งระบบปฏิบัติการมากกว่าหนึ่งตัวลงในคนละ partition ของฮาร์ดดิสก์เรียกว่าการทำ virtual machine</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (เรียกว่า Multi-boot หรือ Dual-boot)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">22</td><td><div>คำสั่งกำหนดค่าให้กับตัวแปรควรเป็น privileged instruction เพราะมีการใช้งานหน่วยความจำ ซึ่งถ้าไม่ป้องกันอาจมีโปรแกรมไม่ประสงค์ดี ใช้งานหน่วยความจำได้อย่างอิสระ</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (การกำหนดค่าตัวแปรใน User Space เป็นคำสั่งพื้นฐานของโปรแกรมทั่วไป ไม่ใช่ privileged instruction)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">23</td><td><div>ถ้าเรารันโปรแกรม Oracle Virtual Box ภายใต้ระบบปฏิบัติการ Mac OS และใช้โปรแกรม Oracle Virtual Box สร้าง Virtual Machine และติดตั้งระบบปฏิบัติการ Windows 10 ลงบน virtual machine ดังกล่าว โปรแกรม Oracle Virtual Box เป็นโปรแกรมที่เรียกว่า</div></td><td><b>A</b> Virtualization Software</td><td class="small">A. Virtualization Software (หรือ Hypervisor Type 2)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">24</td><td><div>จากสถานการณ์ข้อ 23 Mac OS เป็นโปรแกรมที่เรียกว่า</div></td><td><b>C</b> Host OS</td><td class="small">C. Host OS</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">25</td><td><div>จากสถานการณ์ข้อ 23 Windows 10 เป็นโปรแกรมที่เรียกว่า</div></td><td><b>B</b> Guest OS</td><td class="small">B. Guest OS</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">26</td><td><div>ถ้าเรามี Windows 10 เป็น Host OS เราไม่สามารสร้าง virtual Machine ที่ติดตั้ง Windows 10 ได้ เพราะมันจะทำงานขัดแย้งกัน</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (สามารถสร้างและรัน OS เดียวกันซ้อนกันได้เนื่องจากแยกสิ่งแวดล้อมกันอย่างสมบูรณ์)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">27</td><td><div>แนวคิดของ Virtual Machine สามารถนำไปใช้กับระบบ Cloud ได้ด้วย</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">28</td><td><div>แนวคิดของ container technology คือการรวมเอา application และ guest OS เข้าไว้ด้วยกัน</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (Container แชร์ Host OS kernel ร่วมกัน ไม่ได้มี Guest OS เต็มตัว)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">29</td><td><div>แนวคิดของ Virtual Machine สามารถนำไปใช้กับภาษาโปรแกรมได้ด้วย</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (เช่น Java Virtual Machine: JVM)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">30</td><td><div>container แต่ละตัว จะทำงานบนสภาพแวดล้อมของตัวเอง ไม่ขึ้นกับสภาพแวดล้อมของ container ตัวอื่น</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">31</td><td><div>โปรแกรมหลักในการจัดการการทำงาน Container Technology ของ Docker เรียกว่า</div></td><td><b>A</b> docker engine</td><td class="small">A. docker engine</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">32</td><td><div>สิ่งที่เรา download จาก docker hub คือ</div></td><td><b>B</b> docker image</td><td class="small">B. docker image</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">33</td><td><div>สิ่งที่เรารันจากสิ่งที่เรา download จาก docker hub คือ</div></td><td><b>C</b> docker container</td><td class="small">C. docker container</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">34</td><td><div>หนึ่ง docker image สามารถรันได้แค่หนึ่ง docker container</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (Image เดียวสร้าง Container ได้ไม่จำกัด)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">35</td><td><div>container ที่รันอยู่บนเครื่องเดียวกันจะใช้ Host OS ตัวเดียวกัน</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">36</td><td><div>คำสั่ง docker ที่ใช้รัน container จาก docker image คือ</div></td><td><b>A</b> docker run</td><td class="small">A. docker run</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">37</td><td><div>คำสั่ง docker ที่ใช้แสดง docker image บนเครื่องเราคือ</div></td><td><b>B</b> docker images</td><td class="small">B. docker images</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">38</td><td><div>คำสั่ง docker ที่ใช้เรียกให้ container ที่เคยรันอยู่แล้ว แต่เราสั่งหยุดไป ให้กลับมาทำงานคือ</div></td><td><b>C</b> docker start</td><td class="small">C. docker start</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">39</td><td><div>คำสั่ง docker ที่ใช้แสดง container ที่อยู่บนเครื่องเราคือ</div></td><td><b>E</b> docker ps</td><td class="small">E. docker ps</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">40</td><td><div>คำสั่ง docker rm คือการลบ docker image ออกจากเครื่องของเรา</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (<code>docker rm</code> ใช้ลบ container, ถ้าลบ image ต้องใช้ <code>docker rmi</code>)</td></tr>
+</table></div>
+<h3>L2. CompOr and OS &amp; Categories of OS <span style="font-weight:600;color:var(--muted);font-size:.8em">— ชุดที่ 2.1 · 16 ข้อ</span></h3>
+<div class="tbl-wrap"><table class="t sqz">
+<tr style="break-inside:avoid;page-break-inside:avoid"><th style="width:34px">ข้อ</th><th>คำถาม</th><th style="width:120px">คำตอบ</th><th>เฉลย / ความรู้</th></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">1</td><td><div>Device controller จะบอกว่ามันทำงานเสร็จแล้วโดยใช้</div></td><td><b>B</b> Interrupt</td><td class="small">B. Interrupt</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">2</td><td><div>โปรแกรมที่ใช้จัดการ interrupt เรียกว่า</div></td><td><b>C</b> Interrupt Service Routine</td><td class="small">C. Interrupt Service Routine (ISR)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">3</td><td><div>การค้นหาโปรแกรมจัดการ interrupt จะทำผ่าน</div></td><td><b>B</b> Interrupt vector</td><td class="small">B. Interrupt vector (ตารางเก็บแอดเดรสของ ISR)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">4</td><td><div>ระบบที่เมื่อทำงานแล้วจะทำงานไปจนจบโดยไม่มีการติดต่อกับผู้ใช้คือ</div></td><td><b>A</b> Batch System</td><td class="small">A. Batch System</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">5</td><td><div>คุณสมบัติที่สำคัญของระบบปฏิบัติการแบบโต้ตอบคือการแบ่งเวลาการใช้งาน CPU</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (Time-sharing)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">6</td><td><div>ในระบบ hybrid งานแบบ batch จะทำงานหลังฉาก</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (Background process)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">7</td><td><div>ความสามารถที่ OS ทั้งแบบที่เป็น Multi-Program Batch และ Interactive ต้องมีร่วมกันก็คือ การเลือกโปรแกรมที่อยู่ในหน่วยความจำเข้ามาใช้งาน CPU</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (CPU Scheduling)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">8</td><td><div>ในวิชานี้ Windows 11 เป็นตัวอย่างของระบบปฏิบัติการแบบ</div></td><td><b>B</b> Single-user multi-tasking</td><td class="small">B. Single-user multi-tasking</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">9</td><td><div>ในวิชานี้ การที่ OS ยอมให้สร้างบัญชีผู้ใช้ได้หลาย ๆ บัญชี จะถือว่ามันเป็น multi-user OS</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (Multi-user ต้องยอมให้ผู้ใช้หลายคนล็อกอินใช้งานระบบและทรัพยากรพร้อมกันได้จริง เช่น UNIX/Linux)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">10</td><td><div>ระบบซึ่งต้องตอบสนองในเวลาที่กำหนด</div></td><td><b>C</b> Real Time System</td><td class="small">C. Real Time System</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">11</td><td><div>ระบบ Real Time ต้องการ OS ที่พัฒนาขึ้นมาโดยเฉพาะเท่านั้น</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (สามารถดัดแปลง General OS หรือใช้ RTOS ก็ได้)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">12</td><td><div>ระบบที่มี CPU หลายตัวในเครื่องเดียวเรียกว่า</div></td><td><b>E</b> Parallel System</td><td class="small">E. Parallel System (Tightly-coupled system)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">13</td><td><div>ระบบปฏิบัติการที่เราใช้ในปัจจุบันส่วนใหญ่รองรับ parallel system</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (รองรับ Multi-core processor)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">14</td><td><div>Loosely coupled system</div></td><td><b>D</b> Distributed System</td><td class="small">D. Distributed System</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">15</td><td><div>ถ้าใช้ระบบปฏิบัติการแบบกระจาย (distributed OS) ทรัพยากรจะถูกควบคุมโดย OS ของแต่ละโหนดในเครือข่าย</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">16</td><td><div>ในวิชานี้ Windows 11 จัดเป็น Network OS</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (Windows ยุคปัจจุบันมีคุณสมบัติรองรับการทำงานด้านเน็ตเวิร์ก แชร์ไฟล์ แชร์เครื่องพิมพ์ในตัว)</td></tr>
+</table></div>
+<h3>L3. OS Structure <span style="font-weight:600;color:var(--muted);font-size:.8em">— ชุดที่ 2.2 · 16 ข้อ</span></h3>
+<div class="tbl-wrap"><table class="t sqz">
+<tr style="break-inside:avoid;page-break-inside:avoid"><th style="width:34px">ข้อ</th><th>คำถาม</th><th style="width:120px">คำตอบ</th><th>เฉลย / ความรู้</th></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">1</td><td><div>ส่วนของ OS ที่จัดเตรียมส่วนติดต่อให้โปรแกรมที่เขียนขึ้นเรียกใช้เพื่อใช้บริการของ OS</div></td><td><b>B</b> System Calls</td><td class="small">B. System Calls</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">2</td><td><div>บริการของ OS ที่เกี่ยวกับการวางกฎเกณฑ์ และควบคุมให้เป็นไปตามกฎเกณฑ์ในการใช้งานทรัพยากรของระบบ</div></td><td><b>C</b> Protection</td><td class="small">C. Protection</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">3</td><td><div>บริการของ OS ที่เกี่ยวกับการตรวจสอบสิทธิการเข้าใช้งานระบบ</div></td><td><b>D</b> Security</td><td class="small">D. Security (เช่น การยืนยันตัวตนและการเข้าถึงจากภายนอก)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">4</td><td><div>บริการด้านการสื่อสารระหว่างโปรแกรมที่ OS เตรียมไว้ให้</div></td><td><b>C</b> message passing</td><td class="small">C. message passing (IPC แบบหนึ่ง)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">5</td><td><div>Command Line Interface (CLI) ไม่สามารถอยู่ใน kernel ได้</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (ในบางสถาปัตยกรรม CLI สามารถฝังอยู่ในส่วนของ kernel ได้)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">6</td><td><div><code>ls</code> เป็นตัวอย่างคำสั่งแบบ command built-in ของ Linux</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (<code>ls</code> เป็น external program อยู่ที่ <code>/bin/ls</code>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">7</td><td><div><code>cd</code> เป็นตัวอย่างคำสั่งแบบ command built-in ของ Linux</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (<code>cd</code> ถูกฝังอยู่ใน shell โดยตรง)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">8</td><td><div>คำสั่งที่เป็น command built-in จะเริ่มต้นทำงานได้เร็วกว่าคำสั่งที่เป็นโปรแกรมภายนอก</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (ไม่ต้องโหลดไฟล์ binary จาก disk เข้า memory)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">9</td><td><div>คำสั่งที่เป็น command built-in จะแก้ไขได้ง่ายกว่าคำสั่งที่เป็นโปรแกรมภายนอก</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (คำสั่ง built-in ต้องแก้ที่ตัวเชลล์แล้วคอมไพล์ใหม่)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">10</td><td><div>OS จัดการการเรียกใช้ system call คล้ายกับการจัดการ hardware interrupt</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (ใช้ Trap/Software Interrupt ผ่าน Vector Table เหมือนกัน)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">11</td><td><div>การใช้ system call เราจะต้องเขียนโปรแกรมเรียกใช้ฟังก์ชันของ System Call (ไม่ว่าจะเป็นระดับ OS หรือ high level API) โดยตรงเท่านั้น</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (สามารถเรียกผ่าน Library ทั่วไป เช่น Standard C Library <code>printf()</code>, <code>fopen()</code> ซึ่งจะไปเรียก system call ต่ออีกทอดหนึ่ง)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">12</td><td><div>การใช้ high-level API มีข้อดีคือโปรแกรมจะทำงานเร็วกว่าเรียกใช้ System call ระดับ OS</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (API มี overhead มากกว่า จึงไม่เร็วกว่าการเรียก native system call โดยตรง)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">13</td><td><div>การจัดการ System Call จะเหมือนกับการจัดการ Interrupt</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">14</td><td><div>การเรียกใช้ System Call ก็คือการ interrupt ทางซอฟต์แวร์</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (เรียกว่า Software Interrupt หรือ Trap)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">15</td><td><div>สถาปัตยกรรมของ kernel ที่ให้ประสิทธิภาพสูงสุดคือ</div></td><td><b>B</b> Monolithic</td><td class="small">B. Monolithic (บริการทุกอย่างอยู่ใน Address Space เดียวกัน ทำให้เรียกใช้งานได้เร็ว ไม่ต้องสลับ context บ่อย)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">16</td><td><div>สถาปัตยกรรมของ kernel ที่น่าจะทำให้การปรับปรุง OS ทำได้ง่ายที่สุดคือ</div></td><td><b>A</b> Microkernel</td><td class="small">A. Microkernel (บริการส่วนใหญ่ถูกแยกเป็น User Service ทำให้แก้ไขเพิ่มเติมได้โดยไม่ต้องรื้อ Kernel)</td></tr>
+</table></div>
+<h3>L4. Introduction to Process <span style="font-weight:600;color:var(--muted);font-size:.8em">— ชุดที่ 3 · 24 ข้อ</span></h3>
+<div class="tbl-wrap"><table class="t sqz">
+<tr style="break-inside:avoid;page-break-inside:avoid"><th style="width:34px">ข้อ</th><th>คำถาม</th><th style="width:120px">คำตอบ</th><th>เฉลย / ความรู้</th></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">1</td><td><div>จากนิยามของ OS ไฟล์ <code>paint.exe</code> คือ process</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (ไฟล์บนดิสก์คือ Program ส่วน Process คือโปรแกรมที่ถูกโหลดขึ้นมาทำงานในหน่วยความจำแล้ว)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">2</td><td><div>การสร้าง process จากโปรแกรมจะเป็นการจับคู่แบบหนึ่งต่อหนึ่ง คือ หนึ่งโปรแกรมจะสร้างได้หนึ่ง process</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (หนึ่งโปรแกรมสามารถถูกเปิดใช้งานพร้อมกันได้หลาย process)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">3</td><td><div>แต่ละ process จะมี data section ของตัวเอง</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">4</td><td><div>โพรเซสที่รอให้ OS มาเลือกมันไปใช้งาน CPU จะอยู่ในสถานะ</div></td><td><b>B</b> ready</td><td class="small">B. ready</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">5</td><td><div>สมมติโพรเซสอยู่ในสถานะ running ถ้ามันต้องการทำ I/O มันจะเปลี่ยนสถานะเป็น</div></td><td><b>D</b> waiting</td><td class="small">D. waiting</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">6</td><td><div>การเปลี่ยนสถานะของโพรเซสในข้อใดต่อไปนี้ไม่สามารถเกิดขึ้นได้</div></td><td><b>D</b> waiting → running</td><td class="small">D. waiting → running (เมื่อทำ I/O เสร็จ ต้องกลับไปต่อคิวที่ ready ก่อนเสมอ จะกระโดดไป running ทันทีไม่ได้)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">7</td><td><div>ข้อมูลของโพรเซสแต่ละตัวจะถูกเก็บไว้ใน</div></td><td><b>D</b> PCB</td><td class="small">D. PCB (Process Control Block)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">8</td><td><div>โพรเซสที่รอการใช้งานเครื่องพิมพ์จะอยู่ใน</div></td><td><b>C</b> Device queue</td><td class="small">C. Device queue</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">9</td><td><div>กระบวนการสลับโพรเซสเข้าใช้งาน CPU เรียกว่า</div></td><td><b>C</b> Context Switch</td><td class="small">C. Context Switch</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">10</td><td><div>การทำ context switch จะเกิดจากส่วนของ OS ที่เรียกว่า</div></td><td><b>D</b> Dispatcher</td><td class="small">D. Dispatcher (Dispatcher เป็นตัวสลับ Context จริง ส่วน Scheduler เป็นตัวเลือกว่าจะเอาโปรเซสไหน)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">11</td><td><div>ส่วนของ OS ที่ใช้เลือกโพรเซสที่อยู่ใน ready queue เพื่อให้เข้าไปใช้งาน CPU คือ</div></td><td><b>E</b> Scheduler</td><td class="small">E. Scheduler</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">12</td><td><div>แต่ละ process จะสร้าง process ย่อยได้ไม่เกินสาม process</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (สร้างได้ตามที่ทรัพยากรระบบจะอำนวย)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">13</td><td><div>สมมติใช้คำสั่งต่อไปนี้ในการคอมไพล์ source code ภาษา C ชื่อ main.c</div><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">gcc main.c -o main.exe</pre><div>สมมติในโปรแกรมไม่มี error ใด ๆ จะได้โปรแกรมชื่อ</div></td><td><b>C</b> main.exe</td><td class="small">C. main.exe (แฟล็ก <code>-o</code> ระบุชื่อไฟล์ output)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">14</td><td><div>หลังจากการเรียกใช้ ฟังก์ชัน <code>fork()</code> child process จะเริ่มทำงานจากตำแหน่งเริ่มต้นของ program (เช่น เริ่มทำงานตามคำสั่งแรกที่เขียนไว้ใน main program)</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (Child process จะเริ่มทำงานต่อจากคำสั่ง <code>fork()</code> ทันที ไม่ได้กลับไปเริ่มที่ต้นฟังก์ชัน <code>main</code>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">15</td><td><div>หลังจากการเรียกใช้ ฟังก์ชัน <code>fork()</code> การเปลี่ยนค่าตัวแปรของ child process จะไม่ทำให้ตัวแปรชื่อเดียวกันใน parent process เปลี่ยนค่าตามไปด้วย</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (ทั้งสองมี Address Space แยกจากกัน)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">16</td><td><div>ในโค้ดโปรแกรมเราสามารถแยกส่วนของโค้ดที่ต้องการให้ parent process ทำงาน กับส่วนที่ต้องการให้ child process ทำงาน โดยดูจากค่าที่ฟังก์ชัน <code>fork()</code> ส่งกลับมา</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (Child ได้รับค่า 0, Parent ได้รับค่า PID ของลูก)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">17</td><td><div>OS จะให้สิทธิ parent process สูงกว่า child process คือหลังจาก fork OS จะให้ parent process ทำงานก่อน child process</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (ลำดับการทำงานขึ้นอยู่กับ CPU Scheduler ตัวใดอาจทำงานก่อนก็ได้)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">18</td><td><div>ฟังก์ชัน <code>fork()</code> จะ return ค่าลบให้กับ child process ในกรณีที่ <code>fork()</code> ทำงานผิดพลาด (สร้าง process ไม่ได้)</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (ถ้าเกิดข้อผิดพลาด จะไม่มี child process ถูกสร้างขึ้น และจะ return ค่าลบให้กับ parent process เท่านั้น)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">19</td><td><div>ผลลัพธ์ที่ได้จากการทำงานของโปรแกรมที่มีการสร้าง process ย่อย อาจมีได้มากกว่าหนึ่งแบบ</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (ขึ้นอยู่กับการสลับคิวของ Scheduler)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">20</td><td><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">/* fork_example1.c */
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/wait.h&gt;
+
+int main() {
+    pid_t pid;
+    int i;
+    for (i = 0; i &lt; 2; i++) {
+        pid = fork();
+        if (pid == 0) {
+            printf(&quot;child %d\n&quot;, i + 1);
+            exit(0);
+        }
+    }
+    while(wait(NULL) != -1);
+    printf(&quot;goodbye\n&quot;);
+    return 0;
+}</pre><div>จากโปรแกรมดังรูป จะมีโพรเซสถูกสร้างขึ้นกี่โพรเซส (รวมทั้ง parent process ด้วย)</div></td><td><b>C</b> 3</td><td class="small">C. 3  รอบ i=0 แม่สร้างลูก 1 ซึ่งลูกปริ้นท์แล้ว <code>exit(0)</code> ทันที, รอบ i=1 แม่สร้างลูก 2 ซึ่งลูกปริ้นท์แล้ว <code>exit(0)</code> เช่นกัน รวม Parent (1) + Child1 (1) + Child2 (1) = 3 โพรเซส</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">21</td><td><div>จากโปรแกรมในข้อ 20 ผลลัพธ์ที่เป็นไปได้คือ</div></td><td><b>A.</b>  - B. - C. - D.<pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">child 1
+goodbye
+child 2</pre></td><td class="small">A (เนื่องจากมีคำสั่ง <code>while(wait(NULL) != -1);</code> ทำให้ Parent ต้องรอลูกทุกตัวทำงานเสร็จก่อน คำว่า &quot;goodbye&quot; จึงต้องอยู่บรรทัดสุดท้ายเสมอ)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">22</td><td><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;sys/wait.h&gt;
+
+int main() {
+    pid_t pid;
+    int i;
+    for (i = 0; i &lt; 2; i++) {
+        pid = fork();
+        if (pid == 0) {
+            printf(&quot;child %d\n&quot;, i + 1);
+        }
+    }
+    while(wait(NULL) != -1);
+    printf(&quot;goodbye\n&quot;);
+    return 0;
+}</pre><div>จากโปรแกรมดังรูป (ไม่มีคำสั่ง <code>exit(0)</code> ใน child) จะมีโพรเซสถูกสร้างขึ้นกี่โพรเซส (รวมทั้ง parent process ด้วย)</div></td><td><b>D</b> 4</td><td class="small">D. 4 (2² = 4 โพรเซส เพราะลูกตัวแรกไม่ได้ exit จึงวนลูปไป fork ลูกตัวที่สองต่อด้วย)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">23</td><td><div>จากโปรแกรมในข้อ 22 คำว่า &quot;goodbye&quot; จะถูกพิมพ์ออกมากี่ครั้ง</div></td><td><b>D</b> 4</td><td class="small">D. 4 (ทั้ง 4 โพรเซสหลุดออกจากลูปแล้วรันมาถึงบรรทัด <code>printf(&quot;goodbye\n&quot;);</code>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">24</td><td><div>จากโปรแกรมในข้อ 22 คำว่า &quot;child 2&quot; จะถูกพิมพ์ออกมากี่ครั้ง</div></td><td><b>B</b> 2</td><td class="small">B. 2 (ในลูป i=1 จะมีโพรเซสแม่ และลูกตัวแรก ทำการ fork ทำให้เกิดลูกใหม่ 2 ตัวที่มี <code>pid == 0</code> ในรอบ i=1 จึงพิมพ์ &quot;child 2&quot; ทั้งหมด 2 ครั้ง)</td></tr>
+</table></div>
+<h3>L5. Fork and Exec <span style="font-weight:600;color:var(--muted);font-size:.8em">— ชุดที่ 4.1 · 19 ข้อ</span></h3>
+<div class="tbl-wrap"><table class="t sqz">
+<tr style="break-inside:avoid;page-break-inside:avoid"><th style="width:34px">ข้อ</th><th>คำถาม</th><th style="width:120px">คำตอบ</th><th>เฉลย / ความรู้</th></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">1</td><td><div>System call ที่ใช้ในการเรียกโปรแกรมอื่นขึ้นมาทำงานคือ</div></td><td><b>A</b> execl</td><td class="small">A. execl (กลุ่มฟังก์ชัน exec)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">2</td><td><div>System call ที่ใช้ในการเรียกโปรแกรมอื่นขึ้นมาทำงาน ที่เราต้องระบุพารามิเตอร์ในรูปของอาเรย์คือ</div></td><td><b>B</b> execv</td><td class="small">B. execv (<code>v</code> หมายถึง Vector/Array)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">3</td><td><div>System call ที่ Parent Process ใช้เพื่อรอ Child Process จบการทำงาน</div></td><td><b>E</b> wait</td><td class="small">E. wait</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">4</td><td><div>System call ที่ Process ใช้จบการทำงานและส่งค่ากลับให้ Parent Process</div></td><td><b>C</b> exit</td><td class="small">C. exit</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">5</td><td><div>คำสั่งบนระบบปฏิบัติการ UNIX ที่ใช้แสดงสถานะของโพรเซส</div></td><td><b>A</b> ps</td><td class="small">A. ps</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">6</td><td><div>ถ้าในโค้ดมีการเขียนคำสั่งนี้</div><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">execlp(&quot;/bin/ls&quot;, &quot;-l&quot;, NULL);</pre><div>ผลลัพธ์ที่ได้ก็เหมือนกับการป้อนคำสั่ง ls -l</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (เนื่องจากการเรียก <code>execlp</code> พารามิเตอร์ตัวแรกใน list ควรเป็นชื่อโปรแกรมหรือ <code>argv[0]</code> ในที่นี้ส่ง <code>&quot;-l&quot;</code> ไปเป็น <code>argv[0]</code> ทำให้คำสั่งทำงานผิดรูปแบบ ไม่เทียบเท่ากับการสั่ง <code>ls -l</code>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">7</td><td><div>ถ้าในโค้ดมีการเขียนคำสั่งนี้</div><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">execlp(&quot;/bin/ls&quot;, &quot;ly&quot;, &quot;-l&quot;, NULL);</pre><div>จะทำให้การเรียกใช้ฟังก์ชัน execlp ทำงานไม่สำเร็จ นั่นคือจะไม่มีการเรียกใช้คำสั่ง ls</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (คำสั่ง <code>ls</code> จะยังคงถูกโหลดมาทำงานสำเร็จ เพียงแต่ค่า <code>argv[0]</code> จะมีค่าเป็นคำว่า <code>&quot;ly&quot;</code>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">8</td><td><div>ถ้าในโค้ดมีการเขียนคำสั่งนี้</div><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">execl(&quot;ls&quot;, &quot;ls&quot;, &quot;-l&quot;, NULL);</pre><div>ถ้าคำสั่ง ls ไม่อยู่ในโฟลเดอร์เดียวกับโปรแกรมที่มีคำสั่งนี้ คำสั่ง execl จะทำงานไม่สำเร็จ นั่นคือจะไม่มีการเรียกใช้คำสั่ง ls</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (ฟังก์ชัน <code>execl</code> ธรรมดา ไม่ค้นหาจากตัวแปรแวดล้อม <code>PATH</code> เหมือน <code>execlp</code> ดังนั้นถ้าไม่ระบุ full path และไฟล์ไม่อยู่ใน directory ปัจจุบันจะรันไม่สำเร็จ)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">9</td><td><div>ถ้าต้องการเขียนโปรแกรมเพื่อเรียกใช้คำสั่ง cd เพื่อเปลี่ยนไปยังโฟลเดอร์ test ที่อยู่ภายใต้โฟลเดอร์ปัจจุบันที่โปรแกรมทำงานอยู่ เราจะเขียนคำสั่งดังนี้</div><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">execlp(&quot;cd&quot;, &quot;cd&quot;, &quot;./test&quot;, NULL);</pre></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (คำสั่ง <code>cd</code> เป็น Shell built-in ไม่มีไฟล์ executable แยกต่างหากใน disk ให้เรียกผ่าน <code>execlp</code> ได้)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">10</td><td><div>สมมติเขียน shell script ดังนี้</div><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">mkdir test
+cd test</pre><div>จากนั้นจัดเก็บไว้ในไฟล์ชื่อที่เพิ่งสร้างขึ้น ถ้าเรียกใช้ shell script นี้ โดยใช้คำสั่ง</div><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">bash test.sh</pre><div>สมมติโฟลเดอร์ test ยังไม่มีอยู่ในโฟลเดอร์ปัจจุบันที่เราเรียกใช้งาน shell script นี้ เมื่อโปรแกรมทำงานจบ โฟลเดอร์ปัจจุบันที่เราจะใช้งานอยู่คือโฟลเดอร์ test ที่เพิ่งสร้างขึ้น</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (การรันด้วย <code>bash test.sh</code> จะทำงานใน Subshell เมื่อสคริปต์จบ Subshell จะปิดตัวลง โฟลเดอร์ปัจจุบันของ Shell ตัวหลักจะไม่เปลี่ยน)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">11</td><td><div>จากข้อ 10 ถ้าเรียกใช้ shell script นี้ โดยใช้คำสั่ง</div><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">source test.sh</pre><div>เมื่อโปรแกรมทำงานจบ โฟลเดอร์ปัจจุบันที่เราจะใช้งานอยู่คือโฟลเดอร์ test ที่เพิ่งสร้างขึ้น</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (คำสั่ง <code>source</code> หรือ <code>.</code> จะรันคำสั่งทั้งหมดบน Shell ปัจจุบันโดยตรง)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">12</td><td><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">int main(int argc, char *argv[]) {
+    // ...
+}</pre><div>เมื่อเรียกใช้โปรแกรมด้วยคำสั่ง:</div><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">./app Ungink 1234 5678</pre><div>ค่าของ <code>argc</code> คือ</div></td><td><b>D</b> 4</td><td class="small">D. 4 (นับ <code>./app</code>, <code>Ungink</code>, <code>1234</code>, <code>5678</code>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">13</td><td><div>จากโปรแกรมในข้อ 12 ค่าของ <code>argv[1]</code> คือ</div></td><td><b>H. &quot;Ungink&quot;</b>  - I. &quot;1234&quot; - J. &quot;5678&quot;</td><td class="small">H. &quot;Ungink&quot; (<code>argv[0]</code> คือ <code>&quot;./app&quot;</code>, <code>argv[1]</code> คือ <code>&quot;Ungink&quot;</code>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">14</td><td><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">public static void main(String[] args) {
+    // ...
+}</pre><div>เมื่อเรียกใช้โปรแกรมด้วยคำสั่ง:</div><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">java app Ungink 1234 5678</pre><div>ค่าของ <code>args[1]</code> คือ</div></td><td><b>I. &quot;1234&quot;</b>  - J. &quot;5678&quot;</td><td class="small">I. &quot;1234&quot; (ใน Java <code>args[0]</code> คือ <code>&quot;Ungink&quot;</code>, <code>args[1]</code> คือ <code>&quot;1234&quot;</code>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">15</td><td><div><code>wait(NULL);</code> หมายถึง parent process จะไม่หยุดรอการทำงานของ child process</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (<code>wait(NULL)</code> สั่งให้ Parent หยุดรอจนกว่าลูกคนใดคนหนึ่งจะจบการทำงาน)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">16</td><td><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;sys/types.h&gt;
+
+int main() {
+    pid_t pid;
+    int i;
+    for (i = 0; i &lt; 3; i++) {
+        pid = fork();
+        if (pid == 0) {
+            if (i == 0) {
+                execlp(&quot;echo&quot;, &quot;echo&quot;, &quot;good morning&quot;, NULL);
+                printf(&quot;hi\n&quot;);
+            }
+            else if (i == 1) {
+                execlp(&quot;echo&quot;, &quot;echo&quot;, &quot;good afternoon&quot;, NULL);
+                printf(&quot;hi\n&quot;);
+            }
+            else {
+                execlp(&quot;echo&quot;, &quot;echo&quot;, &quot;good night&quot;, NULL);
+                printf(&quot;hi\n&quot;);
+            }
+        }
+    }
+    while(wait(NULL) != -1);
+    printf(&quot;goodbye\n&quot;);
+    return 0;
+}</pre><div>จากโปรแกรมภาษา C ดังรูป จะมีผลลัพธ์กี่บรรทัด (หมายเหตุ: คำสั่ง echo มีเวอร์ชันที่เป็น external program)</div></td><td><b>D</b> 4</td><td class="small">D. 4  <code>execlp</code> รัน echo 3 รอบ (3 บรรทัด) และไม่มีลูกตัวไหนมาทำ <code>printf(&quot;hi\n&quot;)</code> เพราะ <code>exec</code> แทนที่โปรเซสเดิมไปแล้ว จากนั้นแม่พิมพ์ <code>goodbye\n</code> อีก 1 บรรทัด รวมเป็น 4 บรรทัด</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">17</td><td><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/wait.h&gt;
+#include &lt;sys/types.h&gt;
+
+int main() {
+    pid_t pid;
+    int i;
+    for (i = 0; i &lt; 3; i++) {
+        pid = fork();
+        if (pid == 0) {
+            if (i == 0) {
+                execlp(&quot;cd&quot;, &quot;cd&quot;, &quot;test&quot;, NULL);
+                printf(&quot;hi\n&quot;);
+            }
+            else if (i == 1) {
+                execlp(&quot;echo&quot;, &quot;echo&quot;, &quot;good afternoon&quot;, NULL);
+                printf(&quot;hi\n&quot;);
+            }
+            else {
+                execlp(&quot;echo&quot;, &quot;echo&quot;, &quot;good night&quot;, NULL);
+                printf(&quot;hi\n&quot;);
+            }
+        }
+    }
+    while(wait(NULL) != -1);
+    printf(&quot;goodbye\n&quot;);
+    return 0;
+}</pre><div>จากโปรแกรมภาษา C ดังรูป จะมีผลลัพธ์กี่บรรทัด (หมายเหตุ: คำสั่ง cd เป็น shell built in คำสั่ง echo มีเวอร์ชันที่เป็น external program)</div></td><td><b>D</b> 7</td><td class="small">D. 7  เมื่อ i=0 ลูกคนที่ 1 เรียก <code>execlp(&quot;cd&quot;, ...)</code> ซึ่งล้มเหลว (เพราะ cd เป็น built-in) ทำให้ทำงานต่อแล้วพิมพ์ <code>hi\n</code> (1) และลูกคนนี้ไม่ได้ exit จึงวนลูปไป fork ลูกต่ออีก 2 ตัว (พิมพ์ good afternoon, good night) แล้วตัวมันเองพิมพ์ <code>goodbye\n</code> ด…</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">18</td><td><div>จากโปรแกรมภาษา C ในข้อ 17 คำว่า &quot;goodbye&quot; จะถูกพิมพ์ออกมากี่บรรทัด</div></td><td><b>B</b> 2</td><td class="small">B. 2 (พิมพ์จากโพรเซสแม่หลัก 1 ครั้ง และพิมพ์จากลูกตัวแรกที่รอดมาจากการ exec ล้มเหลวอีก 1 ครั้ง)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">19</td><td><div>จากโปรแกรมภาษา C ในข้อ 16 ผลลัพธ์ที่เป็นไปได้คือ</div></td><td><b>A.</b>  - B. - C. - D.<pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">goodbye
+good morning
+good afternoon
+good night</pre></td><td class="small">A (เพราะ <code>while(wait(NULL) != -1);</code> บังคับให้แม่รอจนลูกๆ ทุกตัวทำงานเสร็จหมดก่อน &quot;goodbye&quot; จึงต้องอยู่ท้ายสุด)</td></tr>
+</table></div>
+<h3>L6. Thread <span style="font-weight:600;color:var(--muted);font-size:.8em">— ชุดที่ 5.1 · 12 ข้อ</span></h3>
+<div class="tbl-wrap"><table class="t sqz">
+<tr style="break-inside:avoid;page-break-inside:avoid"><th style="width:34px">ข้อ</th><th>คำถาม</th><th style="width:120px">คำตอบ</th><th>เฉลย / ความรู้</th></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">1</td><td><div>จุดประสงค์ของการเขียนโปรแกรมแบบ multithread ก็คือต้องการให้มีส่วนของโปรแกรมหลาย ๆ ส่วนทำงานขนานกันไป</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">2</td><td><div>ข้อเสียของการสร้าง Thread คือมันใช้ทรัพยากรมากกว่าการสร้าง process ย่อย</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (Thread ใช้ทรัพยากรน้อยกว่าการสร้าง Process มาก จึงเรียกว่า Lightweight Process)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">3</td><td><div>Thread แต่ละตัวจะใช้ program counter ร่วมกัน</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (Thread แต่ละตัวต้องมี Program Counter และ Register เซตของตัวเอง)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">4</td><td><div>Thread แต่ละตัวจะใช้ stack ร่วมกัน</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (Thread แต่ละตัวต้องมี Stack ส่วนตัวสำหรับเก็บ Local variables และ Function call)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">5</td><td><div>Thread แต่ละตัวจะใช้ data section จากโพรเซสที่สร้างพวกมันขึ้นมาร่วมกัน</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (แชร์ Code, Data และ Files ร่วมกัน)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">6</td><td><div>Thread ที่ถูกสร้างจาก process เดียวกันไม่จำเป็นต้องมีสิทธิเท่ากัน</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (Thread ทุกตัวในโปรเซสเดียวกันถือครองสิทธิการเข้าถึงของโปรเซสนั้นเท่ากันทั้งหมด)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">7</td><td><div>JVM เป็นระบบปฏิบัติการแบบใด</div></td><td><b>B</b> Single-process multi-threaded</td><td class="small">B. Single-process multi-threaded</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">8</td><td><div>Windows 10 เป็นระบบปฏิบัติการแบบใด</div></td><td><b>D</b> multi-process multi-threaded</td><td class="small">D. multi-process multi-threaded</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">9</td><td><div>การจับคู่ระหว่าง user-thread และ kernel-thread แบบ many-to-one จะมีปัญหาด้านการทำงานพร้อมกันของ user thread ที่ถูกสร้างขึ้น</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (ถ้าเธรดใดเธรดหนึ่งเรียกบล็อกกิ้งซิสเต็มคอลล์ เธรดอื่นทั้งหมดในโปรเซสนั้นจะถูกบล็อกไปด้วย)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">10</td><td><div>Thread แต่ละ Thread ที่ถูกสร้างขึ้นไม่จำเป็นต้องมีที่เก็บข้อมูลของตัวเอง เพราะมันจะใช้ข้อมูลจาก PCB</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (แต่ละเธรดต้องมี Thread Control Block: TCB สำหรับเก็บค่า State, Registers, Stack pointer)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">11</td><td><div>การจับคู่ user-level กับ kernel-level threads ที่ใช้ทรัพยากรมากที่สุดคือ</div></td><td><b>C</b> One-to-One</td><td class="small">C. One-to-One (สร้าง 1 user thread ต้องสร้าง 1 kernel thread มารองรับ ทำให้เกิด overhead สูงสุด)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">12</td><td><div>การจับคู่ user-level กับ kernel-level threads ที่ user-thread จะไม่ถูกบล็อกจากการทำงานของ user-thread อื่นอย่างแน่นอนคือ</div></td><td><b>C</b> One-to-One</td><td class="small">C. One-to-One</td></tr>
+</table></div>
+<h3>L7. Thread Programming Concepts <span style="font-weight:600;color:var(--muted);font-size:.8em">— ชุดที่ 5.2 · 22 ข้อ</span></h3>
+<div class="tbl-wrap"><table class="t sqz">
+<tr style="break-inside:avoid;page-break-inside:avoid"><th style="width:34px">ข้อ</th><th>คำถาม</th><th style="width:120px">คำตอบ</th><th>เฉลย / ความรู้</th></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">1</td><td><div>ในการเขียนโปรแกรมภาษา C เพื่อใช้ library Pthread ชื่อเมท็อดที่จะให้ thread ไปทำงานต้องชื่อว่า runner</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (ตั้งชื่อฟังก์ชันเป็นชื่ออะไรก็ได้ ขอเพียง signature ตรงตามที่กำหนดคือ <code>void<i> func(void</i> param)</code>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">2</td><td><div>ฟังก์ชันของ Pthread library ที่ทำหน้าที่คล้าย ๆ ฟังก์ชัน fork ของการสร้าง process คือ</div></td><td><b>B</b> pthread_create()</td><td class="small">B. pthread_create()</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">3</td><td><div>ฟังก์ชันของ Pthread library ที่ทำหน้าที่คล้าย ๆ ฟังก์ชัน wait ของการสร้าง process คือ</div></td><td><b>C</b> pthread_join()</td><td class="small">C. pthread_join()</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">4</td><td><div>การเขียนประโยคต่อไปนี้</div><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">pthread_exit(5);</pre><div>คือการที่ thread ลูก ส่งค่า 5 กลับไปให้ thread แม่</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (พารามิเตอร์ของ <code>pthread_exit</code> รับพอยน์เตอร์ <code>void *retval</code> การส่งค่า integer 5 ดิบๆ โดยไม่ cast pointer ทำให้ผิดไวยากรณ์)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">5</td><td><div>ถ้าเขียนโปรแกรมภาษา C ชื่อ test.c ที่มีการเรียกใช้ Pthread library ในการคอมไพล์และลิงก์เพื่อให้ได้โปรแกรมชื่อ test จะใช้คำสั่งใดต่อไปนี้</div></td><td><b>D</b> gcc -o test test.c -lpthread</td><td class="small">D. gcc -o test test.c -lpthread</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">6</td><td><div>การที่จะทำให้คลาสที่สร้างขึ้นมีคุณสมบัติของ thread นักเขียนโปรแกรมภาษา Java จะสร้างคลาสโดยสืบทอดคุณสมบัติมาจากคลาส</div></td><td><b>B</b> Thread</td><td class="small">B. Thread (<code>extends Thread</code>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">7</td><td><div>การที่จะทำให้คลาสที่สร้างขึ้นมีคุณสมบัติของ thread นักเขียนโปรแกรมภาษา Java จะอิมพลีเมนต์ interface ชื่อ</div></td><td><b>A</b> Runnable</td><td class="small">A. Runnable (<code>implements Runnable</code>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">8</td><td><div>ส่วนของโปรแกรมที่เปรียบเสมือน main โปรแกรมสำหรับ thread ที่สร้างขึ้นในภาษา Java จะถูกเขียนไว้ใน method ชื่ออะไร</div></td><td><b>A</b> run</td><td class="small">A. run (<code>public void run()</code>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">9</td><td><div>เมท็อดสำหรับ Java thread ที่ทำหน้าที่คล้าย ๆ wait() ของการสร้าง process คือ</div></td><td><b>D</b> join</td><td class="small">D. join</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">10</td><td><div>ใน Java การสร้าง object ของคลาสที่สืบทอดคุณสมบัติของคลาส Thread ขึ้นมา เท่ากับว่า thread เริ่มต้นทำงานแล้ว</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (ต้องเรียก <code>.start()</code> ก่อน เธรดจึงจะเริ่มทำงาน)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">11</td><td><div>สมมติ Foo เป็นคลาสที่อิมพลีเมนต์ runnable interface และเราสร้าง object ของคลาส Foo ชื่อ obj ถ้าต้องการให้ thread อยู่ในสถานะ runnable เราจะใช้คำสั่งต่อไปนี้</div><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">obj.start();</pre></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (Interface <code>Runnable</code> ไม่มีเมท็อด <code>start()</code> ต้องส่งไปให้คลาส Thread เช่น <code>new Thread(obj).start();</code>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">12</td><td><div>เมื่อเรียกเมท็อด start() ของ object ที่เป็น object ของคลาส Thread ในภาษา Java, thread จะอยู่ในสถานะ running</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (จะเข้าสู่สถานะ Runnable เพื่อรอ Scheduler เลือกไปรัน)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">13</td><td><div>การที่ thread ที่ได้รับคำสั่งให้จบการทำงาน แล้วจบการทำงานเลย เราจะเรียกการอิมพลีเมนต์ thread ในแบบนี้ว่า</div></td><td><b>A</b> Asynchronous Cancellation</td><td class="small">A. Asynchronous Cancellation</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">14</td><td><div>Java thread รองรับการสั่งจบการทำงานของ thread ในรูปแบบที่เรียกว่า (ให้ตอบรูปแบบที่ใกล้เคียงที่สุด)</div></td><td><b>D</b> Cooperative Mechanism</td><td class="small">D. Cooperative Mechanism (การใช้ Flag หรือ <code>Thread.interrupt()</code> ตรวจสอบสถานะร่วมกัน)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">15</td><td><div>Pthread รองรับเฉพาะ deferred cancellation</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (Pthread รองรับทั้ง Asynchronous และ Deferred Cancellation)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">16</td><td><div>คำสั่ง sleep() จัดเป็น cancellation point สำหรับ Pthread</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">17</td><td><div>คำสั่ง printf() จัดเป็น cancellation point สำหรับ Pthread</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">18</td><td><div>แนวคิดการสร้าง Thread ไว้ล่วงหน้า เพื่อที่เมื่อต้องการใช้จะสามารถนำมาใช้ได้เลย โดยไม่ต้องเสียเวลาไปสร้างขึ้นมาใหม่ แนวคิดนี้มีชื่อเรียกว่า</div></td><td><b>B</b> Thread Pool</td><td class="small">B. Thread Pool</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">19</td><td><div>ถ้าต้องการสร้าง Thread pool ใน Java แบบไม่จำกัดขนาดไว้ล่วงหน้า เราจะใช้เมท็อดใดจากคลาส Executors</div></td><td><b>A</b> newCachedThreadPool()</td><td class="small">A. newCachedThreadPool()</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">20</td><td><div>จำนวน thread ใน Java thread pool ที่สร้างได้สูงสุดคือ 10 thread</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (สามารถกำหนดขนาดได้ตามความต้องการ หรือยืดหยุ่นได้ไม่จำกัดใน Cached Thread Pool)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">21</td><td><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;pthread.h&gt;
+
+int sum = 0;
+
+void *runner(void *param) {
+    int i, upper = atoi(param);
+    sum = 0;
+    for (i = 1; i &lt;= upper; i++)
+        sum += i;
+    printf(&quot;I am child thread, I am calculating\n&quot;);
+    pthread_exit(0);
+}
+
+int main(int argc, char *argv[]) {
+    pthread_t tid;
+    pthread_attr_t attr;
+    pthread_attr_init(&amp;attr);
+    pthread_create(&amp;tid, &amp;attr, runner, argv[1]);
+    printf(&quot;I am mother thread, I will wait for my child thread\n&quot;);
+    pthread_join(tid, NULL);
+    printf(&quot;from my child sum = %d\n&quot;, sum);
+    return 0;
+}</pre><div>จากโปรแกรมภาษา C ต่อไปนี้ ถ้าผู้ใช้ run โปรแกรมนี้โดยใช้คำสั่ง <code>./pthread 5</code> ผลลัพธ์ที่เป็นไปได้คือ</div></td><td><b>C</b><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">I am child thread, I am calculating
+I am mother thread, I will wait for my child thread
+from my child sum = 15</pre></td><td class="small">C (ผลรวม 1+2+3+4+5 = 15 และลำดับข้อความของ Child หรือ Mother จะขึ้นก่อนก็ได้ แต่ <code>sum = 15</code> ต้องอยู่หลัง <code>pthread_join()</code>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">22</td><td><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">class SharedData {
+    private int sum;
+    public int getSum() {
+        return sum;
+    }
+    public void setCalculatesum(int num) {
+        sum = num * (num + 1) / 2;
+    }
+}
+
+class Child extends Thread {
+    private SharedData data;
+    int num;
+    public Child(SharedData data, int num) {
+        this.data = data;
+        this.num = num;
+    }
+    public void run() {
+        System.out.print(&quot;I am calculating &quot;);
+        data.setCalculatesum(num);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        int num = Integer.parseInt(args[0]);
+        SharedData data = new SharedData();
+        Child child = new Child(data, num);
+        child.start();
+        try {
+            child.join();
+        } catch (InterruptedException ie) {}
+        System.out.print(data.getSum() + &quot; &quot;);
+        System.out.println(&quot;Goodbye&quot;);
+    }
+}</pre><div>จากโปรแกรมภาษา Java ต่อไปนี้ ถ้าผู้ใช้รันโปรแกรมโดยใช้คำสั่ง <code>java Main 6</code> ผลลัพธ์ที่เป็นไปได้คือ</div></td><td><b>C</b> I am calculating 21 Goodbye</td><td class="small">C. I am calculating 21 Goodbye ((6 × 7)/(2) = 21)</td></tr>
+</table></div>
+<h3>L8. CPU Scheduling <span style="font-weight:600;color:var(--muted);font-size:.8em">— ชุดที่ 6 · 31 ข้อ</span></h3>
+<div class="tbl-wrap"><table class="t sqz">
+<tr style="break-inside:avoid;page-break-inside:avoid"><th style="width:34px">ข้อ</th><th>คำถาม</th><th style="width:120px">คำตอบ</th><th>เฉลย / ความรู้</th></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">1</td><td><div>ส่วนของ OS ที่เรียกว่า Scheduler มีหน้าที่ในการทำ context switch</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (Dispatcher เป็นตัวทำ Context switch ส่วน Scheduler ทำหน้าที่เลือกโปรเซส)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">2</td><td><div>ถ้า OS ไม่สามารถขัดจังหวะการทำงานของโพรเซสได้หลังจากที่ให้โพรเซสได้ใช้งาน CPU Scheduling algorithm ที่ใช้จะเป็นแบบ nonpreemptive</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">3</td><td><div>การเลือกโพรเซสเข้าใช้งาน CPU แบบ round robin จะให้ response time ที่ดี</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">4</td><td><div>waiting time คือเวลาที่โพรเซสรออยู่ใน waiting state</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (Waiting time หมายถึงเวลาที่โปรเซสต้องรออยู่ใน <b>Ready Queue</b>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">5</td><td><div>สำหรับ multi-level feed back queue โพรเซสจะเลื่อนจากคิวที่มีสถานะสูงกว่าลงสู่คิวที่มีสถานะต่ำกว่าเสมอ</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (สามารถเลื่อนขึ้นไปยังคิวที่มีลำดับสูงกว่าได้ เช่น กลไก Aging)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">6</td><td><div>aging ช่วยแก้ปัญหาการอดตาย (starvation) ของโพรเซส</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (เพิ่ม Priority ให้โปรเซสที่รอนานขึ้นเรื่อยๆ)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">7</td><td><div>ถ้า waiting time มากจะทำให้ turnaround time มีค่ามากตามไปด้วย</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (Turnaround Time = Burst Time + Waiting Time)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">8</td><td><div>FCFS เป็น algorithm แบบ preemptive</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (FCFS เป็น Non-preemptive)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">9</td><td><div>ถ้าการเลือกโพรเซสเข้าใช้งาน CPU ทำให้ response time ดีแล้ว จะทำให้ทุกโพรเซสมี turnaround time ดีขึ้นด้วย</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (เช่น Round Robin ให้ response time ดีมาก แต่บ่อยครั้ง turnaround time เฉลี่ยกลับแย่กว่า SJF)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">10</td><td><div>SRTF เป็น nonpreemptive algorithm</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (SRTF คือ Preemptive SJF)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td colspan="4" style="background:#f0f9ff;border-left:3px solid #38bdf8;padding:5px 8px"><b>📊 ข้อมูลสำหรับข้อ 11 - 16</b><div style="margin-top:2px"><table style="border-collapse:collapse;margin:2px 0"><tr><th style="border:1px solid #d0d7de;background:#eef2f7;padding:1px 6px;font-size:9.6px">Process</th><th style="border:1px solid #d0d7de;background:#eef2f7;padding:1px 6px;font-size:9.6px">Arrival Time</th><th style="border:1px solid #d0d7de;background:#eef2f7;padding:1px 6px;font-size:9.6px">Burst Time</th></tr><tr><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">P1</td><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">0</td><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">8</td></tr><tr><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">P2</td><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">2</td><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">4</td></tr><tr><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">P3</td><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">1</td><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">1</td></tr></table><div><b>อัลกอริทึม:</b> Non-preemptive SJF</div><div><b>Gantt Chart:</b></div><ul style="margin:2px 0 2px 14px;padding:0"><li>t=0: P1 เริ่มรันยาวจนจบที่ t=8 (เพราะเป็น Non-preemptive)</li><li>t=8: ในคิวมี P2 (burst 4) และ P3 (burst 1) → P3 สั้นกว่า จึงรัน t=8 ถึง t=9</li><li>t=9: P2 รันต่อจนจบที่ t=13</li></ul><div><b>สรุปค่าเวลา:</b></div><ul style="margin:2px 0 2px 14px;padding:0"><li>P1: เสร็จ 8, Turnaround = 8-0 = 8, Waiting = 8-8 = 0</li><li>P2: เสร็จ 13, Turnaround = 13-2 = 11, Waiting = 11-4 = 7</li><li>P3: เสร็จ 9, Turnaround = 9-1 = 8, Waiting = 8-1 = 7</li></ul></div></td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">11</td><td>turnaround time ของ P1 คือ</td><td><b>8</b></td><td class="small"></td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">12</td><td>turnaround time ของ P2 คือ</td><td><b>11</b></td><td class="small"></td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">13</td><td>turnaround time ของ P3 คือ</td><td><b>8</b></td><td class="small"></td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">14</td><td>waiting time ของ P1 คือ</td><td><b>0</b></td><td class="small"></td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">15</td><td>waiting time ของ P2 คือ</td><td><b>7</b></td><td class="small"></td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">16</td><td>waiting time ของ P3 คือ</td><td><b>7</b></td><td class="small"></td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td colspan="4" style="background:#f0f9ff;border-left:3px solid #38bdf8;padding:5px 8px"><b>📊 ข้อมูลสำหรับข้อ 17 - 22</b><div style="margin-top:2px"><div>(ใช้ตารางเดียวกับข้อ 11 - 16) <b>อัลกอริทึม:</b> Preemptive SJF (SRTF)</div><div><b>Gantt Chart:</b></div><ul style="margin:2px 0 2px 14px;padding:0"><li>t=0: P1 รัน (เหลือ 8)</li><li>t=1: P3 เข้ามา (burst 1), P1 เหลือ 7 → P3 แย่ง CPU รัน t=1 ถึง t=2 (P3 จบ)</li><li>t=2: P2 เข้ามา (burst 4), P1 เหลือ 7 → P2 สั้นกว่า จึงรัน t=2 ถึง t=6 (P2 จบ)</li><li>t=6: P1 รันต่อที่เหลือ 7 หน่วย จนจบที่ t=13</li></ul><div><b>สรุปค่าเวลา:</b></div><ul style="margin:2px 0 2px 14px;padding:0"><li>P1: เสร็จ 13, Turnaround = 13-0 = 13, Waiting = 13-8 = 5</li><li>P2: เสร็จ 6, Turnaround = 6-2 = 4, Waiting = 4-4 = 0</li><li>P3: เสร็จ 2, Turnaround = 2-1 = 1, Waiting = 1-1 = 0</li></ul></div></td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">17</td><td>turnaround time ของ P1 คือ</td><td><b>13</b></td><td class="small"></td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">18</td><td>turnaround time ของ P2 คือ</td><td><b>4</b></td><td class="small"></td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">19</td><td>turnaround time ของ P3 คือ</td><td><b>1</b></td><td class="small"></td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">20</td><td>waiting time ของ P1 คือ</td><td><b>5</b></td><td class="small"></td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">21</td><td>waiting time ของ P2 คือ</td><td><b>0</b></td><td class="small"></td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">22</td><td>waiting time ของ P3 คือ</td><td><b>0</b></td><td class="small"></td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td colspan="4" style="background:#f0f9ff;border-left:3px solid #38bdf8;padding:5px 8px"><b>📊 ข้อมูลสำหรับข้อ 23 - 25</b><div style="margin-top:2px"><table style="border-collapse:collapse;margin:2px 0"><tr><th style="border:1px solid #d0d7de;background:#eef2f7;padding:1px 6px;font-size:9.6px">Process</th><th style="border:1px solid #d0d7de;background:#eef2f7;padding:1px 6px;font-size:9.6px">Arrival Time</th><th style="border:1px solid #d0d7de;background:#eef2f7;padding:1px 6px;font-size:9.6px">Burst Time</th></tr><tr><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">P1</td><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">0</td><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">8</td></tr><tr><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">P2</td><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">2</td><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">5</td></tr><tr><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">P3</td><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">1</td><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">3</td></tr></table><div><b>อัลกอริทึม:</b> Round Robin (RR), Time Quantum = 2</div><div><b>Gantt Chart (q=2):</b></div><ul style="margin:2px 0 2px 14px;padding:0"><li>t=0..2: P1 รัน (เหลือ 6) → ณ t=2 คิวคือ [P3, P2, P1]</li><li>t=2..4: P3 รัน (เหลือ 1) → คิวคือ [P2, P1, P3]</li><li>t=4..6: P2 รัน (เหลือ 3) → คิวคือ [P1, P3, P2]</li><li>t=6..8: P1 รัน (เหลือ 4) → คิวคือ [P3, P2, P1]</li><li>t=8..9: P3 รัน (เหลือ 0) → <b>P3 จบที่ t=9</b></li><li>t=9..11: P2 รัน (เหลือ 1) → คิวคือ [P1, P2]</li><li>t=11..13: P1 รัน (เหลือ 2) → คิวคือ [P2, P1]</li><li>t=13..14: P2 รัน (เหลือ 0) → <b>P2 จบที่ t=14</b></li><li>t=14..16: P1 รัน (เหลือ 0) → <b>P1 จบที่ t=16</b></li></ul></div></td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">23</td><td>turnaround time ของ P1 คือ</td><td><b>16</b></td><td class="small">16 - 0 = 16</td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">24</td><td>turnaround time ของ P2 คือ</td><td><b>12</b></td><td class="small">14 - 2 = 12</td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">25</td><td>turnaround time ของ P3 คือ</td><td><b>8</b></td><td class="small">9 - 1 = 8</td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">26</td><td><table style="border-collapse:collapse;margin:2px 0"><tr><th style="border:1px solid #d0d7de;background:#eef2f7;padding:1px 6px;font-size:9.6px">Process</th><th style="border:1px solid #d0d7de;background:#eef2f7;padding:1px 6px;font-size:9.6px">Arrival Time</th><th style="border:1px solid #d0d7de;background:#eef2f7;padding:1px 6px;font-size:9.6px">Burst Time</th></tr><tr><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">P1</td><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">0</td><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">8</td></tr><tr><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">P2</td><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">2</td><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">4</td></tr><tr><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">P3</td><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">1</td><td style="border:1px solid #d0d7de;padding:1px 6px;font-size:9.6px;text-align:center">1</td></tr></table><div>turnaround time ของ P2 จะเป็นเท่าไร ถ้า Scheduling Algorithm ที่ใช้คือ RR ที่มี time quantum เป็น 4</div></td><td><b>H. 7</b></td><td class="small">7 (P1 รัน t=0..4, จากนั้น P3 รัน t=4..5, P2 รัน t=5..9 ทำเสร็จที่ t=9; Turnaround = 9 - 2 = 7)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">27</td><td><div>สำหรับ multilevel queue โพรเซสที่อยู่ใน ready queue ใด ready queue หนึ่งจะอยู่ใน queue นั้นโดยไม่เปลี่ยนไปอยู่ที่ ready queue อื่น</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (Multilevel Queue ธรรมดาจะย้ายคิวไม่ได้ ต่างจาก Multilevel Feedback Queue ที่ย้ายได้)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">28</td><td><div>ถ้ากำหนด time quantum น้อย ก็มีโอกาสที่จะเกิด context switch มากขึ้น</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">29</td><td><div>ถ้าใช้ multilevel feedback queue ที่มี 3 คิว และแต่ละคิวเป็นดังนี้ - q0 ใช้ Round Robin (RR) มี time quantum 8 - q1 ใช้ Round Robin (RR) มี time quantum 16 - q2 ใช้ FCFS โดยทุก process จะถูกส่งเข้า q0 ก่อน โดยมีเงื่อนไขว่าแต่ละ process จะได…</div></td><td><b>B</b> q1</td><td class="small">B. q1 (ใน q0 ทำได้ 2 รอบ รอบละ 8 หน่วย = 16 หน่วย งานยังเหลืออีก 4 หน่วย จึงตกมาที่ q1 ซึ่งมี quantum 16 หน่วย จึงทำงานเสร็จสิ้นที่ q1)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">30</td><td><div>ถ้ามี thread ที่มีสิทธิสูงกว่าถูกส่งเข้ามาในระบบ JVM อาจหยุดการทำงานของ thread ที่ทำงานอยู่ และให้ thread ดังกล่าวเข้าทำงานแทน</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (Preemptive Priority-based Scheduling)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">31</td><td><div>ถ้าต้องการให้ Java thread เปิดทางให้ thread อื่นได้ทำงาน เมท็อดที่ต้องเรียกใช้คือ</div></td><td><b>D</b> yield()</td><td class="small">D. yield()</td></tr>
+</table></div>
+<h3>L9. Process Synchronization <span style="font-weight:600;color:var(--muted);font-size:.8em">— ชุดที่ 9.1 · 18 ข้อ</span></h3>
+<div class="tbl-wrap"><table class="t sqz">
+<tr style="break-inside:avoid;page-break-inside:avoid"><th style="width:34px">ข้อ</th><th>คำถาม</th><th style="width:120px">คำตอบ</th><th>เฉลย / ความรู้</th></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">1</td><td><div>การที่มีโพรเซสมากกว่าหนึ่งโพรเซสไปใช้แก้ข้อมูลที่ใช้งานร่วมกันโดยไม่มีการจัดจังหวะให้เหมาะสมซึ่งอาจจะทำให้ข้อมูลผิดได้เรียกว่า</div></td><td><b>C</b> Race Condition</td><td class="small">C. Race Condition</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">2</td><td><div>ถ้าค่าที่อยู่ในตัวแปร banana มีค่าเป็น 7 และมีโพรเซสสองโพรเซสเข้ามาแก้ไขค่าตัวแปรตัวนี้ โดยโพรเซส A เพิ่มค่า banana ขึ้นไปอีก 2 และ process B ลดค่าของ banana ลง 1 ถ้าโพรเซส A และโพรเซส B ได้ทำงานโพรเซสละ 1 ครั้ง (ใครทำก่อนก็ได้) ถ้ามีการจัด…</div></td><td><b>C</b> 8</td><td class="small">C. 8 (7 + 2 - 1 = 8)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">3</td><td><div>จากเงื่อนไขในข้อ 2 ถ้าไม่มีการจัดจังหวะอย่างเหมาะสม ค่าของตัวแปร banana จะมีค่าอะไรหลังจากโพรเซสทั้งสองจบการทำงาน</div></td><td><b>F</b> 6 หรือ 8 หรือ 9</td><td class="small">F. 6 หรือ 8 หรือ 9 (เกิด Race condition ขึ้นอยู่กับว่าตัวใดเขียนทับตัวใด หรือผลลัพธ์ปกติ)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">4</td><td><div>แนวคิดหลักของการจัดจังหวะระหว่างโพรเซสในการเข้าใช้ทรัพยากรที่สามารถใช้งานร่วมกันได้คือการล็อกทรัพยากรไม่ให้โพรเซสอื่นใช้ในขณะที่ตัวโพรเซสกำลังใช้งานทรัพยากรอยู่</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">5</td><td><div>ส่วนของโปรแกรมที่โพรเซสที่ถือครองทรัพยากรต้องทำงานให้เสร็จสิ้นก่อนที่จะปล่อยทรัพยากรให้โพรเซสอื่นใช้เรียกว่า</div></td><td><b>D</b> Critical Section</td><td class="small">D. Critical Section</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">6</td><td><div>ถ้าจะคิดขั้นตอนวิธีเพื่อแก้ไขเรื่อง Synchronization เพื่อให้สมบูรณ์จะต้องผ่านเงื่อนไขสามข้อ แต่ถ้าผ่านสามข้อไม่ได้ ข้อที่ต้องทำให้ผ่านให้ได้คือ</div></td><td><b>C</b> Mutual Exclusion</td><td class="small">C. Mutual Exclusion (เป็นกฎเหล็กสำคัญที่สุดว่าห้ามเข้าใช้งานพร้อมกันเด็ดขาด)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">7</td><td><div>เงื่อนไขที่ต้องรับประกันว่า การเลือกโพรเซสจะเลือกจากโพรเซสที่ต้องการเข้าใช้งานเท่านั้นคือ</div></td><td><b>B</b> Progress</td><td class="small">B. Progress</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">8</td><td><div>เงื่อนไขที่ต้องรับประกันว่า ในขณะเวลาหนึ่งจะมีเพียง process เดียว ที่ได้ทำงานใน critical section คือ</div></td><td><b>C</b> Mutual Exclusion</td><td class="small">C. Mutual Exclusion</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">9</td><td><div>เงื่อนไขที่ต้องรับประกันว่า โพรเซสที่รอการใช้งานอยู่จะไม่รอไปเรื่อย ๆ โดยไม่มีจุดสิ้นสุดคือ</div></td><td><b>A</b> Bounded Waiting</td><td class="small">A. Bounded Waiting</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">10</td><td><div>ถ้าไม่ผ่าน progress แล้ว ก็จะไม่ผ่าน Bounded Waiting</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">11</td><td><div>กลไกการแก้ปัญหา Synchronization คือเมื่อ process ทำงานอยู่ในส่วนของ critical section แล้วมันจะไม่ถูกขัดจังหวะ</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (โพรเซสยังคงถูกสลับ Context หรือขัดจังหวะได้ เพียงแต่โพรเซสอื่นจะไม่สามารถเข้าสู่ Critical Section ของตนได้)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">12</td><td><div>Bakery Algorithm ยอมให้มี process มากกว่าหนึ่ง process ที่มีหมายเลขคิวเดียวกันได้</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (กรณีหมายเลขคิวซ้ำกัน จะตัดสินด้วย Process ID ที่น้อยกว่า)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">13</td><td><div>ลำดับหมายเลขคิวใน Bakery Algorithm รองรับ bounded waiting</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (เป็นระบบ First-Come, First-Served ตามเบอร์คิว)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">14</td><td><div>จากขั้นตอนวิธีปัญหา bounded buffer ที่เป็นการพยายามจัดจังหวะของนักเขียนโปรแกรมเองตามที่เราเรียนกัน ตัวแปรที่เป็นตัวแปรที่ใช้ร่วมกันระหว่าง producer และ consumer คือ</div></td><td><b>E</b> count และ buffer</td><td class="small">E. count และ buffer (<code>in</code> เป็นของ Producer, <code>out</code> เป็นของ Consumer)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">15</td><td><div>ตัวแปรที่ producer ใช้ในการอ้างถึงช่อง ใน buffer ที่มันจะเขียนข้อมูลคือ</div></td><td><b>A</b> in</td><td class="small">A. in</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">16</td><td><div>ในการแก้ปัญหา Bounded buffer แบบที่จัดจังหวะของนักเขียนโปรแกรมเองตามที่เราเรียนกัน เงื่อนไขหนึ่งในการทำงานให้สำเร็จคือ ฝั่ง consumer จะต้องอ่านข้อมูลให้เสร็จจนจบกระบวนการถึงการลดตัวนับจำนวนข้อมูลใน buffer แต่ producer สามารถถูกขัดจังหวะได้โ…</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (ทั้งคู่ต้องทำงานจนครบกระบวนการและไม่ถูกขัดจังหวะในจุดวิกฤต มิเช่นนั้นค่า <code>count</code> จะเพี้ยน)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">17</td><td><div>ข้อจำกัดของ Peterson's algorithm คือมันรองรับแค่ Mutual Exclusion และ Progress แต่ไม่รองรับ Bounded Waiting</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (Peterson's algorithm ผ่านครบทั้ง 3 ข้อ รวมถึง Bounded Waiting)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">18</td><td><div>ข้อจำกัดของ Bakery algorithm คือมันรองรับแค่ Mutual Exclusion และ Progress แต่ไม่รองรับ Bounded Waiting</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (Bakery algorithm ผ่านครบทั้ง 3 ข้อสำหรับกรณี N โพรเซส)</td></tr>
+</table></div>
+<h3>L10. Semaphore (Concept &amp; Pthread) <span style="font-weight:600;color:var(--muted);font-size:.8em">— ชุดที่ 9.2 · 25 ข้อ</span></h3>
+<div class="tbl-wrap"><table class="t sqz">
+<tr style="break-inside:avoid;page-break-inside:avoid"><th style="width:34px">ข้อ</th><th>คำถาม</th><th style="width:120px">คำตอบ</th><th>เฉลย / ความรู้</th></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">1</td><td><div>การจัดจังหวะที่ให้โพรเซสติดลูปรอจนกว่าเงื่อนไขเป็นเท็จจึงจะเข้าทำงานได้เรียกว่าการจัดจังหวะที่มี busy waiting</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (หรือเรียกว่า Spinlock)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">2</td><td><div>Semaphore เป็นกลไกในการจัดจังหวะที่ไม่มี busy waiting</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (ในการอิมพลีเมนต์แบบมาตรฐานคลาสสิกของ OS โพรเซสที่รอจะถูกจับเข้า Sleep/Wait queue โดยไม่เปลือง CPU time)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">3</td><td><div>Semaphore ที่ใช้กับปัญหา critical section คือ counting semaphore</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (ใช้ Binary Semaphore หรือ Mutex Lock)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">4</td><td><div>Binary semaphore มีชื่อเรียกอีกอย่างว่า</div></td><td><b>B</b> Mutex lock</td><td class="small">B. Mutex lock</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">5</td><td><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">Semaphore S;
+wait(S)
+Critical Section
+signal(S)</pre><div>เพื่อที่จะใช้ semaphore ในการแก้ปัญหา critical section ต้องกำหนดค่าเริ่มต้นให้ S เป็น</div></td><td><b>B</b> 1</td><td class="small">B. 1</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">6</td><td><div>เมื่อใช้ semaphore แบบ ไม่มี busy waiting โพรเซสซึ่งรอการเข้าใช้ critical section จะรออยู่ใน wait state</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (Waiting Queue)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">7</td><td><div>การใช้ Semaphore รับประกันว่าจะผ่านเงื่อนไขสามข้อของการแก้ปัญหา Critical Section</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (การใช้ Semaphore อย่างไม่ระมัดระวังอาจเกิด Deadlock หรือ Starvation ทำให้ไม่ผ่าน Bounded Waiting)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">8</td><td><div>ฟังก์ชันของ PThread Semaphore ที่ทำหน้าที่เหมือนคำสั่ง wait() ของ Semaphore ที่แสดงใน slide คือ</div></td><td><b>C</b> sem_wait()</td><td class="small">C. sem_wait()</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">9</td><td><div>ฟังก์ชันของ PThread Semaphore ที่ทำหน้าที่เหมือนคำสั่ง signal() ของ Semaphore คือ</div></td><td><b>B</b> sem_post()</td><td class="small">B. sem_post()</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">10</td><td><div>ฟังก์ชันของ PThread Semaphore ที่ทำหน้าที่กำหนดค่าเริ่มต้นให้ semaphore คือ</div></td><td><b>A</b> sem_init()</td><td class="small">A. sem_init()</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">11</td><td><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">#include &lt;stdio.h&gt;
+#include &lt;pthread.h&gt;
+#include &lt;semaphore.h&gt;
+
+int count = 0;
+sem_t mutex;
+
+void *thread_func(void *param) {
+    int i;
+    for (i = 0; i &lt; 5; i++) {
+        sem_wait(&amp;mutex);
+        count++;
+        sem_post(&amp;mutex);
+    }
+    pthread_exit(0);
+}
+
+int main() {
+    pthread_t tid;
+    sem_init(&amp;mutex, 0, 1);
+    pthread_create(&amp;tid, NULL, thread_func, NULL);
+    pthread_join(tid, NULL);
+    printf(&quot;%d\n&quot;, count);
+    return 0;
+}</pre><div>ผลลัพธ์ที่ได้จากโปรแกรมคือ</div></td><td><b>C</b> 5</td><td class="small">C. 5 (วนลูปบวกค่า 5 ครั้ง มี semaphore ป้องกันอย่างถูกต้อง)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">12</td><td><div>การแก้ปัญหา bounded buffer ในวิชานี้ใช้ตัวแปร semaphore กี่ตัว</div></td><td><b>C</b> 3</td><td class="small">C. 3 (ประกอบด้วย <code>mutex</code>, <code>empty</code>, <code>full</code>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">13</td><td><div>การแก้ปัญหา bounded buffer ในวิชานี้ใช้ counting semaphore กี่ตัว</div></td><td><b>B</b> 2</td><td class="small">B. 2 (คือ <code>empty</code> และ <code>full</code> ส่วน <code>mutex</code> เป็น binary semaphore)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">14</td><td><div>การแก้ปัญหา bounded buffer ในวิชานี้ semaphore ที่ producer ใช้เพื่อตรวจสอบว่า buffer ยังมีช่องว่างหรือไม่คือ</div></td><td><b>A</b> empty</td><td class="small">A. empty</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">15</td><td><div>การแก้ปัญหา bounded buffer ในวิชานี้ semaphore ที่ consumer ใช้เพื่อตรวจสอบว่ามีข้อมูลใหม่ใน buffer หรือไม่คือ</div></td><td><b>B</b> full</td><td class="small">B. full</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">16</td><td><div>การแก้ปัญหา bounded buffer ในวิชานี้ semaphore ที่ใช้เพื่อให้แน่ใจว่า ณ.ขณะเวลาใดเวลาหนึ่งจะมีแค่ producer หรือ consumer เท่านั้นที่ได้อ่านหรือเขียน buffer คือ</div></td><td><b>C</b> mutex</td><td class="small">C. mutex</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">17</td><td><div>ปัญหา Dining philosopher ในวิชานี้ นักปราชญ์แต่ละคนจะเป็นตัวแทนของ</div></td><td><b>A</b> process</td><td class="small">A. process</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">18</td><td><div>ปัญหา Dining philosopher ในวิชานี้ ตะเกียบจะเป็นตัวแทนของ</div></td><td><b>B</b> resource</td><td class="small">B. resource (ทรัพยากรที่มีจำนวนจำกัด)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">19</td><td><div>ปัญหา Dining philosopher ในวิชานี้ semaphore จะใช้เพื่อจัดสรรตะเกียบให้นักปราชญ์ เพื่อให้แน่ใจว่านักปราชญ์แต่ละคนจะได้กินข้าว</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (Semaphore ป้องกันแค่การแย่งตะเกียบอันเดียวกัน แต่ไม่ได้รับประกันว่าทุกคนจะได้กิน อาจเกิด Deadlock หรือ Starvation ได้)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">20</td><td><div>การใช้ semaphore กับปัญหา dining philosopher โดยใช้ขั้นตอนวิธีในวิชานี้ อาจทำให้เกิดสิ่งที่เรียกว่า</div></td><td><b>A</b> deadlock</td><td class="small">A. deadlock (เมื่อนักปราชญ์ทุกคนหยิบตะเกียบข้างขวาพร้อมกัน)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">21</td><td><div>การแก้ปัญหา readers-writers ในวิชานี้ใช้ semaphore กี่ตัว</div></td><td><b>B</b> 2</td><td class="small">B. 2 (คือ <code>mutex</code> สำหรับคุม <code>readcount</code> และ <code>wrt</code> สำหรับล็อกไฟล์ข้อมูล)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">22</td><td><div>การแก้ปัญหา readers-writers ในวิชานี้ semaphore ที่ใช้จัดจังหวะระหว่าง readers และ writer คือ</div></td><td><b>A</b> wrt</td><td class="small">A. wrt</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">23</td><td><div>การแก้ปัญหา readers-writers ในวิชานี้ semaphore ที่ใช้เพื่อควบคุมการเพิ่มหรือลดจำนวน reader คือ</div></td><td><b>B</b> mutex</td><td class="small">B. mutex</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">24</td><td><div>การแก้ปัญหา reader-writers ในวิชานี้สามารถมี reader มากกว่าหนึ่งตัวอ่านข้อมูลได้พร้อม ๆ กัน</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (Shared Read)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">25</td><td><div>การแก้ปัญหา reader-writers ในวิชานี้ reader คนแรกเป็นคนเริ่มการป้องกันไม่ให้ writer เข้ามาเขียนข้อมูลในขณะที่ยังมี readers อ่านข้อมูลอยู่ และเป็นคนที่ต้องปลดล็อกให้ writer เขียนข้อมูลได้ เมื่อไม่มี readers ที่ต้องการอ่านข้อมูลแล้ว</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (Reader คนแรกเป็นคนเริ่มล็อก <code>wrt</code> ก็จริง แต่คนที่เป็นคนปลดล็อกให้ Writer คือ <b>Reader คนสุดท้าย</b> ที่อ่านเสร็จ ไม่ใช่คนแรก) # รวมโจทย์ คำถาม และเฉลยวิชาระบบปฏิบัติการ (Operating Systems) ชุดที่ 10 - 14</td></tr>
+</table></div>
+<h3>L11. Monitor, Java Sync, Java Semaphore <span style="font-weight:600;color:var(--muted);font-size:.8em">— ชุดที่ 10 · 34 ข้อ</span></h3>
+<div class="tbl-wrap"><table class="t sqz">
+<tr style="break-inside:avoid;page-break-inside:avoid"><th style="width:34px">ข้อ</th><th>คำถาม</th><th style="width:120px">คำตอบ</th><th>เฉลย / ความรู้</th></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">1</td><td><div>แนวคิดของ monitor คือ การรวมเอา shared data และ ฟังก์ชันที่ต้องการทำงานกับ shared data มาไว้ร่วมกัน และยอมให้มีทีละโพรเซสได้ทำงานใน monitor</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (Monitor รับประกัน Mutual Exclusion โดยอนุญาตให้มีเพียง 1 Thread/Process ทำงานอยู่ภายใน ณ ขณะใดขณะหนึ่ง)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">2</td><td><div>Monitor เป็นกลไกที่มีระดับต่ำกว่า semaphore</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (Monitor เป็นกลไกระดับสูง High-level synchronization construct ที่คอมไพเลอร์ช่วยจัดการความปลอดภัย ต่างจาก Semaphore ที่เป็น Low-level)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">3</td><td><div>ประเภทของตัวแปรที่ monitor เตรียมไว้ให้เรียกใช้ เมื่อ process ที่ทำงานอยู่ใน monitor ต้องการจะรอเงื่อนไขบางอย่างคือตัวแปรที่เรียกว่า</div></td><td><b>A</b> condition</td><td class="small">A. condition (ตัวแปรประเภท <code>condition</code> เช่น <code>condition x, y;</code>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">4</td><td><div>ฟังก์ชันที่ process ที่ทำงานอยู่ใน monitor จะเรียกใช้เพื่อรอเงื่อนไขบางอย่างคือ</div></td><td><b>D</b> wait</td><td class="small">D. wait (เช่น คำสั่ง <code>x.wait()</code>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">5</td><td><div>process ที่รอการเข้าใช้ monitor จะรออยู่ในคิวที่เรียกว่า</div></td><td><b>B</b> entry</td><td class="small">B. entry (Entry Queue หรือ Entry Set)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">6</td><td><div>ฟังก์ชันที่ process ที่ทำงานอยู่ใน monitor จะปลุก process ที่รอเงื่อนไขอยู่คือ</div></td><td><b>C</b> signal</td><td class="small">C. signal (เช่น <code>x.signal()</code>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">7</td><td><div>Process ที่รอเงื่อนไขที่จะเกิดขึ้น จะรออยู่ในคิวแยกต่างหากจากคิวสำหรับ process ที่รอการเข้าใช้ monitor</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (Process ที่รอเงื่อนไขจะรออยู่ใน Condition Queue ของตัวแปรเงื่อนไขนั้นๆ ซึ่งแยกจาก Entry Queue ของตัว Monitor)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">8</td><td><div>ถ้าจะเทียบกับ process state ตัว process ที่รอการเข้าใช้ monitor เปรียบได้กับ process ที่อยู่ใน ready state</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (โพรเซสที่รอเข้ามอนิเตอร์ถือว่าถูกบล็อก ไม่สามารถเข้าทำงานได้จนกว่ามอนิเตอร์จะว่าง)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">9</td><td><div>ถ้าจะเทียบกับ process state ตัว process ที่รอเงื่อนไขที่จะเกิดขึ้นหลังจากได้เข้าทำใน monitor แล้ว เปรียบได้กับ process ที่อยู่ใน ready state</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (เปรียบได้กับ Waiting/Blocked state เนื่องจากต้องรอสัญญาณ signal จากโพรเซสอื่น)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">10</td><td><div>ขั้นตอนวิธีในการแก้ปัญหา Dining Philosophers โดยใช้ monitor ในวิชานี้ ถ้านักปราชญ์หิวข้าว เขาจะเริ่มจากหยิบตะเกียบด้านซ้ายมือมาถือไว้</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (ในวิธี Monitor จะตรวจสอบว่าตะเกียบทั้งสองข้างว่างพร้อมกันหรือไม่ก่อน ถ้าว่างจึงจะหยิบตะเกียบทั้งสองข้างพร้อมกัน)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">11</td><td><div>ขั้นตอนวิธีที่ใช้ monitor ในวิชานี้มาแก้ปัญหา dining philosopher อาจเกิดปัญหา</div></td><td><b>C</b> starvation</td><td class="small">C. starvation (แม้แก้ปัญหา Deadlock ได้ แต่นักปราชญ์บางคนอาจถูกเพื่อนข้างเคียงสลับกันหยิบตะเกียบตัดหน้าตลอดเวลาจนอดตาย)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">12</td><td><div>กลไกที่คล้าย ๆ monitor ที่ Java เตรียมไว้ให้ใช้คือ</div></td><td><b>C</b> synchronization</td><td class="small">C. synchronization (คีย์เวิร์ด <code>synchronized</code>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">13</td><td><div>กลไกการทำ synchronization ของ Java คือจะมีเมท็อดชื่อ wait() และ notify() ให้เรียกใช้ในการล็อกออบเจกต์</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (การล็อกออบเจกต์เกิดขึ้นโดยอัตโนมัติจากการเข้าสู่ <code>synchronized method</code> หรือ <code>synchronized block</code> ส่วน <code>wait()</code> และ <code>notify()</code> ใช้สำหรับปล่อยล็อกและรอ/ปลุกสัญญาณ)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">14</td><td><div>เมื่อ thread เรียกใช้ เมท็อดที่เป็น synchronized method, thread นั้นจะเรียกใช้ synchronized method นั้นได้ก็ต่อเมื่อไม่มี thread อื่นเรียก synchronized method ใด ๆ ของ object นั้นอยู่ก่อน</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (การล็อกระดับ Instance Object ตัวเดียวกัน จะครอบคลุมทุก Synchronized Method ของ Object นั้น)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">15</td><td><div>thread ที่เรียกใช้ synchronized method ไม่ได้ จะรออยู่ในคิวที่เรียกว่า wait set</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (จะรออยู่ใน Entry Set ส่วน Wait Set จะไว้สำหรับเธรดที่เรียกคำสั่ง <code>wait()</code>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">16</td><td><div>การปลดล็อกทรัพยากรของ object ที่ถูกล็อกโดยการเรียก synchronized method จะเกิดขึ้นเมื่อ นักเขียนโปรแกรมเรียกเมท็อด yield()</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (<code>yield()</code> ไม่ได้ปล่อยการถือครองล็อก จะปลดล็อกเมื่อทำงานออกจากเมท็อดหรือเรียก <code>wait()</code>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">17</td><td><div>ถ้ามีการเรียกฟังก์ชัน wait() ใน synchronized method ของ Java thread จะไปรออยู่ใน wait set</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">18</td><td><div>ถ้ามีการเรียกฟังก์ชัน notify() ใน synchronized method ของ Java ตัว thread จะย้ายจาก wait set ไปอยู่ใน entry set</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (เธรดที่ถูกปลุกจะย้ายไป Entry Set เพื่อรอแย่ง Lock กลับมาทำงานต่อ)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">19</td><td><div>เมท็อด notify() จะใช้เลือก process ที่นักเขียนโปรแกรมระบุออกจาก wait set</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (ระบบ JVM จะสุ่มเลือกมาหนึ่งเธรด ไม่สามารถเจาะจงระบุเธรดได้)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">20</td><td><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">class SharedData {
+    private int value = 5;
+    public synchronized void increment() {
+        value++;
+    }
+    public synchronized void decrement() {
+        value--;
+    }
+    public int getValue() {
+        return value;
+    }
+}
+
+class Worker1 extends Thread {
+    SharedData data;
+    public Worker1(SharedData data) {
+        this.data = data;
+    }
+    public void run() {
+        for (int i = 0; i &lt; 3; i++) {
+            data.increment();
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        SharedData data = new SharedData();
+        Worker1 w1 = new Worker1(data);
+        w1.start();
+        try {
+            w1.join();
+        } catch (InterruptedException e) {}
+        System.out.println(data.getValue());
+    }
+}</pre><div>จากโปรแกรมภาษา Java ดังรูป ผลลัพธ์ของโปรแกรมคือ</div></td><td><b>A</b> 8</td><td class="small">A. 8 (ค่าเริ่มต้น 5 + 3 = 8)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">21</td><td><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">class SharedData {
+    private int value = 5;
+    private boolean isAvailable = false;
+
+    public synchronized void increment() {
+        while (isAvailable) {
+            try { wait(); } catch (InterruptedException e) {}
+        }
+        System.out.println(&quot;increment&quot;);
+        isAvailable = true;
+        notify();
+    }
+
+    public synchronized void decrement() {
+        while (!isAvailable) {
+            try { wait(); } catch (InterruptedException e) {}
+        }
+        System.out.println(&quot;decrement&quot;);
+        isAvailable = false;
+        notify();
+    }
+
+    public int getValue() {
+        return value;
+    }
+}</pre><div>จากโปรแกรมภาษา Java ดังรูป (มีการสลับรอบการทำงานด้วย <code>wait()</code> และ <code>notify()</code>) ผลลัพธ์ที่เป็นไปได้จากโปรแกรมคือ</div></td><td><b>C</b><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">increment
+decrement
+increment
+decrement
+5</pre></td><td class="small">C (เพราะเงื่อนไข <code>wait()</code> และ <code>notify()</code> บังคับให้ <code>increment</code> และ <code>decrement</code> ทำงานสลับกันทีละครั้ง)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">22</td><td><div>Method ของ Semaphore class ของ Java ที่ทำหน้าที่เหมือน wait() ของ Semaphore คือ</div></td><td><b>A</b> acquire()</td><td class="small">A. acquire()</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">23</td><td><div>Method ของ Semaphore class ของ Java ที่ทำหน้าที่เหมือน signal() ของ Semaphore คือ</div></td><td><b>C</b> release()</td><td class="small">C. release()</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td colspan="4" style="background:#f0f9ff;border-left:3px solid #38bdf8;padding:5px 8px"><b>💻 ข้อ 24 - 34:</b> โครงสร้างโค้ด BoundedBuffer ด้วย Semaphore ใน Java<div style="margin-top:2px"><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">import java.util.concurrent.Semaphore;
+
+public class BoundedBuffer {
+    private static final int BUFFER_SIZE = 5;
+    private Object[] buffer = new Object[BUFFER_SIZE];
+    private int in = 0, out = 0;
+
+    // A, B, C: ประกาศและกำหนดค่าเริ่มต้นให้กับ Semaphores
+    private Semaphore mutex = //A
+    private Semaphore empty = //B
+    private Semaphore full =  //C
+
+    public void insert(Object item) {
+        try {
+            //D
+            //E
+            buffer[in] = item;
+            in = (in + 1) % BUFFER_SIZE;
+            //F
+            //G
+        } catch (InterruptedException e) {}
+    }
+
+    public Object remove() {
+        Object item = null;
+        try {
+            //H
+            //I
+            item = buffer[out];
+            out = (out + 1) % BUFFER_SIZE;
+            //J
+            //K
+        } catch (InterruptedException e) {}
+        return item;
+    }
+}</pre></div></td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">24</td><td>ที่จุด <code>//A</code> ต้องเติม</td><td><b>C</b> <code>new Semaphore(1);</code></td><td class="small">Mutex Lock</td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">25</td><td>ที่จุด <code>//B</code> ต้องเติม</td><td><b>E</b> <code>new Semaphore(BUFFER_SIZE);</code></td><td class="small">นับจำนวนช่องว่าง</td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">26</td><td>ที่จุด <code>//C</code> ต้องเติม</td><td><b>D</b> <code>new Semaphore(0);</code></td><td class="small">เริ่มต้นยังไม่มีข้อมูล</td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">27</td><td>ที่จุด <code>//D</code> ต้องเติม</td><td><b>F</b> <code>empty.acquire();</code></td><td class="small">รอลดจำนวนช่องว่าง</td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">28</td><td>ที่จุด <code>//E</code> ต้องเติม</td><td><b>A</b> <code>mutex.acquire();</code></td><td class="small">เข้า Critical Section ใน insert</td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">29</td><td>ที่จุด <code>//F</code> ต้องเติม</td><td><b>B</b> <code>mutex.release();</code></td><td class="small">ออกจาก Critical Section ใน insert</td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">30</td><td>ที่จุด <code>//G</code> ต้องเติม</td><td><b>I. <code>full.release();</code></b></td><td class="small">ส่งสัญญาณว่ามีข้อมูลพร้อมอ่านเพิ่มขึ้น 1</td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">31</td><td>ที่จุด <code>//H</code> ต้องเติม</td><td><b>H. <code>full.acquire();</code></b></td><td class="small">รอลดจำนวนข้อมูลที่มีให้อ่าน</td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">32</td><td>ที่จุด <code>//I</code> ต้องเติม</td><td><b>A</b> <code>mutex.acquire();</code></td><td class="small">เข้า Critical Section ใน remove</td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">33</td><td>ที่จุด <code>//J</code> ต้องเติม</td><td><b>B</b> <code>mutex.release();</code></td><td class="small">ออกจาก Critical Section ใน remove</td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">34</td><td>ที่จุด <code>//K</code> ต้องเติม</td><td><b>G. <code>empty.release();</code></b></td><td class="small">ส่งสัญญาณว่ามีช่องว่างเพิ่มขึ้น 1</td></tr></table></div>
+<h3>L12. Deadlock <span style="font-weight:600;color:var(--muted);font-size:.8em">— ชุดที่ 11 · 30 ข้อ</span></h3>
+<div class="tbl-wrap"><table class="t sqz">
+<tr style="break-inside:avoid;page-break-inside:avoid"><th style="width:34px">ข้อ</th><th>คำถาม</th><th style="width:120px">คำตอบ</th><th>เฉลย / ความรู้</th></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">1</td><td><div>Deadlock จะเกิดขึ้นต้องมีตั้งแต่ 2 โพรเซสขึ้นไปเกี่ยวข้อง</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">2</td><td><div>เงื่อนไขที่จะทำให้เกิด deadlock ที่ระบุว่าทรัพยากรจะถูกใช้งานได้ทีละโพรเซสเท่านั้นคือ</div></td><td><b>A</b> Mutual Exclusion</td><td class="small">A. Mutual Exclusion</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">3</td><td><div>เงื่อนไขที่จะทำให้เกิด deadlock ที่ระบุว่าเมื่อทรัพยากรถูกจัดสรรให้โพรเซสแล้ว ทรัพยากรจะถูกนำมาให้โพรเซสอื่นใช้ได้ เมื่อโพรเซสที่ถือครองอยู่ยอมปล่อยทรัพยากรออกมาเท่านั้นคือ</div></td><td><b>C</b> No Preemption</td><td class="small">C. No Preemption</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">4</td><td><div>ถ้ามีเงื่อนไขข้อใดข้อหนึ่งใน 4 ข้อของ deadlock เป็นจริง จะทำให้เกิด deadlock</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (ต้องเป็นจริงครบทั้ง 4 ข้อพร้อมกัน จึงจะเกิด Deadlock)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">5</td><td><div>สำหรับ Resource-Allocation Graph ที่ใช้ในการโมเดล deadlock จะเป็นกราฟแบบไม่มีทิศทาง</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (เป็น Directed Graph กราฟแบบมีทิศทาง)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">6</td><td><div>Request edge ของ resource-allocation graph มีทิศทางจากทรัพยากรไปยังโพรเซส</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (Request Edge มีทิศทางจาก Pᵢ → Rⱼ, ส่วน Assignment Edge มีทิศทางจาก Rⱼ → Pᵢ)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">7</td><td><div>ถ้ามี cycle ใน resource-allocation graph จะหมายความว่าเกิด deadlock ขึ้น</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (ถ้าทรัพยากรมีหลายชิ้น/multi-instance การมี cycle เป็นเพียงเงื่อนไขจำเป็น แต่อาจไม่เกิด deadlock ก็ได้)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td colspan="4" style="background:#f0f9ff;border-left:3px solid #38bdf8;padding:5px 8px"><b>📊 ข้อมูลสำหรับข้อ 8 - 14</b> <span style="color:var(--soft)">( กราฟหน้า 2 และ 3 )</span><div style="margin-top:2px"><div><i>โครงสร้างกราฟ:</i></div><ul style="margin:2px 0 2px 14px;padding:0"><li>Processes: P₁, P₂, P₃</li><li>Resources: R₁ (1 instance), R₂ (2 instances), R₃ (1 instance), R₄ (3 instances)</li><li>Edges:</li><li>P₁ → R₁, R₁ → P₂</li><li>R₂ → P₁, R₂ → P₂, P₃ → R₂</li><li>P₂ → R₃, R₃ → P₃</li></ul></div></td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">8</td><td>จากรูปมีทรัพยากรกี่ประเภท</td><td><b>D</b> 4</td><td class="small">R₁, R₂, R₃, R₄</td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">9</td><td>จากรูปมีโพรเซส โพรเซส</td><td><b>C</b> 3</td><td class="small">P₁, P₂, P₃</td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">10</td><td>จากรูปทรัพยากร R2 มีกี่ชิ้น</td><td><b>B</b> 2</td><td class="small"></td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">11</td><td>จากรูปทรัพยากร R1 ถูกจัดสรรให้โพรเซสใด</td><td><b>B</b> P2</td><td class="small"></td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">12</td><td>จากรูปโพรเซส P3 ถือครองทรัพยากรใด</td><td><b>C</b> R3</td><td class="small">มีลูกศรจาก R₃ → P₃</td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">13</td><td>จากรูปโพรเซส P3 ร้องขอทรัพยากรใด</td><td><b>B</b> R2</td><td class="small">ลูกศร P₃ → R₂</td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">14</td><td>จากรูประบบไม่เกิด deadlock</td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">เกิด Deadlock เนื่องจากมี Cycle และทรัพยากรทุกตัวใน Cycle ถูกใช้งานจนเต็ม</td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">15</td><td><div>OS ที่เราใช้กันทั่วไปไม่มีกลไกจัดการ deadlock ในระดับ user process</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (ส่วนใหญ่ใช้วิธี Ostrich Algorithm คือเพิกเฉย ปล่อยให้เป็นหน้าที่ของผู้ใช้หรือโปรแกรมเมอร์)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">16</td><td><div>กลไกการจัดการ deadlock ที่ไม่ยอมให้เกิด deadlock ขึ้นในระบบ</div></td><td><b>A</b> Deadlock avoidance</td><td class="small">A. Deadlock avoidance (รวมถึง Deadlock Prevention)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">17</td><td><div>การกำหนดให้โพรเซสต้องขอใช้ทรัพยากรเรียงตามลำดับจากทรัพยากรที่มีหมายเลขน้อยไปหามาก จะใช้แก้ปัญหา no preemption</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (ใช้ป้องกันเงื่อนไข Circular Wait)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">18</td><td><div>แนวคิดของ deadlock avoidance คือระบบต้องอยู่ใน safe state เสมอ</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">19</td><td><div>เงื่อนไขหนึ่งของ deadlock avoidance คือโพรเซสจะต้องระบุทรัพยากรที่ต้องการใช้ทั้งหมดก่อนที่มันจะเริ่มทำงาน</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (ต้องรู้ Max Claim ล่วงหน้า)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">20</td><td><div>การใช้ resource-allocation graph ในการทำ deadlock avoidance จะใช้ได้กับกรณีที่ทรัพยากรหนึ่งประเภทมีเพียงหนึ่งชิ้นเท่านั้น</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (ถ้ามีหลายชิ้นต้องใช้อัลกอริทึม Banker's Algorithm)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">21</td><td><div>ด้านที่เพิ่มเข้ามาใน resource allocation graph เพื่อใช้ในการทำ deadlock avoidance คือ</div></td><td><b>B</b> Claim Edge</td><td class="small">B. Claim Edge (เส้นประ Pᵢ ⇢ Rⱼ)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">22</td><td><div>ถ้าทดลองว่าให้ทรัพยากรแล้ว ระบบไม่อยู่ใน Safe State OS จะเปลี่ยน... เป็น...</div></td><td><b>D</b> Request Edge, Claim Edge</td><td class="small">D (หรือหากในขั้นตอนการทดสอบ ระบบจะปฏิเสธการขอและไม่เปลี่ยนเป็น Assignment edge)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">23</td><td><div>ระบบจะอยู่ใน Safe State เมื่อ OS เปลี่ยน claim edge เป็น assignment edge แล้ว ไม่พบว่ามี cycle ใน graph</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td colspan="4" style="background:#f0f9ff;border-left:3px solid #38bdf8;padding:5px 8px"><b>📊 ข้อมูลสำหรับข้อ 24 - 25</b> <span style="color:var(--soft)">( กราฟหน้า 5 )</span><div style="margin-top:2px"><div><i>โครงสร้าง:</i> P₁, P₂ และ R₁, R₂ โดยมี R₁ → P₁, P₂ → R₁, เส้นประ P₁ ⇢ R₂, เส้นประ P₂ ⇢ R₂</div></div></td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">24</td><td>จากรูป claim edge คือ</td><td><b>A</b> P1 R2</td><td class="small"></td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">25</td><td>จากรูปถ้าโพรเซส P1 ร้องขอทรัพยากร R2 ระบบจะยอมให้การร้องขอนี้เกิดขึ้น</td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">เพราะถ้าให้ R₂ แก่ P₁ จะเกิด Cycle และนำไปสู่ Unsafe state</td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">26</td><td><div>กลไกการทำ detection เพื่อแก้ปัญหา critical section คือเปลี่ยน resource-allocation graph เป็น wait-for graph และตรวจหา cycle ใน wait-for graph</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (Wait-for graph ใช้สำหรับตรวจจับ <b>Deadlock</b> ไม่ใช่ Critical Section)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">27</td><td><div>จากรูปหน้า 6 เมื่อเปลี่ยน resource-allocation graph เป็น wait-for graph แล้ว จะพบว่า p2 ไม่ได้รอ p4 โดยตรง</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (ลูกศรผ่านทรัพยากรหลายทอด)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">28</td><td><div>จากรูปหน้า 6 ทุกโพรเซสในระบบติดอยู่ใน deadlock</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (มีบางโพรเซส เช่น P₅ ที่สามารถทำงานจนเสร็จแล้วคืนทรัพยากรได้)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">29</td><td><div>หลังจากที่มีการตรวจสอบพบว่าเกิด deadlock ขึ้นในระบบ วิธีเดียวในการแก้ปัญหาคือจบการทำงานของทุกโพรเซสที่เกี่ยวข้องกับ deadlock</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (สามารถใช้วิธียกเลิกทีละโพรเซส หรือทำ Resource Preemption ได้)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">30</td><td><div>การแก้ปัญหา deadlock อาจทำให้เกิด starvation ได้</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (กรณีโพรเซสเดิมถูกเลือกเป็น Victim ให้ Rollback ซ้ำๆ)</td></tr>
+</table></div>
+<h3>L13. Real Memory Management (Contiguous scheme) <span style="font-weight:600;color:var(--muted);font-size:.8em">— ชุดที่ 12.1 · 15 ข้อ</span></h3>
+<div class="tbl-wrap"><table class="t sqz">
+<tr style="break-inside:avoid;page-break-inside:avoid"><th style="width:34px">ข้อ</th><th>คำถาม</th><th style="width:120px">คำตอบ</th><th>เฉลย / ความรู้</th></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">1</td><td><div>ตำแหน่งของหน่วยความจำที่อ้างถึงโดย CPU คือ</div></td><td><b>E</b> A หรือ C</td><td class="small">E. A หรือ C (Logical address หรือ Virtual Address)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">2</td><td><div>ตำแหน่งของหน่วยความจำที่อ้างถึงโดยฮาร์ดแวร์หน่วยความจำ</div></td><td><b>B</b> Physical Address</td><td class="small">B. Physical Address</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">3</td><td><div>ฮาร์ดแวร์ที่ใช้แปลงจาก logical address เป็น physical address</div></td><td><b>A</b> Memory Management Unit</td><td class="small">A. Memory Management Unit (MMU)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">4</td><td><div>ไฟล์ที่มีนามสกุล .dll ของ Windows เป็นตัวอย่างของ</div></td><td><b>B</b> Dynamic Linking</td><td class="small">B. Dynamic Linking (Dynamic Link Library)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">5</td><td><div>สำหรับแนวคิดของ dynamic linking ถ้าไลบรารีที่โพรเซสต้องการใช้ถูกโหลดเข้าหน่วยความจำโดยโพรเซสอื่นแล้ว โพรเซสนั้นจะสามารถใช้ไลบรารีตัวนั้นได้โดยไม่ต้องโหลดไลบรารีนั้นใหม่</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (Shared Library)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">6</td><td><div>การจัดสรรหน่วยความจำให้กับโพรเซสแบบที่มีการแบ่งหน่วยความจำเป็นส่วน (partition) โดยที่ขนาดของแต่ละส่วนไม่จำเป็นต้องเท่ากัน แต่จะไม่สามารถเปลี่ยนจำนวนส่วนหรือขนาดของส่วนได้หลังจากเริ่มการทำงานของระบบไปแล้วเรียกว่า</div></td><td><b>B</b> Fixed Partitions</td><td class="small">B. Fixed Partitions</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">7</td><td><div>สำหรับการจัดสรรหน่วยความจำแบบ Fixed Partitions ณ. ขณะเวลาใดเวลาหนึ่งจะมีจำนวนโพรเซสสูงสุดได้เท่ากับจำนวนส่วน (partition) ที่แบ่งไว้</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (Multiprogramming Degree ถูกจำกัดด้วยจำนวนพาร์ติชัน)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">8</td><td><div>สำหรับการจัดสรรหน่วยความจำแบบ Fixed Partitions การควบคุมไม่ให้โพรเซสไปใช้หน่วยความจำในส่วนอื่นนอกจากส่วนที่มันได้รับการจัดสรร จะใช้แนวคิดของ base และ limit รีจิสเตอร์ โดยที่ limit รีจิสเตอร์จะเก็บตำแหน่งเริ่มต้นของส่วนที่โพรเซสได้รับการจัดส…</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (สลับหน้าที่กัน: Base register เก็บตำแหน่งเริ่มต้น และ Limit register เก็บขนาด)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">9</td><td><div>สมมติโพรเซสได้รับการจัดสรรลงในส่วนที่มีค่าใน base รีจิสเตอร์ 1000 และ limit รีจิสเตอร์ 2000 ถ้ามีการอ้าง logical address 1800 ถือว่าเป็นการอ้างตำแหน่งหน่วยความจำที่ถูกต้อง</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (1800 &lt; 2000 จึงถูกต้อง)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">10</td><td><div>สมมติโพรเซสได้รับการจัดสรรลงในส่วนที่มีค่าใน base รีจิสเตอร์ 1000 และ limit รีจิสเตอร์ 2000 ถ้ามีการอ้าง logical address 2000 ถือว่าเป็นการอ้างตำแหน่งหน่วยความจำที่ถูกต้อง</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (Logical Address ต้องน้อยกว่า Limit: 0 ≤ address &lt; limit ดังนั้น 2000 จะเกิด Trap Addressing Error)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">11</td><td><div>ปัญหาที่เกิดขึ้นกับวิธีการ Fixed Partitions ที่ทำให้มีหน่วยความจำเหลือว่างอยู่แต่ไม่มีโพรเซสใดสามารถใช้ได้เรียกว่า</div></td><td><b>A</b> internal fragmentation</td><td class="small">A. internal fragmentation</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">12</td><td><div>ปัญหาที่เกิดขึ้นกับวิธีการ variable Partitions ที่ทำให้มีหน่วยความจำเหลือว่างอยู่แต่ไม่มีโพรเซสใดสามารถใช้ได้เรียกว่า</div></td><td><b>B</b> external fragmentation</td><td class="small">B. external fragmentation</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">13</td><td><div>ในวิธี variable Partitions ถ้ามีเนื้อที่ว่างเหลืออยู่ในหน่วยความจำ เรียงตามตำแหน่งหน่วยความจำจากน้อยไปหามาก ดังต่อไปนี้ 16, 10, 5, 20 และ 3 MB ตามลำดับ ถ้ามี process ใหม่ที่ต้องการเนื้อที่หน่วยความจำ 4 MB และ OS จัดสรรให้ลงในช่อง 16 MB อัลก…</div></td><td><b>E</b> first-fit</td><td class="small">E. first-fit (เลือกช่องแรกสุดที่ขนาดเพียงพอ)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">14</td><td><div>จากข้อมูลในข้อ 13 ถ้า OS จัดสรรให้ลงในช่อง 20 MB อัลกอริทึมที่ OS ใช้คือ</div></td><td><b>C</b> worst-fit</td><td class="small">C. worst-fit (เลือกช่องที่ใหญ่ที่สุด)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">15</td><td><div>ในวิธี variable Partitions การขยับให้ process มาใช้เนื้อที่หน่วยความจำที่อยู่ติดกัน เพื่อให้เหลือเนื้อที่หน่วยความจำที่ว่างเรียงต่อกันเป็นผืนเดียวเรียกว่า</div></td><td><b>G. compaction</b></td><td class="small">G. compaction</td></tr>
+</table></div>
+<h3>L14. Real Memory Management (Noncontiguous) <span style="font-weight:600;color:var(--muted);font-size:.8em">— ชุดที่ 12.2 · 22 ข้อ</span></h3>
+<div class="tbl-wrap"><table class="t sqz">
+<tr style="break-inside:avoid;page-break-inside:avoid"><th style="width:34px">ข้อ</th><th>คำถาม</th><th style="width:120px">คำตอบ</th><th>เฉลย / ความรู้</th></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">1</td><td><div>แนวคิดการจัดสรรหน่วยความจำแบบ paging คือหน่วยความจำ จะถูกแบ่งเป็นบล็อกขนาดเท่าๆ กัน แต่ละบล็อกจะเรียกว่า page</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (บล็อกขนาดเท่ากันใน Physical Memory จะเรียกว่า <b>Frame</b> ส่วน <b>Page</b> คือบล็อกของ Logical Memory)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">2</td><td><div>การจัดสรรหน่วยความจำจริง (real memory) ในระบบ paging โปรแกรมจะสามารถถูกโหลดเข้าไปทำงานได้ ถ้าจำนวน frame ที่ว่างเท่ากับจำนวน page</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">3</td><td><div>ถ้า CPU อ้างถึงตำแหน่งหน่วยความจำโดยใช้จำนวนบิต 16 บิต ขนาดหน่วยความจำสูงสุดที่ระบบปฏิบัติการนี้จะใช้ได้คือ ไบต์</div></td><td><b>E</b> 65536</td><td class="small">E. 65536 ไบต์ (2¹⁶ = 65,536)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">4</td><td><div>ถ้า CPU อ้างถึงตำแหน่งหน่วยความจำโดยใช้จำนวนบิต 16 บิต ถ้า 1 page มีขนาด 16 ไบต์ จะได้ว่าจาก 16 บิตดังกล่าวจะถูกแบ่งมาใช้ระบุ page offset จำนวนกี่บิต</div></td><td><b>A</b> 4</td><td class="small">A. 4 บิต (2⁴ = 16)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">5</td><td><div>จากข้อ 4 จะได้ว่าหนึ่งโปรแกรมจะมีจำนวน page ได้สูงสุดกี่ page</div></td><td><b>D</b> 4096</td><td class="small">D. 4096 (16 - 4 = 12 บิต สำหรับเลขหน้า, 2¹² = 4096)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">6</td><td><div>ในระบบ paging จะใช้เพื่อใช้แปลง logical address ให้เป็น physical address</div></td><td><b>C</b> Page table</td><td class="small">C. Page table</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td colspan="4" style="background:#f0f9ff;border-left:3px solid #38bdf8;padding:5px 8px"><b>📊 ข้อมูลสำหรับข้อ 7 - 10</b> <span style="color:var(--soft)">( รูปหน้า 2 และ 3 )</span><div style="margin-top:2px"><div><i>โครงสร้าง:</i> Logical memory ขนาด 16 bytes แบ่งเป็น 4 pages (เพจละ 4 bytes: 0-3, 4-7, 8-11, 12-15). Page table: Page 0 → Frame 5, Page 1 → Frame 6, Page 2 → Frame 1, Page 3 → Frame 2.</div></div></td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">7</td><td>จากรูปโปรแกรมถูกแบ่งออกเป็นกี่ page</td><td><b>D</b> 4</td><td class="small"></td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">8</td><td>จากรูป page แรกของโปรแกรมถูกโหลดเข้า frame ใดในหน่วยความจำ</td><td><b>E</b> 5</td><td class="small"></td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">9</td><td>จากรูปถ้าต้องการอ้างถึงตำแหน่งหน่วยความจำของตัว &quot;g&quot; (อยู่ที่ logical address 6) logical address จะอ้างถึง page ที่ และ offset ที่</td><td><b>C</b> 1, 2</td><td class="small">6 / 4 = 1, 6 mod 4 = 2</td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">10</td><td>จากรูปตัว &quot;g&quot; ถูกเก็บไว้ที่ frame ที่ และ offset ที่</td><td><b>E</b> 6, 2</td><td class="small">Frame 6, Offset 2</td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">11</td><td><div>ถ้าการเข้าถึง TLB ใช้เวลา 0.25 ไมโครวินาที และ การเข้าถึงหน่วยความจำใช้เวลา 1 ไมโครวินาที สมมติ Effective Access Time (EAT) มีค่า 1.35 ไมโครวินาที จะได้ว่า Hit Ratio มีค่ากี่เปอร์เซนต์</div></td><td><b>E</b> 90</td><td class="small">E. 90%  EAT = h(0.25 + 1.0) + (1-h)(0.25 + 2.0) = 1.35 ⟹ 1.25h + 2.25 - 2.25h = 1.35 ⟹ h = 0.90</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">12</td><td><div>ในระบบ paging การป้องกันไม่ให้โพรเซสไปอ้างถึง page ที่มันไม่มีสิทธิใช้จะทำได้โดยกำหนดสิ่งที่เรียกว่า ไว้ใน page table</div></td><td><b>D</b> valid-invalid bit</td><td class="small">D. valid-invalid bit</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">13</td><td><div>สมมติผู้ใช้คนหนึ่งสั่งรันโปรแกรม vi สมมติอีกว่าส่วนที่เป็นโค้ดของโปรแกรม vi แบ่งเป็น 5 page และมี page ที่เป็น data 2 page ถ้าใช้แนวคิดของการ shared page ถ้าผู้ใช้อีกคนหนึ่งสั่งรันโปรแกรม vi จะมีจำนวนเฟรมในหน่วยความจำที่ใช้ร่วมกันระหว่าง 2 …</div></td><td><b>E</b> 5</td><td class="small">E. 5 เฟรม (แชร์เฉพาะหน้าส่วนที่เป็น Code 5 หน้า)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">14</td><td><div>แนวคิดของการจัดสรรหน่วยความจำแบบ segmentation ก็คือการแบ่งโปรแกรมออกเป็นส่วน ๆ แต่ละส่วนไม่จำเป็นต้องมีขนาดเท่ากัน แต่เวลาโหลดแต่ละส่วนเข้าสู่หน่วยความจำ จะต้องโหลดให้อยู่ต่อเนื่องกันในหน่วยความจำ</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (แต่ละเซกเมนต์กระจายตัวอยู่คนละตำแหน่งในแรมได้ ไม่จำเป็นต้องต่อเนื่องกันทั้งโปรแกรม)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">15</td><td><div>ในระบบ segmentation แต่ละโพรเซสจะมี segment table เพื่อใช้แปลง logical address เป็น physical address</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">16</td><td><div>ใน segment table ส่วนที่ใช้ระบุตำแหน่งเริ่มต้นของ segment ในหน่วยความจำคือ</div></td><td><b>A</b> base</td><td class="small">A. base</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">17</td><td><div>ใน segment table ส่วนที่ใช้ระบุขนาด segment ในหน่วยความจำคือ</div></td><td><b>C</b> limit</td><td class="small">C. limit</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">18</td><td><div><b>ตาราง Segment Table:</b></div><ul style="margin:2px 0 2px 14px;padding:0"><li>Segment 0: limit 1000, base 1400</li><li>Segment 1: limit 400, base 6300</li><li>Segment 2: limit 400, base 4300</li><li>Segment 3: limit 1100, base 3200</li><li>Segment 4: limit 1000, base 4700</li></ul><div>ถ้า logical address อยู่ในรูป segment number:offset และระบุค่ามาดังนี้ 2:300 จะได้ physical address คือ</div></td><td><b>C</b> 4600</td><td class="small">C. 4600 (Segment 2: limit 400, offset 300 &lt; 400 ถูกต้อง; Base 4300 + 300 = 4600)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">19</td><td><div>จาก segment table ในข้อ 18 ถ้า logical address ระบุมาเป็น 1:400 จะได้ physical address คือ</div></td><td><b>E</b> error</td><td class="small">E. error (Segment 1 มี limit 400, offset 400 ไม่น้อยกว่า limit จึงเกิด Trap Addressing Error)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">20</td><td><div>การจัดสรรหน่วยความจำแบบ segmentation ยังมีปัญหาของ external fragmentation อยู่</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (เนื่องจากแต่ละเซกเมนต์มีขนาดไม่เท่ากัน)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">21</td><td><div>ใน OS 16 บิต ถ้า page size คือ 256 ไบต์ และ 1 ช่องของ page table ใช้ 2 ไบต์ ถ้าใช้ single level paging และขนาดของโปรแกรมคือ 512 ไบต์ ขนาดของ page table คือกี่ไบต์</div></td><td><b>D</b> 512</td><td class="small">D. 512 ไบต์  Virtual Address Space 16 บิต, Page size 256 B (2⁸) ⟹ ต้องมี 2¹⁶⁻⁸ = 256 Entries. ตารางขนาด 256 × 2  B = 512 ไบต์</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">22</td><td><div>ใน OS 16 บิต ถ้า page size คือ 256 ไบต์ และ 1 ช่องของ page table ใช้ 2 ไบต์ ถ้าใช้ 2-level paging โดยจำนวนบิตของ outer page table และ inner page table คือ 4 บิต และขนาดของโปรแกรมคือ 512 ไบต์ ขนาดของ page table คือกี่ไบต์</div></td><td><b>A</b> 64</td><td class="small">A. 64 ไบต์  Outer table = 2⁴ × 2 B = 32 B. ขนาดโปรแกรม 512 B ต้องการ Inner table เพียง 1 ตัว = 2⁴ × 2 B = 32 B. รวม 32 + 32 = 64 ไบต์</td></tr>
+</table></div>
+<h3>L15. Virtual Memory <span style="font-weight:600;color:var(--muted);font-size:.8em">— ชุดที่ 13 · 22 ข้อ</span></h3>
+<div class="tbl-wrap"><table class="t sqz">
+<tr style="break-inside:avoid;page-break-inside:avoid"><th style="width:34px">ข้อ</th><th>คำถาม</th><th style="width:120px">คำตอบ</th><th>เฉลย / ความรู้</th></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">1</td><td><div>แนวคิดของ virtual memory จะทำให้ขนาดของ logical address ใหญ่กว่า physical address ได้</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">2</td><td><div>แนวคิดของ virtual memory โปรแกรมไม่จำเป็นต้องถูกโหลดเข้าหน่วยความจำทั้งโปรแกรม</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (โหลดเฉพาะส่วนที่กำลังใช้งาน)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">3</td><td><div>ในการใช้ virtual memory แบบ demand paging เรายังใช้ page table ในการแปลง logical address เป็น physical address</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">4</td><td><div>บิตใน page table ที่ใช้เพื่อระบุว่า page ถูกโหลดเข้าสู่หน่วยความจำหรือยังคือ</div></td><td><b>D</b> valid-invalid bit</td><td class="small">D. valid-invalid bit</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">5</td><td><div>ในกรณีที่มีการอ้างถึง page ที่ไม่อยู่ในหน่วยความจำจะเกิดสิ่งที่เรียกว่า</div></td><td><b>C</b> page fault</td><td class="small">C. page fault</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">6</td><td><div>page fault จะเกิดขึ้นเมื่อโพรเซสอ้างถึงหน่วยความจำที่ตัวเองไม่มีสิทธิเข้าถึงเท่านั้น</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (เกิดขึ้นเมื่อโปรเซสอ้างถึงตำแหน่งที่มีสิทธิเข้าถึง แต่หน้านั้นยังไม่ได้ถูกดึงเข้ามาในแรม)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">7</td><td><div>เมื่อเกิด page fault เนื่องจากส่วนของโปรแกรมที่ต้องการยังไม่ได้ถูกโหลดเข้าสู่หน่วยความจำ ระบบปฏิบัติการจะทำงานต่อไปนี้ยกเว้น</div></td><td><b>E</b> เปลี่ยนค่า valid-invalid bit เป็น invalid</td><td class="small">E. เปลี่ยนค่า valid-invalid bit เป็น invalid (ต้องเปลี่ยนเป็น <b>valid</b> เพราะโหลดเข้ามาสำเร็จแล้ว)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">8</td><td><div>ในกรณีที่เกิด page fault และ ในหน่วยความจำไม่มีเฟรมที่ว่างเหลือแล้ว ระบบปฏิบัติการจะแจ้งข้อความข้อผิดพลาดให้ผู้ใช้ทราบ</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (OS จะเรียกกระบวนการ Page Replacement เพื่อสลับเพจเก่าออก)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">9</td><td><div>วิธีวัดประสิทธิภาพของอัลกอริทึมการแทนที่เพจ ก็คือดูจากการเกิด page fault ถ้าอัลกอรีทีมไหนเกิด page fault มากกว่า อัลกอริทึมนั้นจะดีกว่า</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (อัลกอริทึมที่ดีกว่าต้องเกิด Page Fault <b>น้อยกว่า</b>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td colspan="4" style="background:#f0f9ff;border-left:3px solid #38bdf8;padding:5px 8px"><b>📊 ข้อมูลสำหรับข้อ 10 - 16</b><div style="margin-top:2px"><ul style="margin:2px 0 2px 14px;padding:0"><li>หน่วยความจำมี 3 เฟรม ปัจจุบันเก็บเพจ: <code>2, 0, 1</code> (ลำดับการเข้า: 2 มาก่อน ตามด้วย 0 และ 1)</li><li>Page Reference String ที่เหลือ: <code>7 0 1 2 0 3 0 4 2 3 0</code></li></ul></div></td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">10</td><td>ด้วย FIFO เมื่อมีการเรียกใช้ page 7 จะแทนที่เพจใด</td><td><b>C</b> 2</td><td class="small"></td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">11</td><td>ด้วย FIFO จะเกิด page fault ทั้งหมดกี่ครั้ง</td><td><b>E</b> 7</td><td class="small"></td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">12</td><td>ด้วย Optimal เมื่อมีการเรียกใช้ page 7 จะแทนที่เพจใด</td><td><b>C</b> 2</td><td class="small">เพจ 2 ถูกใช้ไกลสุดในอนาคต</td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">13</td><td>ด้วย Optimal จะเกิด page fault ทั้งหมดกี่ครั้ง</td><td><b>C</b> 5</td><td class="small"></td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">14</td><td>วิธีการ optimal เป็นวิธีการที่ระบบปฏิบัติการนิยมใช้ เนื่องจากให้ผลลัพธ์เป็นจำนวน page fault น้อยที่สุด</td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">เป็นวิธีในอุดมคติ ไม่สามารถนำมาใช้จริงได้เพราะไม่สามารถล่วงรู้อนาคต</td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">15</td><td>ด้วย LRU เมื่อมีการเรียกใช้ page 7 จะแทนที่เพจใด</td><td><b>C</b> 2</td><td class="small"></td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">16</td><td>ด้วย LRU จะเกิด page fault ทั้งหมดกี่ครั้ง</td><td><b>E</b> 7</td><td class="small"></td></tr><tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">17</td><td><div>การเลือกเฟรมที่จะถูกแทนที่จะถูกเลือกจากเฟรมที่ระบบปฏิบัติการจัดสรรให้กับโพรเซสนั้นเท่านั้น</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (มีทั้ง Local Replacement และ Global Replacement ที่ดึงเฟรมของโพรเซสอื่นได้)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">18</td><td><div>เหตุการณ์ที่ระบบต้องสลับเพจเข้าและออกอยู่เกือบตลอดเวลาเรียกว่า</div></td><td><b>D</b> thrashing</td><td class="small">D. thrashing</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">19</td><td><div>ถ้าเกิด thrashing แล้วระบบปฏิบัติการตรวจสอบไม่พบ อาจจะเป็นผลให้ระบบปฏิบัติการโหลดโพรเซสเข้ามามากขึ้น เนื่องจาก CPU ไม่ถูกใช้งานเต็มที่</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (CPU Utilization ตกต่ำ ทำให้ OS นึกว่าระบบว่าง จึงเพิ่ม Multiprogramming Degree จนยิ่งแย่ลง)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">20</td><td><div>สมมติ working set window คือ 10 และที่เวลา 11 โพรเซส p1 มี page reference string ดังนี้ <code>2 6 1 5 7 7 7 7 5 1</code> และ p2 มี page reference string เป็น <code>1 2 0 3 4 5 6 6 6 7</code> คอมพิวเตอร์จะต้องมีเฟรมว่างอย่างน้อยกี่เฟรม จึงจะไม่เกิด thrashing</div></td><td><b>C</b> 13</td><td class="small">C. 13 เฟรม (WSS(P₁) = {1, 2, 5, 6, 7} = 5; WSS(P₂) = {0, 1, 2, 3, 4, 5, 6, 7} = 8; รวม 5 + 8 = 13)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">21</td><td><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">public class Main {
+    public static void main(String[] args) {
+        int[][] a = new int[10][256];
+        for(int j = 0; j &lt; 256; j++) {
+            for(int i = 0; i &lt; 10; i++) {
+                a[i][j] = 0;
+            }
+        }
+    }
+}</pre><div>สมมติ 1 แถวของอะเรย์ใช้เนื้อที่ 1 เพจ และหน่วยความจำมีเนื้อที่ว่าง 1 เฟรม ในการกำหนดค่าเริ่มต้นให้อะเรย์ a จะเกิด page fault กี่ครั้ง</div></td><td><b>D</b> 2560</td><td class="small">D. 2560 ครั้ง (วนลูปตามหลัก Column-major เข้าถึงข้ามแถวทุกรอบ เกิด Page Fault ทุกครั้งที่เข้าถึง 256 × 10 = 2560)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">22</td><td><pre style="margin:2px 0;padding:3px 6px;background:#f6f8fa;border:1px solid #d0d7de;border-radius:4px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:8.8px;line-height:1.3;white-space:pre-wrap;word-break:break-word">public class Main {
+    public static void main(String[] args) {
+        int[][] a = new int[10][256];
+        for(int i = 0; i &lt; 10; i++) {
+            for(int j = 0; j &lt; 256; j++) {
+                a[i][j] = 0;
+            }
+        }
+    }
+}</pre><div>สมมติ 1 แถวของอะเรย์ใช้เนื้อที่ 1 เพจ และหน่วยความจำมีเนื้อที่ว่าง 1 เฟรม ในการกำหนดค่าเริ่มต้นให้อะเรย์ a จะเกิด page fault กี่ครั้ง</div></td><td><b>A</b> 10</td><td class="small">A. 10 ครั้ง (วนลูปตามแถว Row-major เพจแถวเดิมถูกโหลด 1 ครั้งแล้วใช้งานต่อเนื่องครบ 256 ช่อง จึงเกิด Page Fault เพียงแถวละ 1 ครั้ง รวม 10 ครั้ง)</td></tr>
+</table></div>
+<h3>L16. File System <span style="font-weight:600;color:var(--muted);font-size:.8em">— ชุดที่ 14 · 30 ข้อ</span></h3>
+<div class="tbl-wrap"><table class="t sqz">
+<tr style="break-inside:avoid;page-break-inside:avoid"><th style="width:34px">ข้อ</th><th>คำถาม</th><th style="width:120px">คำตอบ</th><th>เฉลย / ความรู้</th></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">1</td><td><div>ระบบไฟล์ทำให้การเข้าถึงไฟล์ผ่านทางซอฟต์แวร์มีลักษณะเดียวกันไม่ว่าอุปกรณ์ที่จัดเก็บข้อมูลจะเป็นอะไร</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (File System Abstraction)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">2</td><td><div>หน้าที่หนึ่งของระบบไฟล์คือควบคุมสิทธิในการเข้าใช้งานไฟล์</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">3</td><td><div>ระบบไฟล์ที่ใช้กับระบบปฏิบัติการ Windows เป็นหลัก (เข้ากันไม่ค่อยได้กับระบบปฏิบัติการอื่น ๆ)</div></td><td><b>B</b> NTFS</td><td class="small">B. NTFS</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">4</td><td><div>ระบบไฟล์ที่ใช้กับระบบปฏิบัติการ Linux เป็นหลัก (เข้ากันไม่ค่อยได้กับระบบปฏิบัติการอื่น ๆ)</div></td><td><b>C</b> ext4</td><td class="small">C. ext4</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">5</td><td><div>ระบบไฟล์ที่ใช้กับระบบปฏิบัติการ Apple เป็นหลัก (เข้ากันไม่ค่อยได้กับระบบปฏิบัติการอื่น ๆ)</div></td><td><b>D</b> APFS</td><td class="small">D. APFS (Apple File System)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">6</td><td><div>ระบบไฟล์ที่เข้ากันได้กับระบบปฏิบัติการหลาย ๆ ตัว</div></td><td><b>A</b> exFAT</td><td class="small">A. exFAT</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">7</td><td><div>ระบบไฟล์ที่มักจะใช้กับ External Storage อย่าง USB drive คือ</div></td><td><b>A</b> exFAT</td><td class="small">A. exFAT</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">8</td><td><div>ประโยชน์ของคุณสมบัติ Journaling ของระบบไฟล์บางตัวอย่าง NTFS คือ การเข้ารหัสไฟล์</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (Journaling ใช้บันทึก Log การเปลี่ยนแปลงโครงสร้างไฟล์เพื่อกู้คืนเมื่อระบบล่ม ไม่ใช่การเข้ารหัส)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">9</td><td><div>ปัญหาของการจัดสรรเนื้อที่ให้กับไฟล์แบบต่อเนื่อง (contiguous) คือ internal fragmentation</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (ปัญหาสำคัญที่สุดของการจัดสรรต่อเนื่องคือ <b>External Fragmentation</b>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">10</td><td><div>ปัญหาของการจัดสรรเนื้อที่ให้กับไฟล์แบบต่อเนื่อง (contiguous) คือ การเพิ่มขนาดของไฟล์อาจจะทำได้ยาก</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (หากบล็อกถัดไปไม่ว่าง จะต้องย้ายไฟล์ทั้งไฟล์ไปที่อื่น)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">11</td><td><div>การจัดสรรเนื้อที่ให้ไฟล์แบบ linked allocation เป็นการจัดสรรเนื้อที่ให้ไฟล์แบบต่อเนื่อง (contiguous)</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (Linked Allocation เป็นแบบ Non-contiguous)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">12</td><td><div>ข้อเสียของการจัดสรรเนื้อที่แบบ linked allocation คือจะต้องเสียเนื้อที่ในบล็อกเพื่อเก็บลิงก์ไปยังบล็อกถัดไป</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (Pointer Overhead)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">13</td><td><div>ข้อเสียของการจัดสรรเนื้อที่แบบ linked allocation คือถ้ามีบล็อกใดบล็อกหนึ่งเสีย อาจทำให้อ่านข้อมูลที่เหลือของไฟล์ไม่ได้</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (ลิงก์ขาดตอน)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">14</td><td><div>การจัดสรรเนื้อที่แบบ linked allocation มีข้อเสียคือการอ่านไฟล์ทำได้ช้า</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (ไม่รองรับ Random/Direct Access ต้องไล่อ่านตามลำดับ)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">15</td><td><div>FAT จัดเป็น Linked Allocation</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (เป็น Linked Allocation ที่ดึงพอยน์เตอร์มาเก็บรวมในตาราง FAT)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">16</td><td><div>ขนาดสูงสุดของไฟล์สำหรับระบบที่ใช้ระบบไฟล์แบบ FAT32 คือ</div></td><td><b>C</b> 4 GB</td><td class="small">C. 4 GB (2³² - 1 bytes)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">17</td><td><div>สมมติหนึ่งช่องของ FAT Table มีขนาด 16 บิต และทั้ง 16 บิตถูกใช้อ้างถึงบล็อกข้อมูล โดยขนาดของบล็อกข้อมูลหนึ่งบล็อกคือ 16K ขนาดของวอลุม (volume) สูงสุดของดิสก์คือกี่ GB</div></td><td><b>A</b> 1</td><td class="small">A. 1 GB (2¹⁶ = 65,536 บล็อก × 16 KB = 1,048,576 KB = 1 GB)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">18</td><td><div>ปัญหาของขนาดของบล็อกที่มีขนาดใหญ่คือ external fragmentation</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (บล็อกใหญ่ทำให้เกิดปัญหา <b>Internal Fragmentation</b>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">19</td><td><div>ข้อดีประการหนึ่งของการเข้าถึงไฟล์แบบ index allocation คือ การเข้าถึงข้อมูลในไฟล์ไม่จำเป็นต้องเข้าถึงตามลำดับ</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (รองรับ Direct/Random Access)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">20</td><td><div>ในการใช้งาน index allocation แบบ single level ขนาดของไฟล์สูงสุดจะถูกจำกัดด้วยขนาดของจำนวนช่อง (entry) ใน index block</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (เพราะมี Index block ได้เพียงก้อนเดียว)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">21</td><td><div>สมมติ 1 บล็อกมีขนาด 2 KB และ pointer มีขนาด 4 bytes จะได้ว่า 1 index block จะมีจำนวนช่อง (entry) กี่ช่อง</div></td><td><b>C</b> 512</td><td class="small">C. 512 ช่อง (2048 / 4 = 512)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">22</td><td><div>สมมติ 1 บล็อกมีขนาด 2 KB และ pointer มีขนาด 4 bytes ขนาดสูงสุดของไฟล์ที่เก็บได้ใน Double indirect block อย่างเดียวคือกี่ MB</div></td><td><b>C</b> 512</td><td class="small">C. 512 MB  512 × 512 = 262,144 data blocks × 2 KB = 524,288 KB = 512 MB</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">23</td><td><div>Symbolic link มีชื่อเรียกอีกอย่างว่า hard link</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (เรียกว่า Soft Link)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">24</td><td><div>Symbolic link เปรียบได้กับการสร้าง shortcut ใน Windows</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">25</td><td><div>Hard Link ในระบบปฏิบัติการ Unix จัดการโดยใช้แนวคิด Reference Counter</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True (นับ Link count ใน inode)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">26</td><td><div>เราสามารถสร้าง Hard Link ไปยังไฟล์หรือไดเรกทอรีก็ได้</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (ระบบ Unix ส่วนใหญ่ไม่อนุญาตให้สร้าง Hard link ไปยังไดเรกทอรีเพื่อป้องกัน Loop ในโครงสร้างระบบไฟล์)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">27</td><td><div>เราสามารถสร้าง Soft Link ไปยังไฟล์หรือไดเรกทอรีก็ได้</div></td><td><b style="color:var(--green)">จริง</b></td><td class="small">True</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">28</td><td><div>คำสั่ง softln ใน Unix ใช้สร้าง Soft Link</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (ใช้คำสั่ง <code>ln -s</code>)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">29</td><td><div>เราไม่สามารถสร้าง mount point มากกว่าหนึ่ง mount point ที่ mount อุปกรณ์เดียวกันได้</div></td><td><b style="color:var(--red)">ไม่จริง</b></td><td class="small">False (สามารถ Mount อุปกรณ์เดียวกันไว้ที่หลายโฟลเดอร์/Mount point ได้)</td></tr>
+<tr style="break-inside:avoid;page-break-inside:avoid"><td class="c">30</td><td><div>ถ้าต้องการกำหนดสิทธิในการเข้าถึงไฟล์ดังนี้ - เจ้าของ: อ่านได้ เขียนได้ execute ได้ (<code>rwx</code> = 4+2+1 = 7) - ผู้ใช้ในกลุ่มเดียวกัน: อ่านได้ เขียนได้ execute ไม่ได้ (<code>rw-</code> = 4+2+0 = 6) - คนอื่นในระบบ: อ่านได้อย่างเดียว (<code>r--</code> = 4+0+0 = 4) สิทธิการเข้า…</div></td><td><b>C</b> 0764</td><td class="small">C. 0764</td></tr>
+</table></div>
+
+<!-- ================= PART M: QUICK FORMULAS ================= -->
+<h2 class="part">M. แผ่นสูตรเร็วท้ายเล่ม (อ่าน 3 นาทีก่อนเข้าห้อง)</h2>
 <div class="intro">
   <div class="it">📖 รู้จักส่วนนี้ก่อนอ่าน</div>
   <p><b>ความหมาย:</b> สรุปสูตรคำนวณทุกบทมารวมใน 1 หน้า (TAT/WT, Paging, EAT, นับ fault, Banker's, inode, rwx)</p>
