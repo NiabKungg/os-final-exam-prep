@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "mimosa-finding-ledger-batch/v1",
+  "batchId": "pretooluse-f0ebed6ecd25d2ae15aeba28daf15eb2",
+  "runId": null,
+  "runStatus": "completed",
+  "coverage": {
+    "status": "complete",
+    "reasons": []
+  },
+  "source": {
+    "component": "zcode-hook",
+    "operationId": "PreToolUse"
+  },
+  "revision": null,
+  "diffHash": null,
+  "rulesVersion": null,
+  "sessionHash": "8dcd790207be3bb6fd88678c2dd3958f918ee9b52d2b457d9dab82bcb7ab8430",
+  "reportRef": null,
+  "events": [],
+  "observedFindingIds": [],
+  "verifiedFiles": [],
+  "recordedAt": "2026-11-05T18:20:55.988Z"
+}
