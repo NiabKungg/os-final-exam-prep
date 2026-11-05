@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "mimosa-hook-status/v1",
+  "recordedAt": "2026-11-05T18:42:47.972Z",
+  "sessionId": "session_6f0bd0daf9e0a36761ab06e23766ec08",
+  "event": "PostToolUse",
+  "toolName": "Edit",
+  "file": "/home/niab/Desktop/การเรียน/final y2t1/os/exam-site/openbook.html",
+  "outcome": "clear",
+  "coverage": "complete",
+  "findingCount": 0,
+  "durationMs": 6,
+  "hostState": "hook_complete",
+  "reportHint": ".mimosa/reports/"
+}

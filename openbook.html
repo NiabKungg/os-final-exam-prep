@@ -36,7 +36,7 @@ body {
 .page { max-width: 980px; margin: 0 auto; background: #fff; padding: 26px 30px 60px; box-shadow: 0 0 24px rgba(16,24,40,.08); }
 h1 { font-size: 1.55rem; margin: 8px 0 6px; }
 h2.part {
-  break-before: page; break-inside: avoid;
+  break-inside: avoid; break-after: avoid;   /* ไม่บังคับขึ้นหน้าใหม่ — ไหลต่อเนื่อง ประหยัดกระดาษ (แก้หน้าว่างมากเกิน) */
   margin: 8px -30px 14px; padding: 13px 30px;
   background: linear-gradient(90deg, var(--pri), #0ea5e9); color: #fff;
   font-size: 1.25rem;
@@ -157,8 +157,17 @@ ol.st > li:last-child::after { display: none; }
 .toc .hot { color: var(--red); font-weight: 800; }
 /* ---------- mermaid ---------- */
 .mermaid { margin: 10px auto; text-align: center; break-inside: avoid; background: #fff; }
-/* จำกัดความกว้างแผนภาพ กันยืดเต็มหน้าจนกินพื้นที่พิมพ์ (แก้ปัญหาหน้า 4, 6, 39-41) */
+/* จำกัดความกว้างแผนภาพ กันยืดเต็มหน้าจนกินพื้นที่พิมพ์ (แก้หน้า 4, 6, 39-41) */
 .mermaid svg { max-width: 520px !important; width: auto; height: auto; }
+/* แผนภาพกว้างพิเศษ (2 คอลัมน์) — ใหญ่ขึ้นเพื่อให้อ่านตัวหนังสือในได้ */
+.mermaid.wide svg { max-width: 700px !important; }
+/* แผนภาพขนาดย่อ — ให้ลงช่องว่างที่เหลือของหน้า */
+.mermaid.small svg { max-width: 430px !important; }
+/* แถวสไลด์ 3 ใบ — ย่อให้แถวเดียวจบ ไม่ทิ้งการ์ดหลุดแถว */
+.figrow.fig3 .slide { flex: 1 1 220px; max-width: 236px; }
+.figrow.fig3 .slide .cap { font-size: 9.5px; }
+/* กันบรรทัดนำหน้าตาราง/กล่องถูกแยกข้ามหน้า */
+.keep { break-inside: avoid; }
 /* ---------- misc ---------- */
 .pill { display: inline-block; font-size: 10.5px; font-weight: 800; padding: 2px 10px; border-radius: 999px; background: var(--pri-soft); color: var(--pri-dark); margin-right: 5px; }
 .pill.hot { background: var(--red-soft); color: var(--red); }
@@ -347,7 +356,7 @@ flowchart TD
 }
 <span class="c">/* Output: ผล ls ก่อน ตามด้วย "Child Complete" — ลำดับแน่นอนเพราะ wait() */</span></code></pre>
 
-<div class="mermaid">
+<div class="mermaid small">
 sequenceDiagram
   participant P as Parent
   participant K as Kernel
@@ -431,10 +440,10 @@ sequenceDiagram
   <tr><td><b>Many-to-Many</b></td><td>ULT หลาย → KLT หลาย</td><td>OS สร้าง KLT ให้พอดีจำนวน</td><td>Solaris &lt; 9, Tru64 UNIX</td></tr>
 </table>
 
-<div class="figrow">
-  <div class="slide"><img src="slides/s04p13.jpg" alt="Many-to-one"><div class="cap"><b>p.13</b> Many-to-One</div></div>
-  <div class="slide"><img src="slides/s04p15.jpg" alt="One-to-one"><div class="cap"><b>p.15</b> One-to-One</div></div>
-  <div class="slide"><img src="slides/s04p17.jpg" alt="Many-to-many"><div class="cap"><b>p.17</b> Many-to-Many</div></div>
+<div class="figrow fig3">
+  <div class="slide"><img src="slides/s04p14.jpg" alt="Many-to-One Model"><div class="cap"><b>สไลด์ p.14</b> Many-to-One Model — ULT หลายเส้น รวมเป็น KLT เส้นเดียว</div></div>
+  <div class="slide"><img src="slides/s04p16.jpg" alt="One-to-one Model"><div class="cap"><b>สไลด์ p.16</b> One-to-One Model — ULT 1 เส้น = KLT 1 เส้น</div></div>
+  <div class="slide"><img src="slides/s04p18.jpg" alt="Many-to-Many Model"><div class="cap"><b>สไลด์ p.18</b> Many-to-Many Model — ULT หลายเส้น map ไป KLT หลายเส้น</div></div>
 </div>
 
 <h3>B3. Pthreads (C) — โค้ดตัวอย่างพร้อมคอมเมนต์</h3>
@@ -483,12 +492,6 @@ sequenceDiagram
   <p><b>ความหมาย:</b> CPU Scheduling = การตัดสินใจว่า process ไหนจะได้ใช้ CPU "ตัวต่อไป" เมื่อหลายงานแย่งกัน — มีหลายอัลกอริทึม เช่น FCFS (มาก่อนได้ก่อน), SJF (งานสั้นก่อน), RR (วนแบ่งเวลา)</p>
   <p><b>ความสำคัญกับข้อสอบ:</b> โจทย์วาด Gantt (แผนภูมิช่วงเวลา) หา TAT/WT เป็นข้อคำนวณหลักประจำทุกปี — ฝึกให้ทำข้อละไม่เกิน 2 นาที ใช้เทคนิค "หา TAT ก่อนแล้วลบ BT เสมอ"</p>
   <p><b>ใช้จริงในคอมพิวเตอร์:</b> Windows/Linux/macOS ใช้แนวคิด priority + time slice (โควตาเวลาแบบ RR) จริง ๆ ในตัวจัดคิวของเคอร์เนล — เปิด Task Manager เห็น process แย่ง CPU ด้วยกลไกพวกนี้ทั้งหมด</p>
-</div>
-<div class="intro">
-  <div class="it">📖 รู้จักส่วนนี้ก่อนอ่าน</div>
-  <p><b>ความหมาย:</b> CPU Scheduling = การตัดสินใจว่า process ไหนจะได้ใช้ CPU "ตัวต่อไป" เมื่อมีหลายงานแย่งกัน — มีหลายอัลกอริทึม เช่น FCFS (มาก่อนได้ก่อน), SJF (งานสั้นก่อน), RR (วนแบ่งเวลา)</p>
-  <p><b>ความสำคัญกับข้อสอบ:</b> โจทย์คำนวณวาด Gantt (แผนภูมิช่วงเวลา) แล้วหา TAT/WT เป็นข้อคำนวณหลักประจำทุกปี — ฝึกให้ทำข้อละไม่เกิน 2 นาที ใช้เทคนิค "หา TAT ก่อนแล้วลบ BT"</p>
-  <p><b>ใช้จริงในคอมพิวเตอร์:</b> Windows/Linux/macOS ใช้แนวคิด priority + time slice (โควตาเวลาแบบ RR) จริง ๆ ในตัวจัดคิวของเคอร์เนล — เปิด Task Manager เห็น process แย่ง CPU ตามกลไกพวกนี้ทั้งหมด</p>
 </div>
 
 <h3>C1. พื้นฐาน + สูตรทุกตัวที่ใช้คิดเลข</h3>
@@ -605,7 +608,6 @@ sequenceDiagram
 <p><b>โมเดลตัวอย่าง (p.46–47):</b> Q0 = RR q8ms → ไม่จบ ลง Q1 = RR q16ms → ยังไม่จบ ลง Q2 = FCFS จนจบ · คิวล่างได้รันเมื่อคิวบนว่างหมด</p>
 <div class="figrow">
   <div class="slide"><img src="slides/s04p44.jpg" alt="MLQ"><div class="cap"><b>สไลด์ p.44</b> Multilevel Queue</div></div>
-  <div class="slide"><img src="slides/s04p46.jpg" alt="MLFQ def"><div class="cap"><b>สไลด์ p.46</b> MLFQ นิยาม</div></div>
   <div class="slide"><img src="slides/s04p47.jpg" alt="MLFQ example"><div class="cap"><b>สไลด์ p.47</b> Example MLFQ 3 คิว</div></div>
 </div>
 
@@ -771,8 +773,10 @@ count = register1;         count = register2;</code></pre>
 </div>
 <div class="co exam"><div class="tt">🎯 จุดหลอก: สลับ wait → DEADLOCK</div><p>ถ้า producer เขียน <code>wait(mutex); wait(empty);</code> — buffer เต็ม → producer ครอง mutex ค้างรอ empty แต่ consumer เข้าอ่านไม่ได้เพราะ mutex ถูกครอง → รอกันตาย · <b>กฎเหล็ก: เช็ค resource (empty/full) ก่อนล็อก (mutex) เสมอ</b> · จำค่าเริ่มต้นให้แม่น: mutex=1, empty=n, full=0</p></div>
 
+<div class="keep">
 <h3>E4. ปัญหาคลาสสิก 2: Readers-Writers</h3>
 <p>กติกา: <b>Reader หลายตัวอ่านพร้อมกันได้</b> · Writer ทำงานเมื่อไรห้ามใครยุ่งเด็ดขาด · แชร์: <code>wrt=1, mutex=1, readcount=0 (int ธรรมดา)</code></p>
+</div>
 <div class="two">
 <pre class="code"><code><span class="c">/* Writer — ง่ายสุด */</span>
 <span class="f">wait</span>(wrt);
@@ -978,6 +982,7 @@ flowchart LR
   <tr><td>P3</td><td class="c">2</td><td class="c">1</td><td class="c">1</td><td class="c">2</td><td class="c">2</td><td class="c">2</td><td class="c">0</td><td class="c">1</td><td class="c">1</td></tr>
   <tr><td>P4</td><td class="c">0</td><td class="c">0</td><td class="c">2</td><td class="c">4</td><td class="c">3</td><td class="c">3</td><td class="c">4</td><td class="c">3</td><td class="c">1</td></tr>
 </table>
+<div class="keep">
 <p><b>ไล่ Safety (Work เริ่ม = 3,3,2):</b></p>
 <table class="t">
   <tr><th class="c">ขั้น</th><th>เลือกใคร (เหตุผล)</th><th class="c">Work หลังคืนของ</th></tr>
@@ -987,6 +992,7 @@ flowchart LR
   <tr><td class="c">4</td><td>P2 — Need (6,0,0) ≤ (7,4,5) ✓</td><td class="c">(7,4,5)+(3,0,2) = <b>(10,4,7)</b></td></tr>
   <tr><td class="c">5</td><td>P0 — Need (7,4,3) ≤ (10,4,7) ✓</td><td class="c">(10,4,7)+(0,1,0) = (10,5,7) ครบทุกตัว ✅</td></tr>
 </table>
+</div>
 <div class="fm">Safe sequence = &lt;P1, P3, P4, P2, P0&gt; → SAFE STATE<small>มีได้หลายคำตอบ — ตอบลำดับไหนที่ไล่ได้จริงก็ถูก (สไลด์ให้ &lt;P1,P3,P4,P2,P0&gt;)</small></div>
 
 <h4>F5.3 Resource-Request Algorithm — P1 ขอ (1,0,2) ให้ได้ไหม?</h4>
@@ -1009,6 +1015,7 @@ flowchart LR
   <li><b>Single instance/type:</b> ยุบ RAG เป็น <b>Wait-For Graph (กราฟแสดงว่าใครรอใคร)</b> — ตัดโหนดทรัพยากรทิ้ง เหลือ Pᵢ → Pⱼ ("Pᵢ รอ Pⱼ") มี cycle = deadlock (สแกนทุกระยะ, แพง O(n²))</li>
   <li><b>Multiple instances:</b> Detection Algorithm ทำงานเหมือน Safety แต่เทียบด้วย <b>Request</b> (ของที่ร้องขอค้างจริง) แทน Need · Finish เริ่มต้น: คนที่ Allocation ไม่เป็นศูนย์ = false</li>
 </ul>
+<div class="keep">
 <p><b>ตัวอย่าง Detection จากสไลด์ p.36–37 (A=7, B=2, C=6, Available = 0,0,0):</b></p>
 <table class="t">
   <tr><th rowspan="2">Process</th><th colspan="3" class="c">Allocation</th><th colspan="3" class="c">Request</th></tr>
@@ -1019,6 +1026,7 @@ flowchart LR
   <tr><td>P3</td><td class="c">2</td><td class="c">1</td><td class="c">1</td><td class="c">1</td><td class="c">0</td><td class="c">0</td></tr>
   <tr><td>P4</td><td class="c">0</td><td class="c">0</td><td class="c">2</td><td class="c">0</td><td class="c">0</td><td class="c">2</td></tr>
 </table>
+</div>
 <p>ไล่: Work=(0,0,0) → P0 (Request 000 ≤ 000) จบ → Work=(0,1,0) → P2 (000 ≤ 010) จบ → Work=(3,1,3) → P3 จบ → (5,2,4) → P1 จบ → (7,2,4) → P4 จบ → <b>sequence &lt;P0,P2,P3,P1,P4&gt; ครบ → ไม่มี deadlock</b></p>
 <p><b>แต่ถ้า P2 ขอเพิ่ม C หนึ่งชิ้น (Request P2 = 0,0,1):</b> Work=(0,0,0) → P0 จบ → (0,1,0) → ใครผ่าน? P1(2,0,2)✗ P2(0,0,1)✗ P3(1,0,0)✗ P4(0,0,2)✗ → ตัน → <b>deadlock: P1, P2, P3, P4</b></p>
 <h4>Recovery 2 แนวทาง</h4>
@@ -1071,6 +1079,7 @@ flowchart LR
   <tr><td><b>Compaction (การอัดข้อมูลให้ติดกัน)</b></td><td>ลาก process มา<b>อัดติดกัน</b> รวมว่างปลายเดียว</td><td>overhead แพง และทำได้<b>เฉพาะ relocation แบบ dynamic (ตอน execution time)</b></td></tr>
 </table>
 
+<div class="keep">
 <h3>G5. First-fit (หยิบหลุมแรกที่พอ) · Best-fit (หยิบหลุมที่แน่นที่สุด) · Worst-fit 🔥 (ตัวอย่างจากวิดีโอ)</h3>
 <p><b>โจทย์ (สไลด์ p.21–24):</b> หลุมเรียงตามลำดับใน RAM: <b>16, 14, 5, 30 MB</b> · process ใหม่ต้องการ <b>13 MB</b></p>
 <table class="t">
@@ -1079,6 +1088,7 @@ flowchart LR
   <tr><td><b>Best-fit</b></td><td>สแกนครบ เลือกหลุมที่ "ใหญ่พอ + เหลือน้อยสุด"</td><td class="c ok"><b>14</b></td><td class="c">1</td><td>คุ้มสุด แต่ช้า + ทิ้งเศษจิ๋วใช้ต่อไม่ได้</td></tr>
   <tr><td><b>Worst-fit</b></td><td>สแกนครบ เลือกหลุมใหญ่สุด</td><td class="c ok"><b>30</b></td><td class="c">17</td><td>ทิ้งชิ้นใหญ่ให้งานต่อไป (โดยรวมมักแพ้ best-fit)</td></tr>
 </table>
+</div>
 <div class="co tip"><div class="tt">🟢 เทคนิค 30 วินาที</div><p>เขียนเลขหลุมตามลำดับที่โจทย์ให้ (ห้ามจัดใหม่!) · First = หยุดหลุมแรกที่พอ · Best = เทียบ (หลุม−ขนาด) เลือกค่าน้อยสุด · Worst = หลุมใหญ่สุด · ถ้าโจทย์ให้จัดหลายงานต่อกัน อย่าลืมหักขนาดหลุมที่ใช้ไปแล้วด้วย</p></div>
 <div class="figrow">
   <div class="slide"><img src="slides/s08p21.jpg" alt="placement strategies"><div class="cap"><b>สไลด์ p.21</b> Memory Placement Strategies</div></div>
@@ -1137,12 +1147,14 @@ flowchart LR
 
 <h3>H3. แปลง Logical → Physical ทีละขั้น 🔥</h3>
 <div class="fm">Physical Address = (Frame Number × Page Size (ขนาดของเพจ)) + Offset<small>เปิดตารางด้วย p → ได้ frame → คูณขนาด frame = จุดเริ่ม → บวก offset</small></div>
+<div class="keep">
 <p><b>โจทย์จากสไลด์ p.32 (Paging Example):</b> page size (ขนาดของเพจ) = 4 bytes · Page table: 0→5, 1→4, 2→1, 3→7</p>
 <table class="t">
   <tr><th>หาอะไร</th><th>Logical</th><th>ไล่ทีละขั้น</th><th class="c">PA</th></tr>
   <tr><td>ตัวอักษร 'C'</td><td>(p=0, d=2)</td><td>เพจ 0 → frame 5 → (5 × 4) + 2 = 20 + 2</td><td class="c ok"><b>22</b></td></tr>
   <tr><td>ตัวอักษร 'K'</td><td>(p=2, d=2)</td><td>เพจ 2 → frame 1 → (1 × 4) + 2 = 4 + 2</td><td class="c ok"><b>6</b></td></tr>
 </table>
+</div>
 <div class="co exam"><div class="tt">🎯 3 จุดพลาดคลาสสิก</div><p>1) <b>บวก frame+offset ตรง ๆ</b> (5+2=7 ❌) ต้องคูณขนาดก่อน 2) นับเพจเริ่ม 1 → ต้องเริ่ม <b>Page 0</b> 3) ปัดจำนวนเพจลง — 42 bytes / เพจ 4 = 10.5 → <b>ปัดขึ้น 11 เพจ</b> (10 เพจเก็บได้ 40 bytes ข้อมูลขาด!) เพจสุดท้ายใช้ 2 bytes → internal frag = 4−2 = <b>2 bytes</b></p></div>
 <div class="figrow">
   <div class="slide"><img src="slides/s08p29.jpg" alt="addr translation"><div class="cap"><b>สไลด์ p.29</b> Address Translation Scheme (p | d)</div></div>
@@ -1167,7 +1179,6 @@ flowchart LR
 <div class="figrow">
   <div class="slide"><img src="slides/s08p35.jpg" alt="associative memory"><div class="cap"><b>สไลด์ p.35</b> Associative Memory (TLB): ค้นขนาน</div></div>
   <div class="slide"><img src="slides/s08p36.jpg" alt="TLB hardware"><div class="cap"><b>สไลด์ p.36</b> Paging Hardware With TLB</div></div>
-  <div class="slide"><img src="slides/s08p37.jpg" alt="EAT"><div class="cap"><b>สไลด์ p.37</b> Effective Access Time สูตร (ตรงกับข้างบน)</div></div>
 </div>
 
 <h3>H5. Protection — Valid / Invalid bit</h3>
@@ -1207,7 +1218,17 @@ flowchart LR
   <div class="slide"><img src="slides/s08p42.jpg" alt="hierarchical"><div class="cap"><b>สไลด์ p.42</b> Hierarchical Page Tables</div></div>
   <div class="slide"><img src="slides/s08p44.jpg" alt="three level"><div class="cap"><b>สไลด์ p.44</b> Three-level Paging Scheme (x86 มีจริง)</div></div>
 </div>
-<p class="small">หมายเหตุ: ยังมี Hashed Page Table และ Inverted Page Table — รู้จักชื่อพอ (inverted: 1 แถวต่อ 1 frame จริง ค้นด้วย (pid, page))</p>
+<div class="two">
+<div class="card" style="margin:6px 0">
+<h4 style="margin-top:0">Hashed Page Table — สำหรับ address space ใหญ่มาก</h4>
+<p style="margin:4px 0">เมื่อ address space กว้างมาก (64-bit) ตารางเพจแบบลำดับชั้นจะลึกเกินไป จึงใช้<b>ฟังก์ชัน hash</b> ของ page number ไปชี้ entry ในตาราง แล้วเดินตาม<b>ห่วงโซ่ (chain)</b> ของ element ที่ hash ชนกัน จนเจอแถวที่ page number ตรง แล้วอ่าน frame number — ดีกับเพจที่กระจายตัว ไม่ต้องสร้างตารางครบทุกช่อง</p>
+</div>
+<div class="card" style="margin:6px 0">
+<h4 style="margin-top:0">Inverted Page Table — 1 แถวต่อ 1 frame จริง</h4>
+<p style="margin:4px 0">ปกติตารางเพจมี 1 แถวต่อ 1 <em>เพจเสมือน</em> ของ process (สร้างหลายตาราง) แต่ Inverted กลับด้าน: <b>1 แถวต่อ 1 frame จริงใน RAM</b> เก็บ (pid, page) ที่ครอบอยู่ — มีตารางเดียวสำหรับทั้งระบบ ประหยัด RAM มาก · ราคาที่จ่าย: ตอนแปลง address ต้อง<b>ค้นหา</b> (pid, page) ของตัวเองทั้งตาราง → ช้า จึงต้องมี hash table + TLB ช่วย</p>
+</div>
+</div>
+<p class="small">หมายเหตุ: ทั้งสองแบบเป็นแนวทางแก้ปัญหา "page table ใหญ่เกิน" ร่วมกับ Two-level ที่เจอข้างบน — ข้อสอบมักถามรู้จักชื่อ + หลักคิดสั้น ๆ แบบนี้พอ</p>
 
 <!-- ================= PART I: VIRTUAL MEMORY ================= -->
 <h2 class="part">I. Virtual Memory & Page Replacement <span style="font-size:.8em">(OSNo09)</span> 🔥🔥</h2>
@@ -1230,7 +1251,7 @@ flowchart LR
 </div>
 
 <h3>I2. Page Fault — ขั้นตอนจัดการ 6 ขั้น (เรียงได้ = ได้คะแนน)</h3>
-<div class="mermaid">
+<div class="mermaid wide">
 flowchart LR
   subgraph L1["ระหว่างเกิด Page Fault"]
     direction TB
@@ -1250,6 +1271,14 @@ flowchart LR
   end
   D --> E
 </div>
+<ol class="st">
+  <li><span class="st-title">Trap/Interrupt เข้าสู่ OS</span>MMU เจอ bit = i (invalid) → ยิง trap ขึ้น kernel mode</li>
+  <li><span class="st-title">OS ตรวจชนิดของ invalid</span>อ้างเกิน address space จริง → abort · แค่ยังไม่โหลด → ไปขั้นถัดไป</li>
+  <li><span class="st-title">หาเพจบน disk + หา frame ว่าง</span>ถ้าไม่มี frame ว่าง → ใช้ Page Replacement ก่อน</li>
+  <li><span class="st-title">อ่านเพจจาก disk เข้า frame</span>ขั้นที่แพงที่สุด (เป็น I/O ทั้งตัว)</li>
+  <li><span class="st-title">อัปเดต page table</span>ใส่ frame number + เปลี่ยน bit เป็น v (valid)</li>
+  <li><span class="st-title">Restart คำสั่งเดิม</span>CPU รัน instruction ที่พังอีกครั้ง — คราวนี้อ่านได้ปกติ</li>
+</ol>
 <div class="co warn"><div class="tt">⚠️ Dirty page</div><p>เพจที่ถูกแก้ไข (dirty (เพจที่ถูกแก้ไขข้อมูลแล้ว)/modified = 1) ต้อง<b>เขียนกลับ disk ก่อน</b> (write back (เขียนกลับลงดิสก์ก่อน)) ค่อยแทนที่ — เพจ clean (เพจที่ยังไม่ถูกแก้ไข (ดิสก์มีสำเนาแล้ว)) ทับได้เลยเพราะ disk มีสำเนา</p></div>
 
 <h3>I3. Page Replacement — นับ fault 3 อัลกอริทึม 🔥🔥</h3>
@@ -1311,6 +1340,15 @@ flowchart LR
   <tr><td class="ok"><b>✅ ดี</b></td><td><code>for (i...) for (j...) data[i][j]=0;</code><br>(row นอก, column ใน)</td><td>อยู่เพจเดียวกันทั้งแถว fault เฉพาะตอนเปลี่ยนแถว</td><td class="c ok"><b>128</b></td></tr>
 </table>
 <div class="fm">โค้ดเหมือนกัน สลับลูปเท่านั้น → fault ต่างกัน 128 เท่า (16,384 : 128)<small>บทเรียน: เขียนลูปให้เข้าถึงข้อมูลต่อเนื่องตาม row-major = locality ดี</small></div>
+
+<h4>ไล่ address จริงให้เห็นตา — ทำไมถึงต่างกันขนาดนั้น</h4>
+<p>สมมติเพจเริ่มที่ address <code>A</code> — สมาชิกติดกันในแถวห่างกัน 4 bytes แต่<b>คนละแถวห่างกัน 128 × 4 = 512 bytes = ครบ 1 เพจพอดี</b></p>
+<table class="t">
+  <tr><th></th><th>ลำดับการอ้าง address</th><th>ผลต่อเพจ</th></tr>
+  <tr><td class="ok"><b>✅ row นอก</b><br><code>data[0][0] → data[0][1] → …</code></td><td>A, A+4, A+8, … , A+508 <span class="small">(128 ตัวต่อเนื่อง)</span> → แล้วค่อยกระโดดไป A+512</td><td>เพจเดียวกันทั้งแถว → <b>fault 1 ครั้ง/แถว</b> × 128 แถว</td></tr>
+  <tr><td class="no"><b>❌ column นอก</b><br><code>data[0][0] → data[1][0] → …</code></td><td>A, A+512, A+1024, … <span class="small">(ทุกครั้งข้าม 1 เพจเต็ม)</span></td><td>เปลี่ยนเพจ<b>ทุกครั้ง</b>ที่แตะสมาชิก → 16,384 ครั้ง</td></tr>
+</table>
+<p class="small">💡 หลักเดียวกันใช้ได้กับทุกโจทย์ลักษณะนี้: ดูว่าการอ้างสมาชิกตัวถัดไป "ห่างกันกี่ bytes" — ถ้าห่างน้อยกว่าขนาดเพจ = อยู่เพจเดียวกัน (ไม่ fault) · ถ้าห่างเกินขนาดเพจ = fault</p>
 
 <!-- ================= PART J: FILE SYSTEM ================= -->
 <h2 class="part">J. File System <span style="font-size:.8em">(OSNo10)</span></h2>
@@ -1602,6 +1640,7 @@ flowchart LR
 </table>
 </div>
 <div>
+<div class="keep">
 <h4>💾 Page Replacement (7,0,1,2,0,3,0,4,2,3,0,3,2,1,2,0,1,7,0,1 / 3 frames)</h4>
 <table class="t">
 <tr><td class="c"><b>FIFO</b></td><td class="c">15</td><td>เข้าก่อนออกก่อน · มี Belady (3f=9, 4f=10)</td></tr>
@@ -1610,6 +1649,7 @@ flowchart LR
 <tr><td><b>EAT(p)</b></td><td colspan="2">(1−p)×mat + p×service</td></tr>
 <tr><td><b>128×128</b></td><td colspan="2">row นอก = 128 · col นอก = 16,384</td></tr>
 </table>
+</div>
 <h4>🏦 Banker's · 📁 File</h4>
 <table class="t">
 <tr><td><b>Need</b></td><td>Max − Allocation</td></tr>
