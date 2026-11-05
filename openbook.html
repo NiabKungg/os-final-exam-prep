@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Open-Book Exam Document — Operating Systems (เน้นบท 7–13)</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#eef0ff', primaryBorderColor: '#4f46e5', primaryTextColor: '#1c2333',
+    lineColor: '#64748b', secondaryColor: '#ecfdf5', tertiaryColor: '#fff7ed',
+    fontSize: '13px', fontFamily: 'Noto Sans Thai, sans-serif'
+  },
+  flowchart: { curve: 'basis', htmlLabels: true },
+  sequence: { actorFontSize: 13, messageFontSize: 12 }
+});
+</script>
+<style>
+:root {
+  --ink: #1c2333; --soft: #4a5568; --muted: #8a94a6; --line: #e3e8f0;
+  --pri: #4f46e5; --pri-soft: #eef0ff; --pri-dark: #3730a3;
+  --red: #dc2626; --red-soft: #fef2f2; --green: #059669; --green-soft: #ecfdf5;
+  --amber: #d97706; --amber-soft: #fffbeb; --violet: #7c3aed; --violet-soft: #f5f3ff;
+  --teal: #0d9488; --teal-soft: #f0fdfa; --pink: #db2777; --pink-soft: #fdf2f8;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: #eef1f6; color: var(--ink);
+  font-family: "Noto Sans Thai", "Sarabun", system-ui, sans-serif;
+  font-size: 13.5px; line-height: 1.6;
+}
+.page { max-width: 980px; margin: 0 auto; background: #fff; padding: 26px 30px 60px; box-shadow: 0 0 24px rgba(16,24,40,.08); }
+h1 { font-size: 1.55rem; margin: 8px 0 6px; }
+h2.part {
+  break-before: page; break-inside: avoid;
+  margin: 8px -30px 14px; padding: 13px 30px;
+  background: linear-gradient(90deg, var(--pri), #0ea5e9); color: #fff;
+  font-size: 1.25rem;
+}
+h2.part:first-of-type { break-before: auto; }
+h3 { font-size: 1.06rem; margin: 22px 0 6px; padding: 5px 12px; background: var(--pri-soft); border-left: 5px solid var(--pri); break-after: avoid; }
+h4 { font-size: .95rem; margin: 15px 0 4px; color: var(--pri-dark); break-after: avoid; }
+p { margin: 6px 0; }
+.lead { color: var(--soft); }
+b, strong { color: #111827; }
+small, .small { font-size: 11.5px; color: var(--muted); }
+code {
+  font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  font-size: .86em; background: #f1f4f9; border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px;
+}
+/* ---------- code blocks ---------- */
+pre.code {
+  background: #0f172a; color: #e2e8f0; border-radius: 10px;
+  padding: 11px 14px; overflow-x: auto; break-inside: avoid;
+  font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  font-size: 11.3px; line-height: 1.6; margin: 9px 0;
+}
+pre.code .c { color: #7dd3a8; font-style: italic; }
+pre.code .k { color: #93c5fd; }
+pre.code .f { color: #fbbf24; }
+pre.code .n { color: #f472b6; }
+pre.code .s { color: #fdba74; }
+pre.code .hl { background: rgba(250,204,21,.16); display: inline-block; width: 100%; border-radius: 4px; }
+/* ---------- tables ---------- */
+table.t { border-collapse: collapse; width: 100%; margin: 9px 0; break-inside: avoid; font-size: 12.3px; }
+table.t th { background: #f1f4f9; text-align: left; padding: 5px 9px; border: 1px solid var(--line); }
+table.t td { padding: 5px 9px; border: 1px solid var(--line); vertical-align: top; }
+table.t .c { text-align: center; }
+table.t tr.hl td { background: var(--pri-soft); font-weight: 700; }
+table.t td.ok { background: var(--green-soft); }
+table.t td.no { background: var(--red-soft); }
+/* ---------- Gantt ---------- */
+.gantt { margin: 10px 0 4px; break-inside: avoid; }
+.g-row { display: flex; }
+.g-cell {
+  height: 34px; display: flex; align-items: center; justify-content: center;
+  font-weight: 800; color: #fff; font-size: 12px; text-shadow: 0 1px 2px rgba(0,0,0,.3);
+}
+.g-scale { display: flex; }
+.g-tick { font-size: 10.5px; color: var(--muted); font-weight: 700; }
+.g1 { background: #4f46e5; } .g2 { background: #0ea5e9; } .g3 { background: #059669; }
+.g4 { background: #d97706; } .g5 { background: #db2777; } .g6 { background: #7c3aed; }
+/* ---------- slides / figures ---------- */
+.figrow { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+.slide {
+  flex: 1 1 300px; max-width: 470px; break-inside: avoid;
+  border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+  background: #fff; box-shadow: 0 1px 4px rgba(16,24,40,.08);
+}
+.slide img { display: block; width: 100%; height: auto; }
+.slide .cap {
+  font-size: 10.5px; color: var(--soft); padding: 5px 9px;
+  background: #f8fafc; border-top: 1px dashed var(--line);
+}
+.slide .cap b { color: var(--pri-dark); }
+.fig1 { max-width: 520px; }
+/* ---------- callouts ---------- */
+.co { border: 1px solid var(--line); border-left-width: 5px; border-radius: 9px; padding: 8px 13px; margin: 10px 0; break-inside: avoid; background: #fff; }
+.co .tt { font-weight: 800; font-size: .88rem; margin-bottom: 2px; }
+.co p { margin: 2px 0; }
+.co.exam { border-left-color: var(--red); } .co.exam .tt { color: var(--red); }
+.co.tip { border-left-color: var(--green); } .co.tip .tt { color: var(--green); }
+.co.an { border-left-color: var(--violet); background: var(--violet-soft); border-color: #ddd6fe; } .co.an .tt { color: var(--violet); }
+.co.note { border-left-color: #0ea5e9; } .co.note .tt { color: #0284c7; }
+.co.warn { border-left-color: var(--amber); background: var(--amber-soft); border-color: #fde68a; } .co.warn .tt { color: var(--amber); }
+/* ---------- formula ---------- */
+.fm {
+  background: var(--pri-soft); border: 1.5px dashed #a5b4fc; color: var(--pri-dark);
+  border-radius: 9px; padding: 8px 14px; margin: 9px 0; text-align: center;
+  font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 12.5px;
+}
+.fm small { display: block; font-family: "Noto Sans Thai", sans-serif; font-weight: 600; color: var(--soft); margin-top: 3px; }
+/* ---------- steps ---------- */
+ol.st { margin: 8px 0; padding-left: 0; list-style: none; counter-reset: st; }
+ol.st > li { counter-increment: st; position: relative; padding: 0 0 10px 38px; }
+ol.st > li::before {
+  content: counter(st); position: absolute; left: 0; top: 1px;
+  width: 26px; height: 26px; border-radius: 50%; background: var(--pri); color: #fff;
+  font-weight: 800; font-size: .8rem; display: flex; align-items: center; justify-content: center;
+}
+ol.st > li::after { content: ""; position: absolute; left: 12.5px; top: 30px; bottom: 2px; width: 2px; background: var(--line); }
+ol.st > li:last-child::after { display: none; }
+/* ---------- quiz (Quizizz) cards ---------- */
+.qz { border: 1px solid var(--line); border-radius: 9px; margin: 8px 0; break-inside: avoid; overflow: hidden; }
+.qz .qh {
+  display: flex; gap: 8px; align-items: baseline; padding: 5px 11px;
+  background: #f8fafc; border-bottom: 1px dashed var(--line); font-size: 12px;
+}
+.qz .qn { font-weight: 800; color: var(--pri-dark); white-space: nowrap; }
+.qz .qa { font-weight: 800; color: var(--green); white-space: nowrap; }
+.qz .qq { padding: 6px 11px 2px; }
+.qz .qq .q { color: var(--soft); }
+.qz .qk { padding: 2px 11px 7px; font-size: 12.3px; }
+.qz .qk b { color: var(--pri-dark); }
+.qz2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 760px) { .qz2 { grid-template-columns: 1fr; } }
+/* ---------- cover / toc ---------- */
+.cover { text-align: center; padding: 30px 10px 12px; }
+.cover .badge { display: inline-block; background: var(--pri); color: #fff; border-radius: 999px; padding: 4px 16px; font-weight: 800; font-size: .8rem; letter-spacing: .04em; }
+.cover h1 { font-size: 1.75rem; margin: 12px 0 4px; }
+.cover .sub { color: var(--soft); }
+.cover .meta { margin-top: 10px; font-size: 12px; color: var(--muted); }
+.toc { columns: 2; column-gap: 34px; font-size: 12.8px; margin: 12px 0; }
+.toc div { break-inside: avoid; padding: 3px 0; border-bottom: 1px dotted var(--line); }
+.toc b { color: var(--pri-dark); }
+.toc .hot { color: var(--red); font-weight: 800; }
+/* ---------- mermaid ---------- */
+.mermaid { margin: 10px auto; text-align: center; break-inside: avoid; background: #fff; }
+.mermaid svg { max-width: 100% !important; height: auto !important; }
+/* ---------- misc ---------- */
+.pill { display: inline-block; font-size: 10.5px; font-weight: 800; padding: 2px 10px; border-radius: 999px; background: var(--pri-soft); color: var(--pri-dark); margin-right: 5px; }
+.pill.hot { background: var(--red-soft); color: var(--red); }
+.pill.gr { background: var(--green-soft); color: var(--green); }
+.pill.vi { background: var(--violet-soft); color: var(--violet); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
+ul { margin: 5px 0; padding-left: 20px; }
+li { margin: 2.5px 0; }
+kbd { background: #e2e8f0; border-radius: 4px; padding: 0 5px; font-family: monospace; font-size: .85em; }
+/* ---------- PRINT ---------- */
+@media print {
+  body { background: #fff; font-size: 11.6px; }
+  .page { box-shadow: none; max-width: none; padding: 0; }
+  @page { size: A4; margin: 11mm 10mm; }
+  h2.part { margin: 0 -10mm 12px; padding: 9px 10mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .noprint { display: none !important; }
+  .slide { box-shadow: none; }
+  pre.code, table.t, .co, .qz, .gantt, .fm { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  a { color: inherit; text-decoration: none; }
+  .qz2 { gap: 6px; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ================= COVER ================= -->
+<div class="cover">
+  <span class="badge">OPEN BOOK · EXAM SHEET</span>
+  <h1>📘 เอกสารพกเข้าห้องสอบ Final — Operating Systems</h1>
+  <div class="sub">05506007 · เรียบเรียงจาก Presentation ของอาจารย์ (ภาพต้นฉบับ) + Handout + วิดีโอ + Quizizz ในห้องเรียน</div>
+  <div class="meta">เน้นละเอียดบทที่ 7–13 · พิมพ์เป็น A4 ได้ (Ctrl+P) · ภาพสไลด์ทุกภาพอ้างอิงเลขสไลด์จริงจาก presentation ของอาจารย์</div>
+</div>
+
+<div class="co tip">
+  <div class="tt">🖨️ วิธีใช้ + พิมพ์</div>
+  <p>• เปิดหน้านี้ทิ้งไว้ กด <kbd>Ctrl+P</kbd> → เลือก Save as PDF → เปิด "Background graphics" เพื่อให้สีสไลด์/ตารางออกครบ</p>
+  <p>• กล่อง <span style="color:var(--red);font-weight:800">แดง = จุดหลอกข้อสอบ</span> · <span style="color:var(--green);font-weight:800">เขียว = เทคนิค/สูตรทำเร็ว</span> · <span style="color:var(--violet);font-weight:800">ม่วง = อุปมาช่วยจำ</span> · ภาพสไลด์ = ข้อมูลต้นฉบับของอาจารย์ (ตัวเลขในโจทย์ตัวอย่างตรงกับสไลด์)</p>
+</div>
+
+<h3 style="margin-top:14px">สารบัญ</h3>
+<div class="toc">
+  <div><b>A.</b> Process & fork/exec/wait <span class="hot">🔥</span></div>
+  <div><b>B.</b> Thread & Multi-Threading</div>
+  <div><b>C.</b> CPU Scheduling — Gantt/TAT/WT <span class="hot">🔥</span></div>
+  <div><b>D.</b> Race Condition & Critical Section</div>
+  <div><b>E.</b> Semaphore · Monitor · Java sync <span class="hot">🔥</span></div>
+  <div><b>F.</b> Deadlock + Banker's Algorithm <span class="hot">🔥</span></div>
+  <div><b>G.</b> Real Memory Management</div>
+  <div><b>H.</b> Paging & Address Translation <span class="hot">🔥🔥</span></div>
+  <div><b>I.</b> Virtual Memory & Page Replacement <span class="hot">🔥🔥</span></div>
+  <div><b>J.</b> File System</div>
+  <div><b>K.</b> ความรู้จาก Quizizz ทั้ง 4 ชุด</div>
+  <div><b>L.</b> แผ่นสูตรเร็วท้ายเล่ม (1 หน้า)</div>
+</div>
+
+<!-- ================= PART A: PROCESS ================= -->
+<h2 class="part">A. Process & การสร้าง Process ด้วย fork / exec / wait <span style="font-size:.8em">(OSNo03)</span></h2>
+
+<h3>A1. Program vs Process · สถานะของ Process</h3>
+<table class="t">
+  <tr><th></th><th>Program</th><th>Process</th></tr>
+  <tr><td><b>คือ</b></td><td>ไฟล์คำสั่งนิ่ง ๆ บนดิสก์ — <b>passive entity</b></td><td><b>program in execution</b> — active entity ต้องใช้ทรัพยากร</td></tr>
+  <tr><td><b>มีอะไร</b></td><td>แค่โค้ด</td><td>Program counter (PC), stack, data section, heap, registers</td></tr>
+  <tr><td><b>ชื่อเรียกอื่น</b></td><td>—</td><td>Task (time-sharing) · Job (batch system)</td></tr>
+</table>
+
+<p><b>สถานะของ process (state diagram):</b></p>
+<div class="mermaid">
+stateDiagram-v2
+  direction LR
+  [*] --> New: admitted<br/>(โหลดเข้า RAM)
+  New --> Ready
+  Ready --> Running: dispatch<br/>(ได้ CPU)
+  Running --> Ready: interrupt<br/>(หมดเวลา/ถูกแย่ง)
+  Running --> Waiting: I/O หรือ event wait
+  Waiting --> Ready: I/O เสร็จ<br/>(กลับคิว — ไม่กลับ Running ตรง!)
+  Running --> [*]: exit
+</div>
+<div class="co exam"><div class="tt">🎯 จุดหลอก</div><p>Waiting เสร็จแล้วไป <b>Ready ก่อนเสมอ</b> ไม่ใช่กลับ Running ทันที (ต้องรอ dispatcher เรียก) · Batch system เรียก process ว่า Job, time-sharing เรียก Task</p></div>
+
+<div class="figrow">
+  <div class="slide fig1"><img src="slides/s03p04.jpg" alt="Diagram of Process State"><div class="cap"><b>สไลด์ OSNo03 p.4</b> — Diagram of Process State (ต้นฉบับอาจารย์)</div></div>
+  <div class="slide fig1"><img src="slides/s03p07.jpg" alt="Ready queue and I/O queues"><div class="cap"><b>สไลด์ OSNo03 p.7</b> — Ready Queue และ I/O Device Queues: process วิ่งวน Ready → CPU → I/O คิว</div></div>
+</div>
+
+<h3>A2. PCB — Process Control Block</h3>
+<p>PCB = "รหัสประชาชน" ของ process เก็บทุกอย่างที่ OS ต้องรู้: <b>process state, program counter, CPU registers, scheduling info (priority/queue), memory info (base/limit), accounting info, I/O status</b></p>
+<div class="figrow">
+  <div class="slide fig1"><img src="slides/s03p08.jpg" alt="PCB"><div class="cap"><b>สไลด์ OSNo03 p.8</b> — Process Control Block</div></div>
+  <div class="slide fig1"><img src="slides/s03p09.jpg" alt="Context switch"><div class="cap"><b>สไลด์ OSNo03 p.9</b> — Context Switch: เซฟ state ของ P0 ลง PCB0 → โหลด PCB1 → รัน P1 (ช่วงนี้ = pure overhead)</div></div>
+</div>
+<div class="co note"><div class="tt">Dispatcher ทำ 3 อย่าง</div><p>(1) switching context (2) switch to user mode (3) jump ไปตำแหน่งเดิมใน user program · <b>Dispatch latency</b> = เวลาที่ dispatcher ใช้หยุดตัวหนึ่งเริ่มอีกตัวหนึ่ง</p></div>
+
+<h3>A3. fork() — สร้าง process แบบโคลนตัวเอง</h3>
+<p><code>pid_t fork(void)</code> สร้าง child โดย<b>ก๊อปปี้ parent</b> (address space, ตัวแปร, fd ทุกอย่าง) แล้วทั้งคู่รันต่อจากบรรทัดเดียวกัน (หลัง fork)</p>
+<table class="t">
+  <tr><th>ใครเรียก</th><th class="c">ค่าที่ fork() คืน</th><th>เงื่อนไข if</th></tr>
+  <tr><td>ใน Parent</td><td class="c"><b>PID ของลูก</b> (&gt; 0)</td><td><code>if (pid &gt; 0)</code></td></tr>
+  <tr><td>ใน Child</td><td class="c"><b>0</b></td><td><code>else if (pid == 0)</code></td></tr>
+  <tr><td>สร้างไม่สำเร็จ</td><td class="c"><b>ค่าลบ</b></td><td><code>if (pid &lt; 0)</code> → error</td></tr>
+</table>
+<div class="co an"><div class="tt">🪄 เข้าใจง่าย</div><p>fork() เรียก<b>ครั้งเดียวแต่คืนค่า 2 ครั้ง</b> — ครั้งนึงใน "โลกพ่อ" ครั้งนึงใน "โลกลูก" ทั้งคู่ถือ copy ของตัวแปร pid ของตัวเอง แก้ฝั่งไหนไม่กระทบอีกฝั่ง</p></div>
+
+<pre class="code"><code><span class="c">/* fork_example.c — ตัวอย่างจากสไลด์/วิดีโอ: ผลลัพธ์พิมพ์ 2 บรรทัด */</span>
+<span class="k">#include</span> <span class="s">&lt;stdio.h&gt;</span>
+<span class="k">#include</span> <span class="s">&lt;sys/types.h&gt;</span>   <span class="c">// pid_t</span>
+<span class="k">#include</span> <span class="s">&lt;unistd.h&gt;</span>      <span class="c">// fork()</span>
+
+<span class="f">int</span> <span class="f">main</span>(<span class="k">void</span>) {
+    <span class="f">pid_t</span> pid;                    <span class="c">// เก็บค่า return ของ fork</span>
+    <span class="k">int</span> i = 0;                    <span class="c">// ตัวแปรธรรมดา — จะถูก "ก๊อป" ไปให้ลูกด้วย</span>
+
+    pid = <span class="f">fork</span>();                 <span class="hl">// ← จุดแตกหน่อ: หลังบรรทัดนี้มี 2 process รันโค้ดชุดเดียวกัน</span>
+    <span class="k">if</span> (pid &gt; 0) {                <span class="c">// โลกพ่อ: ได้ PID ของลูก (&gt;0) เสมอ</span>
+        i = 1;                    <span class="c">// แก้ i ใน address space ของพ่อ — ลูกไม่เห็น</span>
+        <span class="f">printf</span>(<span class="s">"I am parent i = %d\n"</span>, i);
+    }
+    <span class="k">else</span> {                        <span class="c">// โลกลูก: fork คืน 0</span>
+        i = 2;
+        <span class="f">printf</span>(<span class="s">"I am child i = %d\n"</span>, i);
+    }
+    <span class="k">return</span> 0;
+}
+<span class="c">/* Output: "I am parent i = 1" และ "I am child i = 2" (2 บรรทัดเสมอ)
+   แต่ลำดับก่อน-หลัง non-deterministic — ขึ้นกับ scheduler ห้ามสรุปใครพิมพ์ก่อน */</span></code></pre>
+
+<div class="figrow">
+  <div class="slide fig1"><img src="slides/s03p19.jpg" alt="fork diagram"><div class="cap"><b>สไลด์ OSNo03 p.19</b> — Diagram for fork() example: พ่อ/ลูกรันต่อจากจุดเดียวกัน แยกคนละสาย</div></div>
+  <div class="slide fig1"><img src="slides/s03p20.jpg" alt="Process IDs"><div class="cap"><b>สไลด์ OSNo03 p.20</b> — Process IDs: ลูกได้ 0 / พ่อได้ PID ลูก / ติดลบ = fail</div></div>
+</div>
+
+<h4>A3.1 นับจำนวน process — วาด Process Tree</h4>
+<div class="mermaid">
+flowchart TD
+  P["P (ต้น)"] -->|"fork 1"| A["C1"]
+  P -->|"fork 2"| B["C2"]
+  A -->|"fork 3 (เฉพาะสายที่ผ่าน)"| C["C1.1"]
+  B -->|"fork 4"| D["C2.1"]
+</div>
+<div class="fm">fork() ติดกัน n ครั้ง ไม่มีเงื่อนไข → process ทั้งหมด = 2ⁿ (ลูกใหม่ = 2ⁿ − 1)<small>fork 3 ครั้ง = 8 process · ถ้ามี if/exit ให้วาด tree แล้วนับ "สายที่ผ่าน fork จุดนั้น" ทีละจุด</small></div>
+
+<h4>A3.2 fork + loop จากวิดีโอ (จุดหลอก: ลูกต้อง exit)</h4>
+<pre class="code"><code><span class="k">for</span> (i = 0; i &lt; 5; i++) {          <span class="c">// พ่อวน 5 รอบ</span>
+    pid = <span class="f">fork</span>();
+    <span class="k">if</span> (pid == 0) {                  <span class="c">// ลูกเท่านั้นเข้า if</span>
+        <span class="k">if</span> (i % 2 != 0) <span class="f">printf</span>(<span class="s">"I am happy\n"</span>);  <span class="c">// ลูกที่เกิดตอน i คี่</span>
+        <span class="k">else</span>            <span class="f">printf</span>(<span class="s">"I am sad\n"</span>);    <span class="c">// ลูกที่เกิดตอน i คู่</span>
+        <span class="f">exit</span>(0);                     <span class="hl">// ← ถ้าลืม! ลูกจะหลุด if ไปวน for ต่อ</span>
+    }                                <span class="c">//   แล้ว fork ลูก/หลานของตัวเองเพิ่ม</span>
+}
+<span class="k">while</span> (<span class="f">wait</span>(NULL) != -1);            <span class="c">// พ่อรอลูกทุกตัว (wait คืน -1 เมื่อไม่มีลูกเหลือ)</span>
+<span class="f">printf</span>(<span class="s">"I am parent goodbye\n"</span>);</code></pre>
+<div class="co exam"><div class="tt">🎯 จุดหลอก (อาจารย์สาธิตในวิดีโอ)</div><p>มี exit() → sad ×3 (i=0,2,4), happy ×2 (i=1,3), goodbye <b>1 ครั้งสุดท้าย</b> · ถ้าลูกเลขคี่<b>ลืม exit()</b> → ลูก C1, C3 กลายเป็น "พ่อ" สร้างหลาน → goodbye พิมพ์ <b>4 ครั้ง</b> (พ่อหลัก + C1 + C3 + หลาน C1₋₃)</p></div>
+
+<h3>A4. exec() — เปลี่ยนร่าง ไม่สร้างคนใหม่</h3>
+<ul>
+  <li>ตระกูล exec แทนที่ <b>process image ทั้งหมด</b> (โค้ด+data) ด้วยโปรแกรมใหม่ — PID คงเดิม</li>
+  <li><code>execlp(file, arg0, arg1, ..., NULL)</code> — <b>l</b> = list (ส่งทีละตัว) · <b>p</b> = หาโปรแกรมตาม PATH · <b>arg0</b> = ธรรมเนียมใส่ชื่อโปรแกรม (exec ข้าม แต่ต้องใส่) · <b>NULL ปิดท้ายบังคับ</b></li>
+  <li>execv: ส่งเป็น array <code>char *argv[]</code></li>
+</ul>
+<div class="co exam"><div class="tt">🎯 จุดหลอก exec</div><p>exec <b>สำเร็จ</b> → โค้ดหลังบรรทัด exec <b>ไม่มีวันรัน</b> (image โดนทับหมด) · exec <b>ล้มเหลว</b> (ชื่อผิด เช่น "ly") → รันบรรทัดถัดไปต่อ · <code>exec("cd")</code> fail เสมอเพราะ <b>cd เป็น shell built-in</b> ไม่ใช่ไฟล์ (echo ได้เพราะมี /usr/bin/echo)</p></div>
+
+<h3>A5. fork + exec + wait — รูปแบบมาตรฐานของ shell</h3>
+<pre class="code"><code><span class="f">int</span> <span class="f">main</span>() {
+    <span class="f">pid_t</span> pid = <span class="f">fork</span>();
+    <span class="k">if</span> (pid &lt; 0) {                          <span class="c">// สร้างลูกไม่สำเร็จ</span>
+        <span class="f">fprintf</span>(stderr, <span class="s">"Fork Failed"</span>);
+        <span class="f">exit</span>(-1);
+    }
+    <span class="k">else if</span> (pid == 0) {                    <span class="c">// ── ลูก: เปลี่ยนร่างเป็น ls ──</span>
+        <span class="f">execlp</span>(<span class="s">"/bin/ls"</span>, <span class="s">"ls"</span>, NULL);      <span class="c">// สำเร็จ = โค้ดลูกถูกแทนที่ทั้งหมด</span>
+    }
+    <span class="k">else</span> {                                  <span class="c">// ── พ่อ: รอลูก ──</span>
+        <span class="f">wait</span>(NULL);                          <span class="c">// บล็อกรอลูกตัวใดตัวหนึ่งจบ (ได้ pid ลูกกลับ)</span>
+        <span class="f">printf</span>(<span class="s">"Child Complete"</span>);           <span class="c">// พิมพ์หลังลูกจบเสมอ</span>
+        <span class="f">exit</span>(0);
+    }
+}
+<span class="c">/* Output: ผล ls ก่อน ตามด้วย "Child Complete" — ลำดับแน่นอนเพราะ wait() */</span></code></pre>
+
+<div class="mermaid">
+sequenceDiagram
+  participant P as Parent
+  participant K as Kernel
+  participant C as Child
+  P->>K: fork()
+  K-->>P: pid ลูก (>0)
+  K-->>C: 0 (ในโลกลูก)
+  C->>K: execlp("/bin/ls")
+  K-->>C: image ใหม่ทับเดิม รัน ls
+  P->>K: wait(NULL)
+  Note over P: บล็อกรอ...
+  C->>K: exit(0) + status
+  K-->>P: wait คืน pid ลูก
+  P->>P: printf("Child Complete")
+</div>
+
+<h3>A6. exit / wait / waitpid + สถานะพิเศษ</h3>
+<table class="t">
+  <tr><th>Call</th><th>ทำอะไร</th><th>จุดสำคัญ</th></tr>
+  <tr><td><code>exit(status)</code></td><td>ขอ OS ทำลายตัวเอง ส่ง status ให้พ่อ</td><td>ส่งได้แค่ <b>8 บิต (0–255)</b> — exit(300) พ่ออ่านได้ 300 mod 256 = 44</td></tr>
+  <tr><td><code>wait(&status)</code></td><td>รอ<em>ลูกใดก็ได้</em>จบ</td><td>คืน pid ลูกที่จบ · ไม่มีลูก → คืน <b>-1</b> · ไม่สน status ใช้ wait(NULL)</td></tr>
+  <tr><td><code>waitpid(pid, &status, 0)</code></td><td>รอ<em>ลูกตัวเจาะจง</em></td><td>พ่อรายงานผลเรียงลำดับได้ (ต่างจาก wait ที่ได้ใครมาก่อน)</td></tr>
+  <tr><td><code>WIFEXITED(status)</code></td><td>เช็คลูกจบแบบปกติ?</td><td rowspan="2">พิมพ์ status ตรง ๆ ได้เลขแปลก (32768 ฯลฯ) เพราะ OS แปะข้อมูลอื่นปน — <b>ต้อง decode ด้วยแมโคร</b></td></tr>
+  <tr><td><code>WEXITSTATUS(status)</code></td><td>ดึงค่า exit จริง</td></tr>
+</table>
+<div class="two">
+<div class="co warn"><div class="tt">🧟 Zombie process</div><p>ลูก<b>ตายแล้ว</b>แต่พ่อไม่ wait() → ทรัพยากรถูกคืนแต่รายการใน process table ค้าง สถานะ <b>Z / defunct</b> — ทางแก้: พ่อต้อง wait</p></div>
+<div class="co warn"><div class="tt">👶 Orphan process</div><p>พ่อ<b>ตายก่อนลูก</b> → OS ให้ init/systemd "รับเลี้ยง" (ps -l เห็น PPID เปลี่ยน) · <b>Cascading termination</b>: พ่อโดน terminate แล้ว OS บางระบบลบลูกหลานตามทั้งตระกูล</p></div>
+</div>
+
+<h4>A6.1 ประสานพ่อ-ลูก: wait vs waitpid (จากวิดีโอ parent.c/child.c)</h4>
+<pre class="code"><code><span class="c">/* child.c: รับ pid ตัวเอง สุ่ม sleep 0-4 วิ แล้ว exit(pid % 256)
+   parent.c: fork 3 ลูก (pid[i]) แล้วเปรียบเทียบสองแบบ */</span>
+<span class="c">// แบบ 1: wait(&status) → ลูกตัวไหนจบก่อน พ่อรายงานตัวนั้นก่อน (ลำดับไม่แน่)</span>
+<span class="k">while</span> ((pid = <span class="f">wait</span>(&amp;status)) &gt; 0) <span class="f">printf</span>(<span class="s">"child %d done\n"</span>, pid);
+<span class="c">// แบบ 2: waitpid(pid[i], &status, 0) → พ่อรอ "ตามลำดับที่กำหนด" เสมอ</span>
+<span class="k">for</span> (i = 0; i &lt; 3; i++) {
+    <span class="f">waitpid</span>(pid[i], &amp;status, 0);   <span class="c">// นิ่งรอลูกตัวที่ 1 ก่อน แม้ตัว 3 จบก่อน</span>
+    <span class="f">printf</span>(<span class="s">"child %d done\n"</span>, pid[i]);
+}</code></pre>
+
+<div class="figrow">
+  <div class="slide fig1"><img src="slides/s03p23.jpg" alt="fork and exec"><div class="cap"><b>สไลด์ OSNo03 p.23</b> — Fork and exec(): โครงโค้ดมาตรฐานจากสไลด์อาจารย์</div></div>
+  <div class="slide fig1"><img src="slides/s03p15.jpg" alt="process tree"><div class="cap"><b>สไลด์ OSNo03 p.15</b> — Process tree (login → sh → คำสั่งต่าง ๆ)</div></div>
+</div>
+
+<!-- ================= PART B: THREAD ================= -->
+<h2 class="part">B. Thread & การเขียนโปรแกรม Multi-Threaded <span style="font-size:.8em">(OSNo04)</span></h2>
+
+<h3>B1. Thread คืออะไร</h3>
+<p><b>Thread = ลำดับคำสั่งที่รันได้อิสระภายใน process เดียวกัน</b> (lightweight process) · สิ่งที่แต่ละ thread มี<b>ส่วนตัว</b>: <b>program counter, registers, stack</b> · สิ่งที่<b>แชร์กัน</b>: code section, data section, heap, ไฟล์ที่เปิด — thread คือ "หน่วยที่ OS จัดคิวเข้า CPU" ในระบบสมัยใหม่ และ<b>สลับ thread ถูกกว่าสลับ process</b></p>
+
+<div class="figrow">
+  <div class="slide fig1"><img src="slides/s04p04.jpg" alt="Single vs multithreaded"><div class="cap"><b>สไลด์ OSNo04 p.4</b> — Single vs Multithreaded: ขวาคือแชร์ code/data/files ร่วมกัน แยกแค่ registers+stack ของแต่ละ thread</div></div>
+  <div class="slide"><img src="slides/s04p25.jpg" alt="Java thread states"><div class="cap"><b>สไลด์ OSNo04 p.25</b> — Java Thread States (New/Runnable/Running/Blocked/Terminated)</div></div>
+</div>
+
+<table class="t">
+  <tr><th>OS แบบไหน</th><th>ตัวอย่าง</th></tr>
+  <tr><td>Single-process single-threaded</td><td><b>MS-DOS</b></td></tr>
+  <tr><td>Single-process multi-threaded</td><td><b>JVM</b></td></tr>
+  <tr><td>Multiprocessing single-threaded</td><td>Traditional UNIX</td></tr>
+  <tr><td>Multiprocessing multi-threaded</td><td><b>Modern OS: Windows, Linux, macOS</b></td></tr>
+</table>
+
+<h3>B2. User Thread vs Kernel Thread + Multithreading Models</h3>
+<ul>
+  <li><b>User-Level Thread (ULT)</b>: จัดการโดย thread library ฝั่งผู้ใช้ kernel ไม่รู้จัก — เร็วมาก แต่ถ้าตัวใด block ทั้ง process หยุด</li>
+  <li><b>Kernel-Level Thread (KLT)</b>: kernel จัดการตรง — block ตัวเดียวตัวอื่นยังรัน ขนานจริงได้</li>
+</ul>
+<table class="t">
+  <tr><th>Model</th><th>Map</th><th>จุดเด่น/จุดพัง</th><th>ตัวอย่าง</th></tr>
+  <tr><td><b>Many-to-One</b></td><td>ULT หลาย → KLT 1</td><td>เร็ว (user space) แต่ block ตัวเดียว = หยุดทั้ง process, ขนานบนหลาย CPU ไม่ได้</td><td>Early Unix</td></tr>
+  <tr><td><b>One-to-One</b></td><td>ULT 1 : 1 KLT</td><td>ขนานจริง ตัวใด block ตัวอื่นไม่พัง · สร้าง kernel thread เยอะ = overhead</td><td><b>Windows NT+, Linux, Solaris 9+</b></td></tr>
+  <tr><td><b>Many-to-Many</b></td><td>ULT หลาย → KLT หลาย</td><td>OS สร้าง KLT ให้พอดีจำนวน</td><td>Solaris &lt; 9, Tru64 UNIX</td></tr>
+</table>
+
+<div class="figrow">
+  <div class="slide"><img src="slides/s04p13.jpg" alt="Many-to-one"><div class="cap"><b>p.13</b> Many-to-One</div></div>
+  <div class="slide"><img src="slides/s04p15.jpg" alt="One-to-one"><div class="cap"><b>p.15</b> One-to-One</div></div>
+  <div class="slide"><img src="slides/s04p17.jpg" alt="Many-to-many"><div class="cap"><b>p.17</b> Many-to-Many</div></div>
+</div>
+
+<h3>B3. Pthreads (C) — โค้ดตัวอย่างพร้อมคอมเมนต์</h3>
+<pre class="code"><code><span class="k">int</span> sum;  <span class="c">// ตัวแปร global — "แชร์" ระหว่าง thread (main กับ runner เห็นตัวเดียวกัน!)</span>
+
+<span class="c">/* ฟังก์ชันที่ thread จะรัน — signature ต้องเป็น void *f(void *) */</span>
+<span class="k">void</span> *<span class="f">runner</span>(<span class="k">void</span> *param) {
+    <span class="k">int</span> upper = <span class="f">atoi</span>(param);      <span class="c">// รับค่าจาก argv[1] ที่ส่งมาตอน create</span>
+    sum = 0;
+    <span class="k">for</span> (<span class="k">int</span> i = 1; i &lt;= upper; i++) sum += i;   <span class="c">// หาผลรวม 1..upper</span>
+    <span class="f">pthread_exit</span>(NULL);            <span class="c">// จบ thread นี้ (≈ exit ของ process)</span>
+}
+
+<span class="f">int</span> <span class="f">main</span>(<span class="k">int</span> argc, <span class="k">char</span> *argv[]) {
+    <span class="f">pthread_t</span> tid;                 <span class="c">// เก็บ id ของ thread ที่สร้าง</span>
+    <span class="f">pthread_attr_t</span> attr;
+    <span class="f">pthread_attr_init</span>(&amp;attr);      <span class="c">// ตั้งค่า attribute = default</span>
+    <span class="f">pthread_create</span>(&amp;tid, &amp;attr, runner, argv[1]);
+    <span class="c">//  ↑ สร้าง thread ให้รันฟังก์ชัน runner โดยส่ง argv[1] เป็น param</span>
+    <span class="f">pthread_join</span>(tid, NULL);       <span class="c">// หลักของ main: รอ thread จบก่อน (≈ wait ของ process)</span>
+    <span class="f">printf</span>(<span class="s">"sum = %d\n"</span>, sum);     <span class="c">// เห็นค่า sum ที่ runner แก้ — เพราะแชร์กันจริง</span>
+}
+<span class="c">/* จับคู่: pthread_create ≈ fork · pthread_join ≈ wait · pthread_exit ≈ exit */</span></code></pre>
+<div class="figrow">
+  <div class="slide fig1"><img src="slides/s04p19.jpg" alt="Pthreads"><div class="cap"><b>สไลด์ OSNo04 p.19</b> — Pthreads (โค้ดต้นฉบับ)</div></div>
+  <div class="slide"><img src="slides/s04p29.jpg" alt="Thread pools"><div class="cap"><b>สไลด์ OSNo04 p.29</b> — Thread Pools: สร้าง thread เตรียมไว้ใน "บ่อ" รับงานเรื่อย ๆ</div></div>
+</div>
+<div class="co note"><div class="tt">Thread Pool (Java 3 แบบ)</div><p><b>Single thread executor</b> (บ่อขนาด 1) · <b>Fixed thread executor</b> (ขนาดคงที่) · <b>Cached thread pool</b> (ขนาดไม่จำกัด สร้างเพิ่มเอง) — ประโยชน์: ใช้ thread เดิมเร็วกว่าสร้างใหม่ + คุมจำนวน thread ได้</p></div>
+
+<h3>B4. Java Thread — 2 วิธีสร้าง + cancellation</h3>
+<table class="t">
+  <tr><th>วิธี</th><th>โค้ด</th><th>หมายเหตุ</th></tr>
+  <tr><td>extends Thread</td><td><code>class W extends Thread { public void run() {...} }</code> → <code>new W().start()</code></td><td>เผา slot extends</td></tr>
+  <tr><td>implements Runnable</td><td><code>class W implements Runnable { public void run() {...} }</code> → <code>new Thread(new W()).start()</code></td><td>นิยมกว่า</td></tr>
+</table>
+<ul>
+  <li><b>Cancellation 2 แบบ:</b> <b>Asynchronous</b> = ยิงปิดทันที (เสี่ยงข้อมูลครึ่ง ๆ กลาง ๆ) · <b>Deferred</b> = บอกเป้าหมายให้เช็คเองเป็นระยะ (<code>Thread.currentThread().isInterrupted()</code>) แล้ว cleanup ก่อนจบ — ปลอดภัยกว่า</li>
+  <li><code>task.join()</code> = main รอ task จบก่อนเสมอ (เทียบ wait)</li>
+</ul>
+<div class="co exam"><div class="tt">🎯 ประโยคทอง Java scheduling</div><p>Java: priority <b>1–10, default 5, มาก = สูง</b> (Unix ตรงข้าม: น้อย = สูง) · การตั้ง priority <b>ไม่การันตีลำดับ 100%</b> — <b>ห้ามฝากความถูกต้องของ logic ไว้กับ scheduler</b> ต้องใช้ Synchronization เท่านั้น</p></div>
+
+<!-- ================= PART C: CPU SCHEDULING ================= -->
+<h2 class="part">C. CPU Scheduling — Gantt · TAT · WT <span style="font-size:.8em">(OSNo04 สไลด์ท้าย + วิดีโอ 6.x)</span></h2>
+
+<h3>C1. พื้นฐาน + สูตรทุกตัวที่ใช้คิดเลข</h3>
+<ul>
+  <li><b>CPU Scheduler</b> เลือก process จาก ready queue ให้ใช้ CPU · <b>Non-preemptive</b> = รันจนจบ/ขอออกเอง · <b>Preemptive</b> = ขัดกลางคันได้ (หมดเวลา/มีตัวสำคัญกว่ามา)</li>
+  <li><b>CPU burst</b> = ช่วงที่ process ใช้ CPU ติดกัน · I/O-bound = burst สั้นถี่ / CPU-bound = burst ยาว</li>
+</ul>
+<div class="fm">Turnaround Time: TAT = Completion − Arrival<small>เวลารวมตั้งแต่งานมาถึง → เสร็จ</small></div>
+<div class="fm">Waiting Time: WT = TAT − Burst Time<small>🟢 เทคนิคทำเร็ว: หา TAT ก่อนแล้วลบ BT เสมอ — โดยเฉพาะ preemptive ที่งานโดนแทรกหลายรอบ</small></div>
+<div class="fm">Response Time = เวลาที่งานมาถึง → เริ่มได้ response ครั้งแรก<small>เกณฑ์วัดอื่น: CPU utilization ↑, throughput ↑, TAT ↓, WT ↓, response ↓</small></div>
+
+<h3>C2. FCFS — First-Come, First-Served (non-preemptive)</h3>
+<p><b>โจทย์ (ตรงจากสไลด์ p.34):</b> P1 (Arrival 0, Burst 24) · P2 (2, 3) · P3 (4, 3)</p>
+<div class="gantt">
+  <div class="g-row"><div class="g-cell g1" style="width:80%">P1</div><div class="g-cell g2" style="width:10%">P2</div><div class="g-cell g3" style="width:10%">P3</div></div>
+  <div class="g-scale"><span class="g-tick" style="width:80%">0</span><span class="g-tick" style="width:10%">24</span><span class="g-tick" style="width:10%">27</span><span class="g-tick">30</span></div>
+</div>
+<table class="t">
+  <tr><th>Process</th><th class="c">TAT = C − A</th><th class="c">WT = TAT − BT</th></tr>
+  <tr><td>P1</td><td class="c">24 − 0 = 24</td><td class="c">24 − 24 = <b>0</b></td></tr>
+  <tr><td>P2</td><td class="c">27 − 2 = 25</td><td class="c">25 − 3 = <b>22</b></td></tr>
+  <tr><td>P3</td><td class="c">30 − 4 = 26</td><td class="c">26 − 3 = <b>23</b></td></tr>
+  <tr class="hl"><td>เฉลี่ย</td><td class="c">25</td><td class="c">(0+22+23)/3 = <b>15</b></td></tr>
+</table>
+<div class="co exam"><div class="tt">🎯 Convoy Effect</div><p>งานใหญ่ตัวเดียวบล็อกหน้า งานเล็กทั้งบ้านต่อแถวรอ — สไลด์ p.35 เปรียบเทียบ: ถ้างานสั้นมาก่อน (P2 มา 0, P3 มา 2, P1 มา 4) avg WT เหลือ <b>1</b> เท่านั้น!</p></div>
+<div class="figrow">
+  <div class="slide"><img src="slides/s04p34.jpg" alt="FCFS"><div class="cap"><b>สไลด์ p.34</b> FCFS</div></div>
+  <div class="slide"><img src="slides/s04p35.jpg" alt="FCFS cont"><div class="cap"><b>สไลด์ p.35</b> FCFS — สลับงานสั้นมาก่อน WT=1</div></div>
+</div>
+
+<h3>C3. SJF — Shortest Job First (non-preemptive) — OPTIMAL</h3>
+<p><b>โจทย์ (p.36):</b> P1 (0, 7) · P2 (2, 4) · P3 (4, 1) · P4 (5, 4) — เมื่อ CPU ว่าง เลือก BT สั้นสุดในคิว ณ ตอนนั้น (เท่ากันเลือกมาก่อน)</p>
+<ol class="st">
+  <li>เวลา 0: มีแค่ P1 → รันจนจบที่ 7 (non-preemptive ใครมาทีหลังรอก่อน)</li>
+  <li>เวลา 7: คิว P2(4), P3(1), P4(4) → สั้นสุด P3 → 7→8</li>
+  <li>เวลา 8: P2(4), P4(4) เท่ากัน → มาก่อนชนะ: P2 → 8→12</li>
+  <li>เวลา 12: P4 → 12→16</li>
+</ol>
+<div class="gantt">
+  <div class="g-row"><div class="g-cell g1" style="width:43.75%">P1</div><div class="g-cell g3" style="width:6.25%">P3</div><div class="g-cell g2" style="width:25%">P2</div><div class="g-cell g4" style="width:25%">P4</div></div>
+  <div class="g-scale"><span class="g-tick" style="width:43.75%">0</span><span class="g-tick" style="width:6.25%">7</span><span class="g-tick" style="width:25%">8</span><span class="g-tick" style="width:25%">12</span><span class="g-tick">16</span></div>
+</div>
+<table class="t">
+  <tr><th>Process</th><th class="c">Completion</th><th class="c">TAT</th><th class="c">WT = TAT − BT</th></tr>
+  <tr><td>P1</td><td class="c">7</td><td class="c">7</td><td class="c">7−7 = <b>0</b></td></tr>
+  <tr><td>P2</td><td class="c">12</td><td class="c">10</td><td class="c">10−4 = <b>6</b></td></tr>
+  <tr><td>P3</td><td class="c">8</td><td class="c">4</td><td class="c">4−1 = <b>3</b></td></tr>
+  <tr><td>P4</td><td class="c">16</td><td class="c">11</td><td class="c">11−4 = <b>7</b></td></tr>
+  <tr class="hl"><td>เฉลี่ย WT</td><td class="c" colspan="2">—</td><td class="c">(0+6+3+7)/4 = <b>4</b></td></tr>
+</table>
+<div class="co note"><div class="tt">📌 SJF คือ optimal</div><p>ให้ avg WT ต่ำสุดจากชุดงานหนึ่ง ๆ แต่ใช้จริงยากเพราะ OS ต้อง<b>ทำนาย</b>ความยาว CPU burst ถัดไป</p></div>
+
+<h3>C4. SRTF — Shortest Remaining Time First (Preemptive SJF) 🔥</h3>
+<p>กติกา: <b>งานใหม่มาถึง → เทียบ BT ของงานใหม่ กับ Remaining Time (เวลาที่เหลือ) ของงานที่รันอยู่</b> — งานใหม่สั้นกว่า = ขัดทันที</p>
+<ol class="st">
+  <li>0–2: P1 รันไป 2 (เหลือ 5) — P2 มาถึง (BT=4) → เทียบ 4 &lt; 5 → <b>ขัด P1</b></li>
+  <li>2–4: P2 รันไป 2 (เหลือ 2) — P3 มาถึง (BT=1) → 1 &lt; 2 → <b>ขัด P2</b></li>
+  <li>4–5: P3 จบที่ 5 พอดี + P4 มาถึง (BT=4) → คิว: P1(5), P2(2), P4(4) → รัน P2 จบที่ 7</li>
+  <li>7: เหลือ P1(5), P4(4) → P4 จบที่ 11 → P1 เศษ 5 จบที่ 16</li>
+</ol>
+<div class="gantt">
+  <div class="g-row"><div class="g-cell g1" style="width:12.5%">P1</div><div class="g-cell g2" style="width:12.5%">P2</div><div class="g-cell g3" style="width:6.25%">P3</div><div class="g-cell g2" style="width:12.5%">P2</div><div class="g-cell g4" style="width:25%">P4</div><div class="g-cell g1" style="width:31.25%">P1</div></div>
+  <div class="g-scale"><span class="g-tick" style="width:12.5%">0</span><span class="g-tick" style="width:12.5%">2</span><span class="g-tick" style="width:6.25%">4</span><span class="g-tick" style="width:12.5%">5</span><span class="g-tick" style="width:25%">7</span><span class="g-tick" style="width:31.25%">11</span><span class="g-tick">16</span></div>
+</div>
+<table class="t">
+  <tr><th>Process</th><th class="c">Completion</th><th class="c">TAT = C − A</th><th class="c">WT = TAT − BT</th></tr>
+  <tr><td>P1</td><td class="c">16</td><td class="c">16</td><td class="c">16−7 = <b>9</b></td></tr>
+  <tr><td>P2</td><td class="c">7</td><td class="c">5</td><td class="c">5−4 = <b>1</b></td></tr>
+  <tr><td>P3</td><td class="c">5</td><td class="c">1</td><td class="c">1−1 = <b>0</b></td></tr>
+  <tr><td>P4</td><td class="c">11</td><td class="c">6</td><td class="c">6−4 = <b>2</b></td></tr>
+  <tr class="hl"><td>เฉลี่ย WT</td><td class="c" colspan="2">—</td><td class="c">(9+1+0+2)/4 = <b>3</b></td></tr>
+</table>
+<div class="co exam"><div class="tt">🎯 จุดหลอก SRTF</div><p>เทียบด้วย <b>Remaining</b> เสมอ ไม่ใช่ BT ดั้งเดิม! (ตอนเวลา 4 ต้องเทียบ "P2 เหลือ 2" ไม่ใช่ "P2 = 4") · SRTF overhead มากกว่า SJF เพราะ context switch บ่อย</p></div>
+<div class="figrow">
+  <div class="slide"><img src="slides/s04p38.jpg" alt="SRTF def"><div class="cap"><b>สไลด์ p.38</b> SRTF นิยาม</div></div>
+  <div class="slide"><img src="slides/s04p39.jpg" alt="SRTF example"><div class="cap"><b>สไลด์ p.39</b> SRTF example (เฉลยตรงกับตารางข้างบน)</div></div>
+</div>
+
+<h3>C5. Priority Scheduling</h3>
+<ul>
+  <li>CPU ให้งาน priority สูงสุดก่อน (มีทั้ง preemptive/non-preemptive) · SJF = priority ที่ใช้ "predicted next CPU burst" เป็น priority</li>
+  <li><b>ปัญหา Starvation</b> (งานสิทธิต่ำไม่ได้รัน) → <b>แก้ด้วย Aging</b>: ยิ่งรอนานยิ่งเพิ่ม priority</li>
+  <li><b>ทิศทางตัวเลข:</b> Unix-based → <b>เลขน้อย = สิทธิสูง</b> / Java Thread → <b>เลขมาก = สูง</b> (10 สูงสุด, default 5)</li>
+</ul>
+
+<h3>C6. Round Robin (RR) — preemptive, ตอบสนองไว</h3>
+<p>แต่ละงานรันไม่เกิน <b>Time Quantum (q)</b> หมดเวลายังไม่เสร็จ → ถูกตัดไปต่อท้ายคิว · คิวมี n งาน → ไม่มีงานรอเกิน <b>(n−1)q</b></p>
+<p><b>โจทย์ (p.41–42):</b> ข้อมูล FCFS เดิม (P1: 0,24 · P2: 2,3 · P3: 4,3) q = 4</p>
+<div class="gantt">
+  <div class="g-row"><div class="g-cell g1" style="width:13.3%">P1</div><div class="g-cell g2" style="width:10%">P2</div><div class="g-cell g3" style="width:10%">P3</div><div class="g-cell g1" style="width:66.7%">P1</div></div>
+  <div class="g-scale"><span class="g-tick" style="width:13.3%">0</span><span class="g-tick" style="width:10%">4</span><span class="g-tick" style="width:10%">7</span><span class="g-tick" style="width:66.7%">10</span><span class="g-tick">30</span></div>
+</div>
+<table class="t">
+  <tr><th>Process</th><th class="c">TAT = C − A</th><th class="c">WT = TAT − BT</th></tr>
+  <tr><td>P1</td><td class="c">30 − 0 = 30</td><td class="c">30 − 24 = <b>6</b></td></tr>
+  <tr><td>P2</td><td class="c">7 − 2 = 5</td><td class="c">5 − 3 = <b>2</b></td></tr>
+  <tr><td>P3</td><td class="c">10 − 4 = 6</td><td class="c">6 − 3 = <b>3</b></td></tr>
+  <tr class="hl"><td>เฉลี่ย WT</td><td class="c">—</td><td class="c">11/3 ≈ <b>3.67</b></td></tr>
+</table>
+<div class="two">
+<div class="co warn"><div class="tt">⚖️ ขนาด quantum</div><p>q ใหญ่มาก → RR กลายเป็น <b>FCFS</b> · q เล็กมาก → <b>context switch ถี่เกิน overhead โต</b> (ช่วง switch = pure overhead)</p></div>
+<div class="co note"><div class="tt">ไทม์ไลน์ RR ทีละจังหวะ</div><p>0–4 P1(เหลือ 20) → 4–7 P2 จบ → 7–10 P3 จบ → 10–30 P1 ตัวเดียวรันรอบละ 4 จนครบ 24</p></div>
+</div>
+<div class="figrow">
+  <div class="slide"><img src="slides/s04p41.jpg" alt="RR def"><div class="cap"><b>สไลด์ p.41</b> Round Robin</div></div>
+  <div class="slide"><img src="slides/s04p42.jpg" alt="RR example"><div class="cap"><b>สไลด์ p.42</b> Example RR q=4 (เฉลยตรงกับตาราง)</div></div>
+</div>
+
+<h3>C7. Multilevel Queue & Multilevel Feedback Queue (MLFQ)</h3>
+<ul>
+  <li><b>Multilevel Queue</b>: แยก ready queue หลายคิว (เช่น foreground=RR / background=FCFS) — <b>งานอยู่คิวไหนตลอดชีวิต ย้ายไม่ได้</b> · ระหว่างคิว: fixed priority (คิวหน้าจบก่อน — เสี่ยง starvation) หรือแบ่งเวลา (80/20)</li>
+  <li><b>MLFQ</b>: <b>งานย้ายคิวได้</b> → ทำ aging ได้ จัดกลุ่มตามพฤติกรรมได้</li>
+</ul>
+<p><b>โมเดลตัวอย่าง (p.46–47):</b> Q0 = RR q8ms → ไม่จบ ลง Q1 = RR q16ms → ยังไม่จบ ลง Q2 = FCFS จนจบ · คิวล่างได้รันเมื่อคิวบนว่างหมด</p>
+<div class="figrow">
+  <div class="slide"><img src="slides/s04p44.jpg" alt="MLQ"><div class="cap"><b>สไลด์ p.44</b> Multilevel Queue</div></div>
+  <div class="slide"><img src="slides/s04p46.jpg" alt="MLFQ def"><div class="cap"><b>สไลด์ p.46</b> MLFQ นิยาม</div></div>
+  <div class="slide"><img src="slides/s04p47.jpg" alt="MLFQ example"><div class="cap"><b>สไลด์ p.47</b> Example MLFQ 3 คิว</div></div>
+</div>
+
+<div class="co exam"><div class="tt">🎯 สรุป 5 จุดพลาดของบทนี้</div><p>1) ลบ Arrival ไม่ครบ (เอาเวลาเริ่มรันตอบเป็น WT) 2) WT ใน preemptive ไล่นับมือผิด → ใช้ WT=TAT−BT 3) ตี priority ผิดฝั่ง 4) SRTF ใช้ BT ดิบแทน remaining 5) เลือก quantum ผิด</p></div>
+
+<!-- ================= PART D: RACE CONDITION / CS ================= -->
+<h2 class="part">D. Race Condition & Critical Section <span style="font-size:.8em">(OSNo06 ต้น ๆ)</span></h2>
+
+<h3>D1. จุดเริ่ม: Bounded Buffer ยังไม่มี sync (Producer-Consumer)</h3>
+<p>Producer-Consumer แชร์ buffer วงแหวนขนาด BUFFER_SIZE ช่อง + ตัวนับ <code>count</code> — producer เขียนแล้ว count++ / consumer อ่านแล้ว count−−</p>
+<pre class="code"><code><span class="c">/* Producer (สไลด์ p.3)                      Consumer (สไลด์ p.4) */</span>
+<span class="k">while</span> (<span class="f">true</span>) {                            <span class="k">while</span> (<span class="f">true</span>) {
+    <span class="k">while</span> (count == BUFFER_SIZE);            <span class="k">while</span> (count == 0);   <span class="c">// busy wait</span>
+    buffer[in] = nextProduced;               nextConsumed = buffer[out];
+    in = (in + 1) % BUFFER_SIZE;             out = (out + 1) % BUFFER_SIZE;
+    count++;                                 count--;
+}                                         }
+<span class="c">/* ปัญหา: ข้อมูลหาย (producer เขียนทับที่ยังไม่อ่าน) / อ่านซ้ำ — และ count ไม่ atomic */</span></code></pre>
+
+<h3>D2. Race Condition — ไล่ S0–S5 ให้เห็นตา 🔥</h3>
+<p><code>count++</code> ในระดับเครื่องแตกเป็น 3 คำสั่ง (ไม่ atomic!):</p>
+<pre class="code"><code><span class="c">/* count++: */</span>            <span class="c">/* count--: */</span>
+register1 = count;         register2 = count;
+register1 = register1 + 1; register2 = register2 - 1;
+count = register1;         count = register2;</code></pre>
+<p><b>ไทม์ไลน์จากสไลด์ p.5 (เริ่ม count = 5):</b></p>
+<table class="t">
+  <tr><th class="c">จังหวะ</th><th>ใครทำอะไร</th><th class="c">ค่าที่เกี่ยวข้อง</th></tr>
+  <tr><td class="c">S0</td><td>producer: register1 = count</td><td class="c">r1 = 5</td></tr>
+  <tr><td class="c">S1</td><td>producer: r1 = r1 + 1</td><td class="c">r1 = 6</td></tr>
+  <tr><td class="c">S2</td><td>consumer: register2 = count</td><td class="c">r2 = <b class="no" style="padding:0 4px">5</b> ⚠️ (ยังเก่า!)</td></tr>
+  <tr><td class="c">S3</td><td>consumer: r2 = r2 − 1</td><td class="c">r2 = 4</td></tr>
+  <tr><td class="c">S4</td><td>producer: count = r1</td><td class="c">count = 6</td></tr>
+  <tr><td class="c">S5</td><td>consumer: count = r2</td><td class="c">count = <b class="no" style="padding:0 4px">4</b> ❌ (ควรได้ 5)</td></tr>
+</table>
+<div class="co an"><div class="tt">💳 อุปมา</div><p>เงินในบัญชี 5,000 · คุณโอนเข้า +1,000 แฟนถอน −1,000 พร้อมกัน แอปให้ทั้งคู่เห็นยอด 5,000 พร้อมกันแล้วบันทึกทับ → เหลือ 4,000 เงินหายในอากาศ!</p></div>
+<div class="co exam"><div class="tt">📖 นิยามที่ต้องพิมพ์ได้</div><p><b>Race condition</b>: หลาย process เข้าถึง/จัดการข้อมูลร่วมกันพร้อมกัน แล้ว<b>ผลลัพธ์ขึ้นกับลำดับการเข้าถึง</b> · โค้ดช่วงที่แตะข้อมูลแชร์ = <b>critical section (critical region)</b></p></div>
+
+<h3>D3. Critical Section — เงื่อนไข 3 ข้อที่โซลูชันต้องผ่าน 🔥</h3>
+<table class="t">
+  <tr><th>เงื่อนไข</th><th>ความหมาย (พิมพ์ได้ต้องได้)</th></tr>
+  <tr><td><b>1. Mutual Exclusion</b></td><td>ถ้า Pᵢ อยู่ใน CS → <b>ห้ามมี process อื่นอยู่ใน CS ของมันพร้อมกัน</b></td></tr>
+  <tr><td><b>2. Progress</b></td><td>ถ้า<em>ไม่มีใคร</em>อยู่ใน CS และมีคนอยากเข้า → ต้องเลือกจาก<em>คนที่อยากเข้าเท่านั้น</em> และตัดสินไม่ล่าช้าไม่สิ้นสุด (กันคนไม่สนมาขวาง / กันไม่มีใครเข้าเลย)</td></tr>
+  <tr><td><b>3. Bounded Waiting</b></td><td>มีขอบเขตว่า process หนึ่งถูก "ตัดหน้า" ได้<b>จำกัดกี่ครั้ง</b>หลังยื่นขอ (กัน starvation ของคิว CS)</td></tr>
+</table>
+<p class="small">โครงโค้ด: ENTRY SECTION → CRITICAL SECTION → EXIT SECTION → REMAINDER SECTION (วน while(true)) · สมมติ: แต่ละ process รันด้วยความเร็วไม่เป็นศูนย์ แต่<b>ไม่มีข้อสมมติเรื่องความเร็วสัมพัทธ์</b></p>
+
+<h3>D4. Peterson's Solution (2 process)</h3>
+<p>แชร์ 2 ตัวแปร: <code>int turn</code> (ตาใคร) + <code>boolean flag[2]</code> (ใครอยากเข้า) — สมมติ LOAD/STORE <b>atomic</b></p>
+<pre class="code"><code><span class="c">/* โค้ดของ Pᵢ (อีกฝั่งคือ Pⱼ) — สไลด์ p.9–10 */</span>
+<span class="k">while</span> (<span class="f">true</span>) {
+    flag[i] = TRUE;              <span class="c">// 1. ประกาศว่า "ฉันอยากเข้า!"</span>
+    turn = j;                    <span class="hl">// 2. ยกสิทธิ์ให้เพื่อนก่อน (ความสุภาพ = หัวใจ)</span>
+    <span class="k">while</span> (flag[j] &amp;&amp; turn == j); <span class="c">// 3. รอเฉพาะเมื่อ: เพื่อนอยากเข้า "และ" ถึงตาเพื่อน</span>
+
+    CRITICAL SECTION
+
+    flag[i] = FALSE;             <span class="c">// 4. ออกแล้ว — ปล่อยให้คนอื่นเข้าได้</span>
+    REMAINDER SECTION
+}</code></pre>
+<table class="t">
+  <tr><th>เงื่อนไข</th><th>Peterson ทำไม่ผ่านทำไมยังไง</th></tr>
+  <tr><td>Mutual Exclusion ✓</td><td>ทั้งคู่ตั้ง turn พร้อมกันไม่ได้ — คนที่ตั้ง turn เป็นฝ่ายอื่น<b>เป็นคนสุดท้าย</b> ต้องรอก่อน</td></tr>
+  <tr><td>Progress ✓</td><td>เงื่อนไขรอต้องเจอ flag[j] = true จริง — คนที่ไม่สนใจเข้าไม่ขวาง</td></tr>
+  <tr><td>Bounded Waiting ✓</td><td>หลังออกจาก CS อีกฝั่งได้เข้าภายใน 1 รอบ (turn สลับเสมอ)</td></tr>
+</table>
+<div class="co note"><div class="tt">📌 ในโลกจริง</div><p>Peterson เวิร์คในทฤษฎี แต่ CPU สมัยใหม่ (compiler optimization, out-of-order) อาจพัง — ใช้จริงด้วยฮาร์ดแวร์/ไลบรารี แต่<b>ออกสอบเยอะ</b>เพราะสอนหลักคิด</p></div>
+
+<h3>D5. Bakery Algorithm (n process) — จ่ายคิวร้านเบเกอรี่</h3>
+<ul>
+  <li>ก่อนเข้า CS จ่ายเลขคิว = max(number[0..n−1]) + 1 → คนถือเลข<b>น้อยสุด</b>เข้าก่อน · เลขซ้ำเทียบ <b>PID</b> มาก่อนชนะ</li>
+  <li>เทียบแบบ lexicographical: <code>(a,b) &lt; (c,d)</code> ถ้า a &lt; c หรือ (a = c และ b &lt; d) — (เลขคิว, pid)</li>
+  <li>แชร์: <code>boolean choosing[n]</code>, <code>int number[n]</code> (เริ่ม false/0)</li>
+</ul>
+<pre class="code"><code><span class="k">do</span> {
+    choosing[i] = <span class="f">true</span>;                          <span class="c">// กำลังจ่ายเลข (ยังไม่นับคิวจริง)</span>
+    number[i] = <span class="f">max</span>(number[0..n-1]) + 1;          <span class="c">// จ่ายเลขใหญ่กว่าใคร ๆ +1 (อาจซ้ำ)</span>
+    choosing[i] = <span class="f">false</span>;
+    <span class="k">for</span> (j = 0; j &lt; n; j++) {
+        <span class="k">while</span> (choosing[j]);                     <span class="c">// รอคนที่กำลังจ่ายเลขจบก่อน</span>
+        <span class="k">while</span> ((number[j] != 0) &amp;&amp; ((number[j],j) &lt; (number[i],i)));
+        <span class="c">// รอถ้า: เพื่อนถือคิวอยู่ และ (เลขน้อยกว่า หรือ เลขเท่าแต่ pid น้อยกว่า)</span>
+    }
+    CRITICAL SECTION
+    number[i] = 0;                               <span class="c">// ออก → ยกเลิกคิวตัวเอง</span>
+    REMAINDER SECTION
+} <span class="k">while</span> (<span class="f">true</span>);</code></pre>
+<p class="small">เลขคิวอาจกระโดด (1,2,3,3,3,4) — ไม่เป็นไร lexicographical จัดการเคสซ้ำ · รับประกันครบ 3 เงื่อนไขสำหรับ n process</p>
+
+<!-- ================= PART E: SEMAPHORE / MONITOR ================= -->
+<h2 class="part">E. Semaphore · ปัญหาคลาสสิก · Monitor · Java Synchronization <span style="font-size:.8em">(OSNo06 ท้าย ๆ)</span> 🔥</h2>
+
+<h3>E1. Semaphore — wait / signal (อุปมาโหลหิน 🪨)</h3>
+<pre class="code"><code><span class="f">wait</span>(S) {              <span class="c">// P — "หยิบหินจากโหล"</span>
+    <span class="k">while</span> (S &lt;= 0);    <span class="c">// โหลว่าง → ยืนรอ (busy wait)</span>
+    S--;
+}
+<span class="f">signal</span>(S) {            <span class="c">// V — "คืนหินใส่โหล" แล้วปลุกคนรอ</span>
+    S++;
+}</code></pre>
+<ul>
+  <li><b>Binary semaphore</b> = ค่า 0/1 เท่านั้น อีกชื่อคือ <b>mutex lock</b> → ใช้กับ critical section (เข้าได้ทีละคน)</li>
+  <li><b>Counting semaphore</b> = ค่า 0..k → ใช้กับ resource หลายหน่วย (k = จำนวน resource)</li>
+</ul>
+<div class="co exam"><div class="tt">🎯 กับดักจาก Quizizz ชุด 3</div><p>(1) CS ใช้ <b>binary</b> ไม่ใช่ counting (2) Semaphore การันตีได้แค่ <b>Mutual Exclusion</b> — progress/bounded waiting ขึ้นกับ implementation</p></div>
+
+<h3>E2. Implement แบบไม่มี busy waiting (waiting queue + block/wakeup)</h3>
+<pre class="code"><code><span class="c">/* แต่ละ semaphore มี waiting queue (แต่ละรายการเก็บ value + pointer รายการถัดไป) */</span>
+<span class="f">wait</span>(S) {
+    S.value--;                    <span class="c">// หยิบหินก่อนเลย</span>
+    <span class="k">if</span> (S.value &lt; 0) {            <span class="c">// ติดลบ = หินไม่พอ มีคนรอแล้ว</span>
+        เพิ่มตัวเองเข้า S.list;      <span class="c">// ต่อคิว</span>
+        <span class="f">block</span>();                  <span class="c">// หลับ — ไม่เผา CPU</span>
+    }
+}
+<span class="f">signal</span>(S) {
+    S.value++;                    <span class="c">// คืนหิน</span>
+    <span class="k">if</span> (S.value &lt;= 0) {           <span class="c">// ยังมีคนรออยู่</span>
+        หยิบ P จาก S.list;
+        <span class="f">wakeup</span>(P);                <span class="c">// ปลุก 1 คนกลับ ready queue</span>
+    }
+}
+<span class="c">/* 💡 ค่า value ติดลบ = มี process รออยู่ |value| ตัว */</span></code></pre>
+
+<h3>E3. ปัญหาคลาสสิก 1: Bounded Buffer 🔥 (semaphore 3 ตัว)</h3>
+<table class="t">
+  <tr><th>Semaphore</th><th class="c">เริ่มต้น</th><th>ชนิด</th><th>หน้าที่</th></tr>
+  <tr><td><code>mutex</code></td><td class="c"><b>1</b></td><td>binary</td><td>ล็อก buffer เข้าแตะทีละคน</td></tr>
+  <tr><td><code>empty</code></td><td class="c"><b>n</b></td><td>counting</td><td>นับช่องว่าง</td></tr>
+  <tr><td><code>full</code></td><td class="c"><b>0</b></td><td>counting</td><td>นับช่องที่มีข้อมูล</td></tr>
+</table>
+<div class="two">
+<pre class="code"><code><span class="c">/* Producer (สไลด์ p.20–21) */</span>
+<span class="k">while</span> (<span class="f">true</span>) {
+    <span class="c">// produce an item</span>
+    <span class="f">wait</span>(empty);   <span class="c">// ขอช่องว่าง</span>
+    <span class="f">wait</span>(mutex);   <span class="c">// ล็อก buffer</span>
+    <span class="c">// เขียนลง buffer</span>
+    <span class="f">signal</span>(mutex); <span class="c">// ปลดล็อก</span>
+    <span class="f">signal</span>(full);  <span class="c">// บอกว่ามีของแล้ว</span>
+}</code></pre>
+<pre class="code"><code><span class="c">/* Consumer (สไลด์ p.21) */</span>
+<span class="k">while</span> (<span class="f">true</span>) {
+    <span class="f">wait</span>(full);    <span class="c">// มีของไหม?</span>
+    <span class="f">wait</span>(mutex);
+    <span class="c">// ดึงของออกจาก buffer</span>
+    <span class="f">signal</span>(mutex);
+    <span class="f">signal</span>(empty); <span class="c">// คืนช่องว่าง</span>
+    <span class="c">// consume item</span>
+}</code></pre>
+</div>
+<div class="co exam"><div class="tt">🎯 จุดหลอก: สลับ wait → DEADLOCK</div><p>ถ้า producer เขียน <code>wait(mutex); wait(empty);</code> — buffer เต็ม → producer ครอง mutex ค้างรอ empty แต่ consumer เข้าอ่านไม่ได้เพราะ mutex ถูกครอง → รอกันตาย · <b>กฎเหล็ก: เช็ค resource (empty/full) ก่อนล็อก (mutex) เสมอ</b> · จำค่าเริ่มต้นให้แม่น: mutex=1, empty=n, full=0</p></div>
+
+<h3>E4. ปัญหาคลาสสิก 2: Readers-Writers</h3>
+<p>กติกา: <b>Reader หลายตัวอ่านพร้อมกันได้</b> · Writer ทำงานเมื่อไรห้ามใครยุ่งเด็ดขาด · แชร์: <code>wrt=1, mutex=1, readcount=0 (int ธรรมดา)</code></p>
+<div class="two">
+<pre class="code"><code><span class="c">/* Writer — ง่ายสุด */</span>
+<span class="f">wait</span>(wrt);
+<span class="c">// เขียนข้อมูล</span>
+<span class="f">signal</span>(wrt);</code></pre>
+<pre class="code"><code><span class="c">/* Reader — "ตัวแรกล็อก ตัวสุดท้ายปลด" */</span>
+<span class="f">wait</span>(mutex);              <span class="c">// แตะ readcount ทีละคน</span>
+readcount++;
+<span class="k">if</span> (readcount == 1)      <span class="hl">// reader แรกล็อก writer</span>
+    <span class="f">wait</span>(wrt);
+<span class="f">signal</span>(mutex);
+<span class="c">// อ่านข้อมูล (พร้อมกันได้หลายคน)</span>
+<span class="f">wait</span>(mutex);
+readcount--;
+<span class="k">if</span> (readcount == 0)      <span class="hl">// reader สุดท้ายปลดล็อก</span>
+    <span class="f">signal</span>(wrt);
+<span class="f">signal</span>(mutex);</code></pre>
+</div>
+<div class="co exam"><div class="tt">🎯 จาก Quizizz 3</div><p>semaphore ที่ควบคุมการเพิ่ม/ลดจำนวน reader คือ <b>mutex</b> (ครอบ readcount) — <b>readcount เป็น int ธรรมดา</b> ไม่ใช่ semaphore · ที่คุม writer คือ wrt</p></div>
+
+<h3>E5. ปัญหาคลาสสิก 3: Dining Philosophers (นักปราชญ์ 5 คน)</h3>
+<p>ตะเกียบ 5 อัน = <b>resource</b> ใช้ semaphore 1 ตัวต่อ 1 ตะเกียบ เริ่มทุกตัว = 1 · กินได้ต้องมีครบ 2 ข้าง (ซ้าย i, ขวา (i+1)%5)</p>
+<pre class="code"><code><span class="c">/* โค้ดนักปราชญ์ i (สไลด์ p.25–26) */</span>
+<span class="k">while</span> (<span class="f">true</span>) {
+    <span class="f">wait</span>(chopstick[i]);             <span class="c">// หยิบซ้าย</span>
+    <span class="f">wait</span>(chopstick[(i + 1) % 5]);   <span class="c">// หยิบขวา</span>
+    <span class="c">// กินข้าว 🍚</span>
+    <span class="f">signal</span>(chopstick[i]);           <span class="c">// วางซ้าย</span>
+    <span class="f">signal</span>(chopstick[(i + 1) % 5]); <span class="c">// วางขวา</span>
+    <span class="c">// คิดปรัชญา</span>
+}</code></pre>
+<div class="co exam"><div class="tt">🎯 โซลูชัน naive นี้พัง</div><p>ทุกคน<b>หิวพร้อมกัน หยิบซ้ายพร้อมกัน</b> → ไม่เหลือตะเกียบว่าง → ทุกคนรอขวาเป็นวงกลม = <b>deadlock</b> (+ ไม่มี bounded waiting → starvation ได้) · แก้: จำกัดจำนวนคนนั่ง ≤ 4 / หยิบพร้อมกันเท่านั้น / ใช้ Monitor (ล่าง)</p></div>
+
+<h3>E6. Monitor — เกราะระดับสูง + Condition Variables</h3>
+<ul>
+  <li>Monitor = shared data + ฟังก์ชันรวมในก้อนเดียว (คล้าย class) — <b>รับประกัน mutual exclusion อัตโนมัติ: 1 process ใน monitor ต่อ 1 เวลา</b> (ลืมล็อกไม่ได้!)</li>
+  <li><b>Condition variable x:</b> <code>x.wait()</code> = สลัดล็อก หลับไปรอในคิวของ x · <code>x.signal()</code> = ปลุก 1 ตัวในคิว x</li>
+</ul>
+<div class="co exam"><div class="tt">🎯 ต่างจาก semaphore ยังไง</div><p><b>x.signal() ถ้าไม่มีใคนรอ → สัญญาณหายไปเฉย ๆ</b> (ไม่มี counter เก็บยอด) ต่างจาก semaphore ที่ signal สะสมค่า</p></div>
+<div class="figrow">
+  <div class="slide"><img src="slides/s06p29.jpg" alt="Monitor schematic"><div class="cap"><b>สไลด์ p.29</b> Schematic view of a Monitor: คิว entry → ใน monitor มีได้ 1 คน</div></div>
+  <div class="slide"><img src="slides/s06p30.jpg" alt="Condition variables"><div class="cap"><b>สไลด์ p.30</b> Condition Variables x.wait() / x.signal()</div></div>
+</div>
+
+<h4>E6.1 แก้ Dining Philosophers ด้วย Monitor (กัน deadlock 100%)</h4>
+<pre class="code"><code><span class="f">monitor</span> DP {
+    <span class="f">enum</span> {THINKING, HUNGRY, EATING} state[5];   <span class="c">// สถานะของแต่ละคน</span>
+    condition self[5];                           <span class="c">// คิวรอของแต่ละคน</span>
+
+    <span class="f">void</span> <span class="f">pickup</span>(<span class="k">int</span> i) {
+        state[i] = HUNGRY;
+        <span class="f">test</span>(i);                                  <span class="c">// ลองดูว่ากินได้ไหม</span>
+        <span class="k">if</span> (state[i] != EATING) self[i].wait;    <span class="c">// ยังไม่ได้ → หลับรอ</span>
+    }
+    <span class="f">void</span> <span class="f">putdown</span>(<span class="k">int</span> i) {
+        state[i] = THINKING;
+        <span class="f">test</span>((i + 4) % 5);                       <span class="c">// เช็คเพื่อนบ้านซ้าย</span>
+        <span class="f">test</span>((i + 1) % 5);                       <span class="c">// เช็คเพื่อนบ้านขวา</span>
+    }
+    <span class="f">void</span> <span class="f">test</span>(<span class="k">int</span> i) {
+        <span class="c">// กินได้เมื่อ: เพื่อนซ้ายไม่กิน และ ฉันหิว และ เพื่อนขวาไม่กิน</span>
+        <span class="k">if</span> ( (state[(i + 4) % 5] != EATING) &amp;&amp;
+             (state[i] == HUNGRY) &amp;&amp;
+             (state[(i + 1) % 5] != EATING) ) {
+            state[i] = EATING;
+            self[i].signal();
+        }
+    }
+}
+<span class="c">/* ใช้: dp.pickup(i) → EAT → dp.putdown(i)
+   ไม่มีใคร "ถือตะเกียบเดี่ยวค้าง" → ไม่มี deadlock แน่นอน (แต่ starvation ยังเป็นไปได้) */</span></code></pre>
+
+<h3>E7. Java Synchronization — synchronized · wait · notify</h3>
+<ul>
+  <li>ทุก object มี <b>lock</b> — เรียก <code>synchronized</code> method ต้องได้ lock ก่อน · ตกคิวไปรอใน <b>Entry Set</b> · ออกจาก method = คืน lock อัตโนมัติ</li>
+  <li><code>wait()</code> ทำ 3 อย่าง: <b>(1) คืน object lock (2) สถานะ blocked (3) ย้ายเข้า Wait Set</b></li>
+  <li><code>notify()</code> = <b>สุ่ม</b> 1 thread จาก Wait Set → ย้ายไป Entry Set (รอแย่ง lock ใหม่ — <b>ไม่ได้รันทันที!</b> และเลือกตัวเองไม่ได้) · <code>notifyAll()</code> = ปลุก<b>ทุกตัว</b> (ปลอดภัยกว่าเมื่อ wait set มีหลายตัว)</li>
+  <li>Java 5+ มี <code>Semaphore</code> class จริง: <code>acquire()</code> ≈ wait, <code>release()</code> ≈ signal</li>
+</ul>
+<div class="two">
+<pre class="code"><code><span class="c">/* insert() ด้วย wait/notify (สไลด์ p.41) */</span>
+<span class="k">public synchronized void</span> <span class="f">insert</span>(Object item) {
+   <span class="k">while</span> (count == BUFFER_SIZE) {
+       <span class="k">try</span> { <span class="f">wait</span>(); }                  <span class="c">// เต็ม → คืนล็อก หลับรอ</span>
+       <span class="k">catch</span> (InterruptedException e) { }
+   }
+   ++count;
+   buffer[in] = item;
+   in = (in + 1) % BUFFER_SIZE;
+   <span class="f">notify</span>();                            <span class="c">// ปลุกคนที่รออยู่ 1 ตัว</span>
+}</code></pre>
+<pre class="code"><code><span class="c">/* remove() (สไลด์ p.42) */</span>
+<span class="k">public synchronized</span> Object <span class="f">remove</span>() {
+   Object item;
+   <span class="k">while</span> (count == 0) {
+       <span class="k">try</span> { <span class="f">wait</span>(); }                  <span class="c">// ว่าง → หลับรอ</span>
+       <span class="k">catch</span> (InterruptedException e) { }
+   }
+   --count;
+   item = buffer[out];
+   out = (out + 1) % BUFFER_SIZE;
+   <span class="f">notify</span>();
+   <span class="k">return</span> item;
+}</code></pre>
+</div>
+<div class="co exam"><div class="tt">🎯 ตารางแยกพวก "wait" ที่หลอกบ่อยสุด</div><table class="t" style="margin:6px 0 0">
+<tr><th>wait ของใคร</th><th>ทำอะไร</th></tr>
+<tr><td><code>wait(S)</code> ของ Semaphore</td><td>หยิบหิน — ลดค่า S</td></tr>
+<tr><td><code>wait()</code> ของ Java/Monitor</td><td>สลัด lock + หลับใน Wait Set</td></tr>
+<tr><td><code>wait()</code> ของ Process (บท A)</td><td>พ่อรอลูกจบ เก็บ exit status</td></tr>
+</table>
+<p style="margin-top:5px">แถม: <code>Thread.yield()</code> แค่ยอมออกจาก CPU — <b>ยังถือ lock ค้างอยู่!</b> (เหมือนล็อกห้องแล้วปีนหน้าต่างหนี)</p></div>
+
+<!-- ================= PART F: DEADLOCK ================= -->
+<h2 class="part">F. Deadlock + Banker's Algorithm <span style="font-size:.8em">(OSNo07)</span> 🔥</h2>
+
+<h3>F1. Deadlock คืออะไร + ตัวอย่างรากฐาน</h3>
+<p><b>Deadlock</b> = process ≥ 2 ตัว<b>รอกันไม่สิ้นสุด</b> เพราะเหตุการณ์ที่จะปลุกนั้นอยู่ในมือกลุ่มผู้รอเอง</p>
+<pre class="code"><code><span class="c">/* ตัวอย่างโค้ดจากสไลด์ p.4 — S, Q เป็น binary semaphore เริ่ม 1 ทั้งคู่ */</span>
+<span class="c">/* P0 */</span>                 <span class="c">/* P1 */</span>
+<span class="f">wait</span>(S);   <span class="c">← S=0 ยึด S</span>   <span class="f">wait</span>(Q);   <span class="c">← Q=0 ยึด Q</span>
+<span class="f">wait</span>(Q);   <span class="c">รอ Q (P1 ถือ)  </span> <span class="f">wait</span>(S);   <span class="c">รอ S (P0 ถือ) → ตายล็อกทั้งคู่</span>
+...
+<span class="f">signal</span>(S); <span class="f">signal</span>(Q);    <span class="f">signal</span>(Q); <span class="f">signal</span>(S);</code></pre>
+<ul>
+  <li><b>Starvation</b> = indefinite blocking — process อาจไม่เคยถูกหยิบออกจากคิว semaphore เลย (ต่างจาก deadlock ที่รอกันเป็นวง)</li>
+  <li>สไลด์ p.3 สะพานแคบ: รถ = process, ช่วงถนน = resource, แก้โดยให้คันหนึ่ง<b>ถอย (preempt + rollback)</b></li>
+  <li><b>OS ส่วนใหญ่ (รวม UNIX) ไม่ป้องกัน/ไม่จัดการ deadlock เลย</b> — ปล่อยให้โปรแกรมเมอร์รับผิดชอบ</li>
+</ul>
+
+<h3>F2. เงื่อนไข 4 ข้อ — ต้องเกิด "พร้อมกัน" จึงเกิด deadlock 🔥</h3>
+<table class="t">
+  <tr><th>เงื่อนไข</th><th>ความหมาย</th><th>Prevention ยังไง</th></tr>
+  <tr><td><b>1. Mutual Exclusion</b></td><td>ทรัพยากร 1 ชิ้นมีได้ 1 เจ้าของ/เวลา</td><td>ทำให้แชร์ได้ — ทำไม่ได้กับทุกชนิด</td></tr>
+  <tr><td><b>2. Hold and Wait</b></td><td>ถืออย่างน้อย 1 ชิ้น + รอชิ้นอื่นที่คนอื่นถือ</td><td>ขอให้<b>ครบทุกชิ้นก่อนเริ่มรัน</b> หรือขอเมื่อไม่ถืออะไรเลย → utilization ต่ำ + starvation ได้</td></tr>
+  <tr><td><b>3. No Preemption</b></td><td>ยึดคืนกลางคันไม่ได้ ปล่อยเมื่อเจ้าของใจดีเท่านั้น</td><td>ขอเพิ่มไม่ได้ = ถูกยึดของที่ถือทั้งหมด ไปให้คนรอ แล้วค่อยเริ่มใหม่ → ยุ่งยาก</td></tr>
+  <tr><td><b>4. Circular Wait</b></td><td>P0 รอ P1, P1 รอ P2, … วนกลับมา P0</td><td>ให้ทุกทรัพยากรมี<b>เลขประจำตัว</b> ขอเรียง<b>จากน้อยไปมากเท่านั้น</b> เช่น Disk=4, Printer=11 → ต้องได้ 4 ก่อน 11 ห้ามถือ 11 แล้วขอ 4</td></tr>
+</table>
+<div class="co exam"><div class="tt">🎯 จำแน่น</div><p>ต้องครบ <b>4 ข้อพร้อมกัน</b> → ตัดข้อเดียวก็ไม่เกิด · Prevention ทั้งหมด "ทฤษฎีดี แต่ปฏิบัติเสียประสิทธิภาพ" อาจารย์สรุปว่าไม่คุ้มใช้</p></div>
+
+<h3>F3. Resource-Allocation Graph (RAG)</h3>
+<ul>
+  <li><b>วงกลม</b> = Process Pᵢ · <b>สี่เหลี่ยม</b> = Resource type Rⱼ (จุดในสี่เหลี่ยม = จำนวน instance)</li>
+  <li><b>Request edge</b> Pᵢ → Rⱼ : "ขอ" · <b>Assignment edge</b> Rⱼ → Pᵢ : "ได้ถืออยู่"</li>
+</ul>
+<div class="mermaid">
+flowchart LR
+  P1(["P1"]) -- request --> R1["R1"]
+  R1 -- assigned --> P2(["P2"])
+  P2 -- request --> R2["R2 ⚠️"]
+  R2 -- assigned --> P1
+</div>
+<div class="fm">ไม่มี cycle → ไม่เกิด deadlock แน่ (100%)<br>มี cycle → single instance/type = deadlock แน่ · multiple instances = "อาจเกิด" เท่านั้น<small>slide p.11: มี cycle แต่ R2 มีหลายชิ้น ชิ้นที่เหลือ (ถือโดย P4 นอกวง) มาช่วยได้ → ไม่ deadlock</small></div>
+<div class="figrow">
+  <div class="slide"><img src="slides/s07p10.jpg" alt="RAG with deadlock"><div class="cap"><b>สไลด์ p.10</b> RAG มี deadlock</div></div>
+  <div class="slide"><img src="slides/s07p11.jpg" alt="cycle no deadlock"><div class="cap"><b>สไลด์ p.11</b> มี cycle แต่ไม่ deadlock (multiple instance)</div></div>
+</div>
+
+<h3>F4. กลยุทธ์จัดการ Deadlock 4 แนวทาง</h3>
+<ol class="st">
+  <li><b>Prevention</b> — ออกแบบให้เงื่อนไขข้อใดข้อหนึ่งเกิดไม่ได้เลย (ตาราง F2)</li>
+  <li><b>Avoidance</b> — process แจ้ง <b>Max demand ล่วงหน้า</b> OS เช็คทุกครั้งก่อนจัดสรรว่ายัง safe → Banker's / claim edge</li>
+  <li><b>Detection + Recovery</b> — ปล่อยเกิด สแกนหา แล้วแก้</li>
+  <li><b>เมิน (Ostrich)</b> — ที่ OS จริงใช้กัน</li>
+</ol>
+
+<h4>F4.1 Avoidance แบบ single instance — Claim Edge (เส้นประ)</h4>
+<ul>
+  <li><b>Claim edge</b> Pᵢ ⇢ Rⱼ (เส้นประ) = "อาจขอในอนาคต" · ขอจริง → กลายเป็น request edge · ได้รับ → assignment edge · ปล่อย → กลับเป็น claim edge</li>
+  <li><b>ให้ทรัพยากรได้เมื่อ:</b> แปลง request เป็น assignment แล้ว<b>เกิด cycle ไม่ได้</b> (มี cycle = unsafe → ไม่ให้ ให้รอ)</li>
+  <li>ข้อเสีย: สแกนหา cycle ทุกครั้งที่ขอ = O(n²) แพง</li>
+</ul>
+<div class="figrow">
+  <div class="slide"><img src="slides/s07p20.jpg" alt="claim edge"><div class="cap"><b>สไลด์ p.20</b> Claim edges (เส้นประ)</div></div>
+  <div class="slide"><img src="slides/s07p21.jpg" alt="unsafe state"><div class="cap"><b>สไลด์ p.21</b> Unsafe state: ถ้าให้ P2 ใช้ R2 จะเกิดวง → ไม่ให้</div></div>
+</div>
+
+<h3>F5. Banker's Algorithm (multiple instances) 🔥🔥</h3>
+<p>ข้อมูลที่ OS ถือ (n = process, m = resource type): <code>Available[m]</code> · <code>Max[n×m]</code> · <code>Allocation[n×m]</code> · <b>Need = Max − Allocation</b></p>
+<div class="fm">Need[i,j] = Max[i,j] − Allocation[i,j]<small>หัวใจของทุกโจทย์ Banker's — คิด Need ให้ครบทุกช่องก่อนเสมอ</small></div>
+
+<h4>F5.1 Safety Algorithm (ตรวจว่า state ปลอดภัยไหม)</h4>
+<ol class="st">
+  <li>Work = Available · Finish[i] = false ทุกตัว</li>
+  <li>หา i ที่ <b>Finish[i] = false และ Needᵢ ≤ Work</b> (เทียบทีละช่องทุกชนิด) — ไม่มีใครผ่าน → ไปขั้น 4</li>
+  <li>สมมติ i รันจนจบแล้วคืนของ: <b>Work = Work + Allocationᵢ</b>, Finish[i] = true → กลับขั้น 2</li>
+  <li>ถ้า Finish = true <b>ทุกตัว → SAFE</b> (มี safe sequence) · ติดตรงไหน = UNSAFE</li>
+</ol>
+
+<h4>F5.2 โจทย์เต็มจากสไลด์ p.26–27 (5 process, A=10 B=5 C=7, Available = 3,3,2)</h4>
+<table class="t">
+  <tr><th rowspan="2">Process</th><th colspan="3" class="c">Allocation</th><th colspan="3" class="c">Max</th><th colspan="3" class="c">Need = Max − Alloc</th></tr>
+  <tr><th class="c">A</th><th class="c">B</th><th class="c">C</th><th class="c">A</th><th class="c">B</th><th class="c">C</th><th class="c">A</th><th class="c">B</th><th class="c">C</th></tr>
+  <tr><td>P0</td><td class="c">0</td><td class="c">1</td><td class="c">0</td><td class="c">7</td><td class="c">5</td><td class="c">3</td><td class="c">7</td><td class="c">4</td><td class="c">3</td></tr>
+  <tr><td>P1</td><td class="c">2</td><td class="c">0</td><td class="c">0</td><td class="c">3</td><td class="c">2</td><td class="c">2</td><td class="c">1</td><td class="c">2</td><td class="c">2</td></tr>
+  <tr><td>P2</td><td class="c">3</td><td class="c">0</td><td class="c">2</td><td class="c">9</td><td class="c">0</td><td class="c">2</td><td class="c">6</td><td class="c">0</td><td class="c">0</td></tr>
+  <tr><td>P3</td><td class="c">2</td><td class="c">1</td><td class="c">1</td><td class="c">2</td><td class="c">2</td><td class="c">2</td><td class="c">0</td><td class="c">1</td><td class="c">1</td></tr>
+  <tr><td>P4</td><td class="c">0</td><td class="c">0</td><td class="c">2</td><td class="c">4</td><td class="c">3</td><td class="c">3</td><td class="c">4</td><td class="c">3</td><td class="c">1</td></tr>
+</table>
+<p><b>ไล่ Safety (Work เริ่ม = 3,3,2):</b></p>
+<table class="t">
+  <tr><th class="c">ขั้น</th><th>เลือกใคร (เหตุผล)</th><th class="c">Work หลังคืนของ</th></tr>
+  <tr><td class="c">1</td><td>P1 — Need (1,2,2) ≤ (3,3,2) ✓</td><td class="c">(3,3,2)+(2,0,0) = <b>(5,3,2)</b></td></tr>
+  <tr><td class="c">2</td><td>P3 — Need (0,1,1) ≤ (5,3,2) ✓</td><td class="c">(5,3,2)+(2,1,1) = <b>(7,4,3)</b></td></tr>
+  <tr><td class="c">3</td><td>P4 — Need (4,3,1) ≤ (7,4,3) ✓</td><td class="c">(7,4,3)+(0,0,2) = <b>(7,4,5)</b></td></tr>
+  <tr><td class="c">4</td><td>P2 — Need (6,0,0) ≤ (7,4,5) ✓</td><td class="c">(7,4,5)+(3,0,2) = <b>(10,4,7)</b></td></tr>
+  <tr><td class="c">5</td><td>P0 — Need (7,4,3) ≤ (10,4,7) ✓</td><td class="c">(10,4,7)+(0,1,0) = (10,5,7) ครบทุกตัว ✅</td></tr>
+</table>
+<div class="fm">Safe sequence = &lt;P1, P3, P4, P2, P0&gt; → SAFE STATE<small>มีได้หลายคำตอบ — ตอบลำดับไหนที่ไล่ได้จริงก็ถูก (สไลด์ให้ &lt;P1,P3,P4,P2,P0&gt;)</small></div>
+
+<h4>F5.3 Resource-Request Algorithm — P1 ขอ (1,0,2) ให้ได้ไหม?</h4>
+<ol class="st">
+  <li>เช็ค Request ≤ Need: (1,0,2) ≤ (1,2,2) ✓ (ไม่ขอเกินที่ประกาศ)</li>
+  <li>เช็ค Request ≤ Available: (1,0,2) ≤ (3,3,2) ✓ (ของพอ)</li>
+  <li><b>สมมติจัดให้ (pretend):</b> Available = (2,3,0) · P1 Alloc = (3,0,2) · P1 Need = (0,2,0)</li>
+  <li>รัน Safety ใหม่ → ได้ sequence &lt;P1, P3, P4, P0, P2&gt; → ยัง SAFE ✅ → <b>ให้ไปได้</b></li>
+</ol>
+<table class="t">
+  <tr><th>คำขออื่นในสไลด์ p.28</th><th class="c">ผล</th><th>เหตุผล</th></tr>
+  <tr><td>P4 ขอ (3,3,0)</td><td class="c"><b>ไม่ให้</b></td><td>Request &gt; Available (3,3,0) &gt; (2,3,0) — ของไม่พอ P4 ต้อง wait</td></tr>
+  <tr><td>P0 ขอ (0,2,0)</td><td class="c"><b>ไม่ให้</b></td><td>ผ่าน 2 เช็คแรก แต่ไล่ Safety แล้ว <b>UNSAFE</b> (มี deadlock เป็นไปได้) → ให้รอ คืนสถานะเดิม</td></tr>
+</table>
+<div class="co tip"><div class="tt">🟢 วิธีทำในห้องสอบ (เร็ว)</div><p>1) เติมตาราง Need = Max − Alloc ทุกช่อง 2) เขียน Work = Available กก.ลงข้าง ๆ 3) วนหา "Need ≤ Work" ใครผ่านให้ไปก่อน แล้ว <b>บวก Allocation แถวนั้นเข้า Work</b> 4) จนครบทุกตัว = safe · โจทย์ถาม "ขอได้ไหม" → เช็ค 2 ข้อแล้ว pretend แล้วไล่ safety ใหม่เสมอ</p></div>
+<div class="co note"><div class="tt">📌 ปัญหาของ Banker's (เคยออก)</div><p>ต้องประกาศ Max ล่วงหน้า / จำนวนทรัพยากรคงที่ / จำนวนงานคงที่ / overhead สูง / ใช้ทรัพยากรไม่คุ้มเพราะคิดแย่สุดเสมอ</p></div>
+
+<h3>F6. Detection (ตรวจจับ) & Recovery (กู้)</h3>
+<ul>
+  <li><b>Single instance/type:</b> ยุบ RAG เป็น <b>Wait-For Graph</b> — ตัดโหนดทรัพยากรทิ้ง เหลือ Pᵢ → Pⱼ ("Pᵢ รอ Pⱼ") มี cycle = deadlock (สแกนทุกระยะ, แพง O(n²))</li>
+  <li><b>Multiple instances:</b> Detection Algorithm ทำงานเหมือน Safety แต่เทียบด้วย <b>Request</b> (ของที่ร้องขอค้างจริง) แทน Need · Finish เริ่มต้น: คนที่ Allocation ไม่เป็นศูนย์ = false</li>
+</ul>
+<p><b>ตัวอย่าง Detection จากสไลด์ p.36–37 (A=7, B=2, C=6, Available = 0,0,0):</b></p>
+<table class="t">
+  <tr><th rowspan="2">Process</th><th colspan="3" class="c">Allocation</th><th colspan="3" class="c">Request</th></tr>
+  <tr><th class="c">A</th><th class="c">B</th><th class="c">C</th><th class="c">A</th><th class="c">B</th><th class="c">C</th></tr>
+  <tr><td>P0</td><td class="c">0</td><td class="c">1</td><td class="c">0</td><td class="c">0</td><td class="c">0</td><td class="c">0</td></tr>
+  <tr><td>P1</td><td class="c">2</td><td class="c">0</td><td class="c">0</td><td class="c">2</td><td class="c">0</td><td class="c">2</td></tr>
+  <tr><td>P2</td><td class="c">3</td><td class="c">0</td><td class="c">3</td><td class="c">0</td><td class="c">0</td><td class="c">0</td></tr>
+  <tr><td>P3</td><td class="c">2</td><td class="c">1</td><td class="c">1</td><td class="c">1</td><td class="c">0</td><td class="c">0</td></tr>
+  <tr><td>P4</td><td class="c">0</td><td class="c">0</td><td class="c">2</td><td class="c">0</td><td class="c">0</td><td class="c">2</td></tr>
+</table>
+<p>ไล่: Work=(0,0,0) → P0 (Request 000 ≤ 000) จบ → Work=(0,1,0) → P2 (000 ≤ 010) จบ → Work=(3,1,3) → P3 จบ → (5,2,4) → P1 จบ → (7,2,4) → P4 จบ → <b>sequence &lt;P0,P2,P3,P1,P4&gt; ครบ → ไม่มี deadlock</b></p>
+<p><b>แต่ถ้า P2 ขอเพิ่ม C หนึ่งชิ้น (Request P2 = 0,0,1):</b> Work=(0,0,0) → P0 จบ → (0,1,0) → ใครผ่าน? P1(2,0,2)✗ P2(0,0,1)✗ P3(1,0,0)✗ P4(0,0,2)✗ → ตัน → <b>deadlock: P1, P2, P3, P4</b></p>
+<h4>Recovery 2 แนวทาง</h4>
+<ul>
+  <li><b>Process Termination:</b> จบทุกตัวที่ติด (เสียงานหมด) หรือจบทีละตัวจนวงแตก — เลือกจาก: priority, รันมานานแค่ไหน, ใช้ทรัพยากรอะไรไปแล้ว, ต้องการอีกเท่าไร, ต้องจบกี่ตัว, interactive/batch?</li>
+  <li><b>Resource Preemption:</b> เลือกเหยื่อ (victim) → <b>Rollback</b> ไป safe state → เริ่มใหม่ · ระวัง <b>Starvation</b> — ใส่ "จำนวน rollback ที่โดนมาแล้ว" ในตัวแปรต้นทุน</li>
+</ul>
+
+<!-- ================= PART G: REAL MEMORY ================= -->
+<h2 class="part">G. Real Memory Management <span style="font-size:.8em">(OSNo08 ต้น)</span></h2>
+
+<h3>G1. Logical vs Physical Address + MMU</h3>
+<table class="t">
+  <tr><th></th><th>Logical (Virtual) Address</th><th>Physical Address</th></tr>
+  <tr><td><b>สร้างโดย</b></td><td>CPU ปล่อยขณะรัน</td><td>ตำแหน่งจริงที่ memory unit มองเห็น</td></tr>
+  <tr><td><b>จุดอ้างอิง</b></td><td>โปรแกรมเริ่มที่ byte 0 เสมอ</td><td>เทียบจุดเริ่ม RAM จริง</td></tr>
+</table>
+<p><b>MMU</b> = ฮาร์ดแวร์แปลง logical → physical แบบง่ายสุดคือ<b>บวก Relocation (Base) Register</b></p>
+<div class="fm">Physical Address = Relocation Register + Logical Address<small>ตัวอย่างวิดีโอ: โปรแกรมโหลดที่ 14,000 · CPU ขอ byte 346 → PA = 14,000 + 346 = 14,346</small></div>
+<div class="figrow">
+  <div class="slide"><img src="slides/s08p03.jpg" alt="Logical vs physical"><div class="cap"><b>สไลด์ p.3</b> Logical vs Physical</div></div>
+  <div class="slide"><img src="slides/s08p05.jpg" alt="Relocation register"><div class="cap"><b>สไลด์ p.5</b> Dynamic relocation ด้วย relocation register</div></div>
+</div>
+
+<h3>G2. Static vs Dynamic Linking (มีตัวเลขให้คำนวณ)</h3>
+<ul>
+  <li><b>Static linking</b>: ก๊อปโค้ด library รวมใน executable ตั้งแต่ compile — lib ซ้ำทุกโปรแกรม</li>
+  <li><b>Dynamic linking</b>: เลื่อนไป link ตอน run — ใส่แค่ <b>stub</b> (โค้ดจิ๋วหา library / แทนตัวเองด้วย address routine) → library โหลดครั้งเดียวแชร์กันทั้งระบบ (shared libraries)</li>
+</ul>
+<div class="fm">ตัวอย่างวิดีโอ: A(10MB) + B(20MB) + Lib(20MB)<br>Static: A=30MB, B=40MB → RAM 30+40 = <b>70MB</b> (lib ซ้ำ 2 ชุด)<br>Dynamic: A=10+2, B=20+2, lib 1 ชุด → 12+20+22 = <b>54MB</b> ประหยัด 16MB</div>
+
+<h3>G3. Fixed Partition — Internal Fragmentation</h3>
+<ul>
+  <li>แบ่ง RAM ส่วน user เป็นช่องคงที่ล่วงหน้า → <b>มีกี่ช่องรับ process พร้อมกันได้เท่านั้น</b> · ป้องกันด้วย limit register (ขนาด) + relocation register (ตำแหน่ง): เช็ค LA &lt; Limit ผ่านแล้วค่อย + Base</li>
+  <li><b>ตัวอย่างวิดีโอ:</b> Partitions P1=100K, P2=25K, P3=25K, P4=50K · Job1(30K)→P1 (เหลือ 70K ใช้ไม่ได้ = <b>internal frag</b>) · Job2(50K)→P4 พอดี · <b>Job3(30K) ต้องรอ!</b> เพราะ P2,P3 มีแค่ 25K แม้ว่างรวม 120K · Job4(25K)→P2 พอดี</li>
+</ul>
+<div class="co exam"><div class="tt">🎯 คู่แฝด fragmentation</div><p><b>Fixed = Internal</b> (เศษในช่องจองแล้ว ใครใช้ต่อไม่ได้) · <b>Variable + Segmentation = External</b> (เศษกระจายนอก รวมว่างเยอะแต่ช่องเดียวไม่พอ) · <b>Paging = ไม่มี External แต่มี Internal</b> ที่เพจสุดท้าย — ออกถูก/ผิดวนไป</p></div>
+
+<h3>G4. Variable Partition — External Fragmentation + วิธีรักษา</h3>
+<p>จัดสรรตามขนาดจริง ตอนแรกไม่มีของเสีย แต่งานจบทิ้งช่องว่างกระจาย · <b>ตัวอย่าง:</b> หลุมว่าง 5+2+1 = 8MB แต่ขอ 7MB โหลดไม่ได้ (ช่องเดียวใหญ่สุด 5MB)</p>
+<table class="t">
+  <tr><th>วิธีรักษา</th><th>ทำอะไร</th><th>ข้อจำกัด</th></tr>
+  <tr><td><b>Coalescing</b></td><td>รวมหลุมที่<b>ติดกัน</b>เป็นหลุมใหญ่ 1 หลุม</td><td>หลุมไม่ติดกันก็ช่วยไม่ได้ — มักไม่พอ</td></tr>
+  <tr><td><b>Compaction</b></td><td>ลาก process มา<b>อัดติดกัน</b> รวมว่างปลายเดียว</td><td>overhead แพง และทำได้<b>เฉพาะ relocation แบบ dynamic (ตอน execution time)</b></td></tr>
+</table>
+
+<h3>G5. First-fit · Best-fit · Worst-fit 🔥 (ตัวอย่างจากวิดีโอ)</h3>
+<p><b>โจทย์ (สไลด์ p.21–24):</b> หลุมเรียงตามลำดับใน RAM: <b>16, 14, 5, 30 MB</b> · process ใหม่ต้องการ <b>13 MB</b></p>
+<table class="t">
+  <tr><th>กลยุทธ์</th><th>หลักคิด</th><th class="c">ลงหลุม</th><th class="c">เศษเหลือ</th><th>จุดเด่น/ด้อย</th></tr>
+  <tr><td><b>First-fit</b></td><td>ไล่จากซ้าย เจอหลุมแรกที่ ≥ ขนาด เอาทันที</td><td class="c ok"><b>16</b></td><td class="c">3</td><td>เร็วสุด (ไม่สแกนครบ) แต่เปลืองพื้นที่</td></tr>
+  <tr><td><b>Best-fit</b></td><td>สแกนครบ เลือกหลุมที่ "ใหญ่พอ + เหลือน้อยสุด"</td><td class="c ok"><b>14</b></td><td class="c">1</td><td>คุ้มสุด แต่ช้า + ทิ้งเศษจิ๋วใช้ต่อไม่ได้</td></tr>
+  <tr><td><b>Worst-fit</b></td><td>สแกนครบ เลือกหลุมใหญ่สุด</td><td class="c ok"><b>30</b></td><td class="c">17</td><td>ทิ้งชิ้นใหญ่ให้งานต่อไป (โดยรวมมักแพ้ best-fit)</td></tr>
+</table>
+<div class="co tip"><div class="tt">🟢 เทคนิค 30 วินาที</div><p>เขียนเลขหลุมตามลำดับที่โจทย์ให้ (ห้ามจัดใหม่!) · First = หยุดหลุมแรกที่พอ · Best = เทียบ (หลุม−ขนาด) เลือกค่าน้อยสุด · Worst = หลุมใหญ่สุด · ถ้าโจทย์ให้จัดหลายงานต่อกัน อย่าลืมหักขนาดหลุมที่ใช้ไปแล้วด้วย</p></div>
+<div class="figrow">
+  <div class="slide"><img src="slides/s08p21.jpg" alt="placement strategies"><div class="cap"><b>สไลด์ p.21</b> Memory Placement Strategies</div></div>
+  <div class="slide"><img src="slides/s08p24.jpg" alt="strategies part3"><div class="cap"><b>สไลด์ p.24</b> ผลการจัดทั้ง 3 กลยุทธ์ (ตรงกับตารางข้างบน)</div></div>
+</div>
+
+<h3>G6. Segmentation 🔥 — แบ่งตามสายตาโปรแกรมเมอร์</h3>
+<ul>
+  <li>แบ่งเป็น logical unit ขนาดไม่เท่ากัน: main, function, object, stack, global variables · Logical address = คู่ <code>&lt;segment s, offset d&gt;</code></li>
+  <li>Segment table แต่ละแถวมี <b>Base</b> (จุดเริ่มใน RAM) + <b>Limit</b> (ความยาว) · STBR ชี้ตาราง, STLR = จำนวน segment (s ใช้ได้ถ้า s &lt; STLR)</li>
+</ul>
+<div class="fm">ขั้นแรก: เช็ค d &lt; Limit — ถ้า d ≥ Limit → TRAP (error!) ทันที<br>ขั้นต่อมา: Physical Address = Base + Offset</div>
+<p><b>ตัวอย่างจากสไลด์ p.50:</b> S1 (base 6300, limit 500) · S2 (base 4300, limit 400)</p>
+<table class="t">
+  <tr><th>Logical</th><th>เช็ค</th><th class="c">ผล</th></tr>
+  <tr><td>&lt;1, 300&gt;</td><td>300 &lt; 500 ✓ → PA = 6300 + 300</td><td class="c ok"><b>6600</b> ✓</td></tr>
+  <tr><td>&lt;2, 400&gt;</td><td>400 &lt; 400 ✗ (400 ไม่ได้ "น้อยกว่า" 400)</td><td class="c no"><b>Trap / Error</b> ❌</td></tr>
+</table>
+<div class="co exam"><div class="tt">🎯 จุดหลอก</div><p>เช็ค <b>ก่อนเสมอ แล้วค่อยบวก</b> — เคร่งครัดเรื่อง &lt; ไม่ใช่ ≤ · Segmentation ยังเจ็บกับ <b>external fragmentation</b> (แต่ละ segment ต้องวางติดกันเป็นผืน) · สูตรอย่างสลับกับ paging: Segment/Base = <b>Base + offset</b> / Paging = <b>frame × size + offset</b></p></div>
+<div class="figrow">
+  <div class="slide"><img src="slides/s08p47.jpg" alt="logical view seg"><div class="cap"><b>สไลด์ p.47</b> Logical view (user space) vs physical memory</div></div>
+  <div class="slide"><img src="slides/s08p50.jpg" alt="segmentation example"><div class="cap"><b>สไลด์ p.50</b> Example of Segmentation (ตัวเลขตรงกับตาราง)</div></div>
+</div>
+
+<!-- ================= PART H: PAGING ================= -->
+<h2 class="part">H. Paging & Address Translation <span style="font-size:.8em">(OSNo08 ท้าย)</span> 🔥🔥</h2>
+
+<h3>H1. แนวคิด Paging</h3>
+<ul>
+  <li><b>Paging = จัดสรรแบบ non-contiguous</b> (ไม่ต้องติดกัน) — ตัด external fragmentation ขาด</li>
+  <li><b>Frame</b>: แบ่ง RAM เป็นบล็อกขนาดคงที่ ขนาดเป็นกำลังสอง 2ⁿ bytes (512–8,192)</li>
+  <li><b>Page</b>: แบ่งโปรแกรมเป็นบล็อก<b>ขนาดเท่า frame เป๊ะ</b> · รันโปรแกรม n เพจ = หา frame ว่าง n อันกระจายวาง</li>
+  <li><b>Page table</b>: จับคู่ "เพจ i → frame ไหน" ของแต่ละ process</li>
+</ul>
+<div class="co exam"><div class="tt">🎯 เช็คความเข้าใจ</div><p>Paging <b>ไม่มี External frag</b> แต่มี <b>Internal frag</b> — เกิดเฉพาะ<b>เพจสุดท้าย</b>ถ้าขนาดโปรแกรมไม่ลงตัว</p></div>
+
+<h3>H2. โครงสร้าง Logical Address — บิต p กับ d 🔥</h3>
+<p>Address ที่ CPU ปล่อย (ยาว <b>m บิต</b>) ซอยเป็น 2 ส่วนโดยฮาร์ดแวร์:</p>
+<div class="mermaid">
+flowchart LR
+  A["Logical Address<br/>(m บิต)"] --> B["Page number p<br/>(m−n บิต)"]
+  A --> C["Offset d<br/>(n บิต)"]
+  B --> D["เปิด Page Table<br/>หา frame"]
+  C --> E["ใช้ตรง ๆ<br/>ไม่แปลงอะไรเลย"]
+  D --> F["PA = frame × page size + d"]
+  E --> F
+</div>
+<div class="fm">Page size = 2ⁿ bytes → บิต offset = n บิต · บิต page number = m − n บิต → เพจได้สูงสุด 2^(m−n) เพจ<small>ตัวอย่างวิดีโอ: m = 5 บิต (2⁵ = 32 bytes), page = 4 bytes (2²) → offset 2 บิต, page# 3 บิต → 8 เพจ (0–7 นับจากศูนย์!)</small></div>
+<div class="co an"><div class="tt">🪑 อุปมาอาจารย์</div><p>เก้าอี้ 32 ตัว จัด 8 ห้อง ห้องละ 4 — อ้างอิงว่า "เก้าอี้ตัวที่ 3 ในห้องเบอร์ 1" = (Page 1, Offset 3) สองเลขนี้คือทั้งชีวิตของ paging</p></div>
+
+<h3>H3. แปลง Logical → Physical ทีละขั้น 🔥</h3>
+<div class="fm">Physical Address = (Frame Number × Page Size) + Offset<small>เปิดตารางด้วย p → ได้ frame → คูณขนาด frame = จุดเริ่ม → บวก offset</small></div>
+<p><b>โจทย์จากสไลด์ p.32 (Paging Example):</b> page size = 4 bytes · Page table: 0→5, 1→4, 2→1, 3→7</p>
+<table class="t">
+  <tr><th>หาอะไร</th><th>Logical</th><th>ไล่ทีละขั้น</th><th class="c">PA</th></tr>
+  <tr><td>ตัวอักษร 'C'</td><td>(p=0, d=2)</td><td>เพจ 0 → frame 5 → (5 × 4) + 2 = 20 + 2</td><td class="c ok"><b>22</b></td></tr>
+  <tr><td>ตัวอักษร 'K'</td><td>(p=2, d=2)</td><td>เพจ 2 → frame 1 → (1 × 4) + 2 = 4 + 2</td><td class="c ok"><b>6</b></td></tr>
+</table>
+<div class="co exam"><div class="tt">🎯 3 จุดพลาดคลาสสิก</div><p>1) <b>บวก frame+offset ตรง ๆ</b> (5+2=7 ❌) ต้องคูณขนาดก่อน 2) นับเพจเริ่ม 1 → ต้องเริ่ม <b>Page 0</b> 3) ปัดจำนวนเพจลง — 42 bytes / เพจ 4 = 10.5 → <b>ปัดขึ้น 11 เพจ</b> (10 เพจเก็บได้ 40 bytes ข้อมูลขาด!) เพจสุดท้ายใช้ 2 bytes → internal frag = 4−2 = <b>2 bytes</b></p></div>
+<div class="figrow">
+  <div class="slide"><img src="slides/s08p29.jpg" alt="addr translation"><div class="cap"><b>สไลด์ p.29</b> Address Translation Scheme (p | d)</div></div>
+  <div class="slide"><img src="slides/s08p30.jpg" alt="paging hardware"><div class="cap"><b>สไลด์ p.30</b> Paging Hardware: p ไปตารางได้ frame + d ต่อกันเป็น PA</div></div>
+</div>
+<div class="figrow">
+  <div class="slide fig1"><img src="slides/s08p32.jpg" alt="paging example"><div class="cap"><b>สไลด์ p.32</b> Paging Example — หน่วยความจำ 32 bytes, เพจ 4 bytes (โจทย์ 'C' และ 'K' อยู่นี่)</div></div>
+  <div class="slide"><img src="slides/s08p31.jpg" alt="paging model"><div class="cap"><b>สไลด์ p.31</b> Paging Model: เพจกระจาย frame ไม่ติดกันก็ได้</div></div>
+</div>
+
+<h3>H4. TLB + Effective Access Time 🔥</h3>
+<ul>
+  <li>Page table อยู่ใน RAM → อ่านข้อมูล 1 ครั้ง = ไป RAM <b>2 ครั้ง</b> (1: อ่านตารางหา frame, 2: อ่านข้อมูลจริง)</li>
+  <li><b>TLB</b> = แคชฮาร์ดแวร์ความเร็วสูง เก็บคู่ (page # → frame #) ล่าสุด ค้นแบบขนาน (associative memory)</li>
+</ul>
+<table class="t">
+  <tr><th>กรณี</th><th class="c">ไป RAM</th><th>เวลา (memory = 1 μs, TLB search = ε)</th></tr>
+  <tr><td><b>TLB Hit</b> (โอกาส α)</td><td class="c">1 ครั้ง</td><td>ε + 1 = 1 + ε</td></tr>
+  <tr><td><b>TLB Miss</b> (โอกาส 1−α)</td><td class="c">2 ครั้ง</td><td>ε + 1 + 1 = 2 + ε</td></tr>
+</table>
+<div class="fm">EAT = α(1 + ε) + (1 − α)(2 + ε) = 2 + ε − α<small>โจทย์วิดีโอ: ε = 0.1 μs, α = 80% → (0.8×1.1) + (0.2×2.1) = 0.88 + 0.42 = 1.3 μs (สูตรลัด: 2 + 0.1 − 0.8 = 1.3 ✓)</small></div>
+<div class="figrow">
+  <div class="slide"><img src="slides/s08p35.jpg" alt="associative memory"><div class="cap"><b>สไลด์ p.35</b> Associative Memory (TLB): ค้นขนาน</div></div>
+  <div class="slide"><img src="slides/s08p36.jpg" alt="TLB hardware"><div class="cap"><b>สไลด์ p.36</b> Paging Hardware With TLB</div></div>
+  <div class="slide"><img src="slides/s08p37.jpg" alt="EAT"><div class="cap"><b>สไลด์ p.37</b> Effective Access Time สูตร (ตรงกับข้างบน)</div></div>
+</div>
+
+<h3>H5. Protection — Valid / Invalid bit</h3>
+<ul>
+  <li>แต่ละแถว page table มี <b>valid–invalid bit</b>: <b>v</b> = เพจนี้อยู่ใน address space ของ process (ใช้ได้) · <b>i</b> = ห้ามอ้างอิง</li>
+  <li><b>PTBR</b> ชี้ตำแหน่ง page table ใน RAM · <b>PTLR</b> = ความยาวตาราง (เช็คเบื้องต้นว่าไม่อ้างเพจเกินขอบเขต)</li>
+</ul>
+<div class="co exam"><div class="tt">🎯 จุดหลอก: valid ดู "ทั้งเพจ" ไม่ได้ดู "ทีละไบต์"</div><p>เพจสุดท้าย valid = v → ระบบยอมให้อ้าง offset <em>ใด ๆ</em> ในเพจนั้น (แม้เกินขนาดโปรแกรมจริง) — นี่คือเหตุผลที่ internal fragmentation ยังอยู่รอดใน paging</p></div>
+<div class="figrow">
+  <div class="slide"><img src="slides/s08p38.jpg" alt="memory protection"><div class="cap"><b>สไลด์ p.38</b> Memory Protection</div></div>
+  <div class="slide"><img src="slides/s08p39.jpg" alt="valid invalid"><div class="cap"><b>สไลด์ p.39</b> Valid (v) / Invalid (i) Bit</div></div>
+</div>
+
+<h3>H6. Two-Level Paging — ทำไม + คำนวณ 🔥</h3>
+<p><b>ปัญหา single-level ในระบบ 32-bit:</b> page 4KB (offset 12 บิต) → page# 20 บิต → 2²⁰ = 1,048,576 ช่อง × 4B = <b>4MB ต่อ process ทุกตัว!</b> แม้โปรแกรมเล็กแค่ 1MB (ตารางต้องอยู่ต่อเนื่องด้วย)</p>
+<p><b>ทางแก้:</b> ซอยบิต 32 ตัวเป็น <b>p₁ = 10 | p₂ = 10 | d = 12</b> — p₁ เปิด outer table หา inner table, p₂ เปิด inner table หา frame</p>
+<div class="mermaid">
+flowchart LR
+  A["Logical Address<br/>32 บิต"] --> B["p1 (10 บิต)"]
+  A --> C["p2 (10 บิต)"]
+  A --> D["d (12 บิต)<br/>offset ภายในเพจ"]
+  B --> E["Outer Page Table<br/>(1024 ช่อง)"]
+  E --> F["ชี้ไป Inner Page Table"]
+  C --> G["Inner Page Table<br/>(1024 ช่อง)"]
+  G --> H["Frame Number"]
+  D --> I["Offset"]
+  H --> J["PA = frame × 4K + d"]
+  I --> J
+</div>
+<table class="t">
+  <tr><th>โจทย์ (จากวิดีโอ)</th><th class="c">จำนวนเพจ</th><th class="c">Inner tables ที่ต้องสร้าง</th><th class="c">พื้นที่ page table รวม</th></tr>
+  <tr><td>โปรแกรม 1 MB</td><td class="c">1024KB ÷ 4KB = <b>256 เพจ</b></td><td class="c">256 ≤ 1024 → <b>1 ตาราง</b></td><td class="c ok">outer 4KB + inner 4KB = <b>8 KB</b> (แทน 4MB!)</td></tr>
+  <tr><td>โปรแกรม 8 MB</td><td class="c">8192KB ÷ 4KB = <b>2048 เพจ</b></td><td class="c">2048 ÷ 1024 = <b>2 ตาราง</b></td><td class="c ok">4KB + 2×4KB = <b>12 KB</b></td></tr>
+</table>
+<div class="co tip"><div class="tt">🟢 สูตรรวมทั้งบท</div><p>บิต offset = log₂(page size) · บิต page# = บิต address − บิต offset · เพจ = ceil(ขนาดโปรแกรม ÷ page size) · PA = frame × pageSize + offset · EAT = 2 + ε − α · inner tables = ceil(จำนวนเพจ ÷ 1024)</p></div>
+<div class="figrow">
+  <div class="slide"><img src="slides/s08p42.jpg" alt="hierarchical"><div class="cap"><b>สไลด์ p.42</b> Hierarchical Page Tables</div></div>
+  <div class="slide"><img src="slides/s08p44.jpg" alt="three level"><div class="cap"><b>สไลด์ p.44</b> Three-level Paging Scheme (x86 มีจริง)</div></div>
+</div>
+<p class="small">หมายเหตุ: ยังมี Hashed Page Table และ Inverted Page Table — รู้จักชื่อพอ (inverted: 1 แถวต่อ 1 frame จริง ค้นด้วย (pid, page))</p>
+
+<!-- ================= PART I: VIRTUAL MEMORY ================= -->
+<h2 class="part">I. Virtual Memory & Page Replacement <span style="font-size:.8em">(OSNo09)</span> 🔥🔥</h2>
+
+<h3>I1. Demand Paging — ขอเมื่อไรค่อยเอามา</h3>
+<ul>
+  <li><b>Virtual memory</b> = แยก logical memory ออกจาก physical → address space ใหญ่กว่า RAM จริงก็ได้ · implement ผ่าน <b>demand paging</b> หรือ demand segmentation</li>
+  <li><b>Demand paging</b>: โหลดเพจเฉพาะเมื่อถูกเรียกใช้ — หลักขี้เกียจของ <b>lazy swapper</b> (ตัวทำงานกับเพจเรียก <b>pager</b>) · ผลดี: I/O น้อย, RAM น้อย, ตอบเร็ว, รองรับ user มาก</li>
+  <li>เพจที่ยังไม่โหลด → bit = <b>i (invalid)</b> → แปลง address เจอ i → <b>Page Fault</b> — <b>invalid ที่นี่ส่วนใหญ่ไม่ใช่ error</b> แค่ "ยังไม่มา"</li>
+</ul>
+<div class="figrow">
+  <div class="slide"><img src="slides/s09p04.jpg" alt="VM larger"><div class="cap"><b>สไลด์ p.4</b> Virtual Memory ใหญ่กว่า Physical</div></div>
+  <div class="slide"><img src="slides/s09p06.jpg" alt="valid invalid bit"><div class="cap"><b>สไลด์ p.6</b> Valid–Invalid Bit ใน page table</div></div>
+</div>
+
+<h3>I2. Page Fault — ขั้นตอนจัดการ 6 ขั้น (เรียงได้ = ได้คะแนน)</h3>
+<div class="mermaid">
+flowchart TD
+  A["CPU อ้างเพจ<br/>bit = i"] --> B["1. Trap/Interrupt<br/>เข้าสู่ OS"]
+  B --> C{"2. OS เช็ค:<br/>อ้างผิดจริงหรือแค่ยังไม่โหลด?"}
+  C -->|"อ้างผิดจริง"| X["Abort process"]
+  C -->|"แค่ยังไม่โหลด"| D["3. หาเพจบน disk<br/>+ หา frame ว่าง"]
+  D --> E{"มี frame ว่างไหม?"}
+  E -->|"ไม่มี"| F["Page Replacement<br/>เลือกเพจออกก่อน<br/>(เพจ dirty → write back ก่อน!)"]
+  F --> G["4. อ่านเพจจาก disk<br/>เข้า frame (แพงสุด — I/O)"]
+  E -->|"มี"| G
+  G --> H["5. อัปเดต page table<br/>frame # + bit = v"]
+  H --> I["6. Restart คำสั่งเดิม<br/>คราวนี้ใช้ได้ปกติ"]
+</div>
+<div class="co warn"><div class="tt">⚠️ Dirty page</div><p>เพจที่ถูกแก้ไข (dirty/modified = 1) ต้อง<b>เขียนกลับ disk ก่อน</b> (write back) ค่อยแทนที่ — เพจ clean ทับได้เลยเพราะ disk มีสำเนา</p></div>
+
+<h3>I3. Page Replacement — นับ fault 3 อัลกอริทึม 🔥🔥</h3>
+<p><b>โจทย์หลัก (สไลด์ใช้ string เดียวกัน, 3 frames เริ่มว่าง):</b></p>
+<div class="fm">Reference String: 7, 0, 1, 2, 0, 3, 0, 4, 2, 3, 0, 3, 2, 1, 2, 0, 1, 7, 0, 1</div>
+<table class="t">
+  <tr><th>อัลกอริทึม</th><th>มองไหน</th><th>หลักเลือก victim</th><th class="c">Faults (3 frames)</th><th>ใช้จริง?</th></tr>
+  <tr><td><b>FIFO</b></td><td class="c">คิวเข้า</td><td>เข้ามาก่อน ออกก่อน (ไม่สนว่าใครฮิต)</td><td class="c no"><b>15</b></td><td>ง่ายแต่โง่ · เจอ Belady</td></tr>
+  <tr><td><b>Optimal (OPT)</b></td><td class="c">อนาคต 👁️</td><td>ตัวที่<b>จะไม่ถูกใช้อีกนานสุด</b>ในอนาคต</td><td class="c ok"><b>9</b></td><td><b>ใช้จริงไม่ได้</b> (รู้อนาคตไม่ได้) — ไว้เทียบ benchmark</td></tr>
+  <tr><td><b>LRU</b></td><td class="c">อดีต 🔙</td><td>ตัวที่<b>ไม่ได้ใช้มานานสุด</b></td><td class="c"><b>12</b></td><td>ใช้จริงได้ (เก็บประวัติย้อนหลัง) ดีกว่า FIFO</td></tr>
+</table>
+<div class="co an"><div class="tt">👕 ตู้เสื้อผ้า 3 ชั้น</div><p>FIFO = รีดตัวใส่นานสุดก่อน · Optimal = หมอดู รีดตัวที่จะไม่ใส่อีกนานสุด · LRU = จำได้ว่าใส่ตัวไหนล่าสุดเมื่อไร รีดตัวที่ทิ้งไว้นานสุด</p></div>
+<div class="figrow">
+  <div class="slide"><img src="slides/s09p13.jpg" alt="FIFO"><div class="cap"><b>สไลด์ p.13</b> FIFO Page Replacement</div></div>
+  <div class="slide"><img src="slides/s09p16.jpg" alt="Optimal"><div class="cap"><b>สไลด์ p.16</b> Optimal Page Replacement</div></div>
+  <div class="slide"><img src="slides/s09p17.jpg" alt="LRU"><div class="cap"><b>สไลด์ p.17</b> LRU Page Replacement</div></div>
+</div>
+<p class="small">💡 เทคนิคไล่มือ: เขียน 3 ช่อง frame ใต้ string ทีละตัวอักษร · FIFO บอกตัวเลือก "เก่าสุด" ไว้ในหัว · LRU เขียนเลขกำกับ "ใช้ล่าสุดเมื่อไร" ใต้ช่อง · OPT กลับไปดูขวาของ string</p>
+
+<h3>I4. Belady's Anomaly — เพิ่ม frame แล้ว fault กลับโต! 🤯</h3>
+<p><b>String: 1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5 (FIFO):</b></p>
+<table class="t">
+  <tr><th>จำนวน frame</th><th class="c">3 frames</th><th class="c">4 frames</th></tr>
+  <tr><td>Page faults</td><td class="c"><b>9</b></td><td class="c no"><b>10</b> 😱</td></tr>
+</table>
+<p>เพิ่ม RAM fault กลับเพิ่ม — เกิดได้กับ <b>FIFO</b> (และ non-stack algorithm) แต่<b>ไม่เกิดกับ LRU / Optimal</b></p>
+<div class="figrow">
+  <div class="slide fig1"><img src="slides/s09p14.jpg" alt="Belady"><div class="cap"><b>สไลด์ p.14</b> FIFO Illustrating Belady's Anomaly</div></div>
+  <div class="slide"><img src="slides/s09p11.jpg" alt="replacement def"><div class="cap"><b>สไลด์ p.11</b> Page Replacement Algorithms (กราฟ fault vs frames)</div></div>
+</div>
+
+<h3>I5. EAT เมื่อมี Page Fault Rate (p)</h3>
+<div class="fm">EAT = (1 − p) × memory access time + p × page fault service time<small>ตัวเลขชวนคิด: mat = 200ns, fault service = 8ms → ที่ p = 0.001 (fault แค่ 0.1%) EAT = 0.999×200 + 0.001×8,000,000 ≈ 8,200ns = 8.2μs — ช้าขึ้น 40 เท่า! ห้ามให้ p โต</small></div>
+
+<h3>I6. Global vs Local Allocation</h3>
+<ul>
+  <li><b>Global replacement</b>: แทนที่ได้จาก <b>frame ใดก็ได้ในระบบ</b> — แย่งข้าม process ได้</li>
+  <li><b>Local replacement</b>: เลือกจาก<b>เฉพาะ frame ของตัวเอง</b> (คนละบ้านกับคนละบ้าน)</li>
+</ul>
+
+<h3>I7. Thrashing · Locality · Working Set 🔥</h3>
+<ul>
+  <li><b>Thrashing</b>: process มีเพจไม่พอ → สลับเพจเข้า-ออก disk ตลอดเวลา → <b>CPU utilization ดิ่ง</b> · OS เข้าใจผิดว่า "งานน้อย" เลยเพิ่ม process → thrashing ยิ่งหนัก (วงจรนรก) · เกิดทั้งข้ามงานและในงานเดียว (ลูปข้ามเพจ)</li>
+  <li><b>Locality of reference</b>: โปรแกรมมักอ้างกลุ่มเพจเดิมซ้ำ ๆ ในช่วงสั้น ๆ (อยู่ในฟังก์ชัน/ลูปเดิม)</li>
+  <li><b>Working set</b>: กลุ่มเพจที่ process ต้องมีใน RAM เพื่อไม่ให้ fault ในช่วง locality นั้น — มองย้อนหลัง Δ (working-set window เช่น 10,000 instruction) · <b>WSSᵢ</b> = จำนวนเพจที่ Pᵢ อ้างใน Δ · Δ เล็กไปครอบ locality ไม่หมด / ใหญ่ไปกินหลาย locality / Δ = ∞ คือทั้งโปรแกรม</li>
+  <li><b>D = Σ WSSᵢ</b> = ความต้องการ frame รวม · ถ้า <b>D &gt; m (frame จริง) → thrashing!</b> → OS ต้อง <b>suspend บาง process</b> คืน frame ให้คนที่เหลือ</li>
+</ul>
+<div class="co an"><div class="tt">🍳 อุปมา</div><p>Working set = ของที่ต้องมีบนเคาน์เตอร์เพื่อทำเมนูให้จบ ถ้าวางไม่ครบ คุณวิ่งไปตู้เย็น (disk) ทุก 30 วินาที = ไม่มีอะไรเสร็จ → ทางแก้: ลดจำนวนเมนูที่ทำพร้อมกัน (suspend process)</p></div>
+<div class="figrow">
+  <div class="slide"><img src="slides/s09p19.jpg" alt="thrashing"><div class="cap"><b>สไลด์ p.19</b> Thrashing</div></div>
+  <div class="slide"><img src="slides/s09p22.jpg" alt="working set model"><div class="cap"><b>สไลด์ p.22</b> Working-Set Model (D = ΣWSSᵢ, D &gt; m → suspend)</div></div>
+</div>
+
+<h3>I8. โจทย์สุดคลาสสิก: Array 128×128 🔥 (สไลด์ p.24)</h3>
+<p><code>int data[128][128]</code> · <b>1 แถว = 1 เพจ</b> · เก็บแบบ <b>row-major</b> (เรียงตามแถว)</p>
+<table class="t">
+  <tr><th></th><th>ลูป</th><th>พฤติกรรม</th><th class="c">Page faults</th></tr>
+  <tr><td class="no"><b>❌ แย่</b></td><td><code>for (j...) for (i...) data[i][j]=0;</code><br>(column นอก, row ใน)</td><td>ทุกครั้งกระโดดข้ามแถว = เปลี่ยนเพจทุกครั้ง</td><td class="c no"><b>128 × 128 = 16,384</b></td></tr>
+  <tr><td class="ok"><b>✅ ดี</b></td><td><code>for (i...) for (j...) data[i][j]=0;</code><br>(row นอก, column ใน)</td><td>อยู่เพจเดียวกันทั้งแถว fault เฉพาะตอนเปลี่ยนแถว</td><td class="c ok"><b>128</b></td></tr>
+</table>
+<div class="fm">โค้ดเหมือนกัน สลับลูปเท่านั้น → fault ต่างกัน 128 เท่า (16,384 : 128)<small>บทเรียน: เขียนลูปให้เข้าถึงข้อมูลต่อเนื่องตาม row-major = locality ดี</small></div>
+
+<!-- ================= PART J: FILE SYSTEM ================= -->
+<h2 class="part">J. File System <span style="font-size:.8em">(OSNo10)</span></h2>
+
+<h3>J1. File System รับผิดชอบอะไร</h3>
+<p>จัดการเก็บ/ดึง/จัดระเบียบข้อมูลบน storage — หน้าที่: <b>ตั้งชื่อ+โครงสร้างไฟล์ · เก็บข้อมูล · ดึง/แก้ไข · Metadata · ความปลอดภัย/สิทธิ์เข้าถึง</b> · หัวใจคือ <b>abstraction</b>: interface เข้าถึงไฟล์เหมือนกันไม่ว่าข้อมูลอยู่บน HDD/SSD/USB (device independence — จาก Quizizz 4 ข้อ 2)</p>
+
+<h3>J2. 5 ระบบไฟล์ยอดนิยม</h3>
+<table class="t">
+  <tr><th>ระบบไฟล์</th><th class="c">ไฟล์สูงสุด</th><th class="c">Volume สูงสุด</th><th class="c">Journaling</th><th>ใช้ที่ไหน</th></tr>
+  <tr><td><b>FAT32</b> (1996)</td><td class="c"><b>4 GB</b> 😅</td><td class="c">8 TB</td><td class="c">ไม่มี</td><td>USB/การ์ด — เข้ากันได้<em>ทุก</em>เครื่อง</td></tr>
+  <tr><td><b>NTFS</b> (1993)</td><td class="c">16 TB</td><td class="c">256 TB</td><td class="c">✅</td><td>Windows — สิทธิ์/เข้ารหัส (EFS)/compression/quota</td></tr>
+  <tr><td><b>ext4</b> (2008)</td><td class="c">16 TB</td><td class="c">1 EB</td><td class="c">✅</td><td>Linux หลัก (ต่อจาก ext3)</td></tr>
+  <tr><td><b>exFAT</b> (2006)</td><td class="c">16 EB</td><td class="c">128 PB</td><td class="c">ไม่มี</td><td>USB/SD ใหญ่ข้าม OS — แก้ขีดจำกัด 4GB</td></tr>
+  <tr><td><b>APFS</b> (2017)</td><td class="c">8 EB</td><td class="c">8 EB</td><td class="c">✅ + Snapshots</td><td>Apple ทั้งหมด — เข้ารหัสทั้งดิสก์</td></tr>
+</table>
+<div class="co exam"><div class="tt">🎯 จาก Quizizz 4</div><p>• USB/external drive = <b>ExFAT</b> · • <b>Journaling ≠ เข้ารหัส!</b> — journaling คือบันทึก log ก่อนเขียนจริงเพื่อ<b>กู้คืนหลัง crash</b> · เข้ารหัสของ NTFS คือ <b>EFS</b> แยกกัน · • FAT32 ไฟล์เดี่ยว<b>ตัน 4GB เด็ดขาด</b> (ฟิลด์ 32 บิต) ดิสก์ว่างเยอะก็ไม่ช่วย</p></div>
+
+<h3>J3. File Allocation Methods 🔥 (วิธีจัดสรรบล็อกให้ไฟล์)</h3>
+<table class="t">
+  <tr><th>วิธี</th><th>หลักการ</th><th>ข้อดี</th><th>ข้อเสีย</th></tr>
+  <tr><td><b>Contiguous</b></td><td>บล็อก<b>ติดกันเป็นผืน</b> · directory เก็บ start + length</td><td>อ่านเร็วมาก (ไม่ต้อง seek)</td><td><b>External fragmentation</b> + ขยายไฟล์ยาก (บล็อกถัดไปถูกจอง = ต้องย้ายทั้งไฟล์)</td></tr>
+  <tr><td><b>Linked</b></td><td>บล็อกกระจาย + pointer ชี้บล็อกถัดไปเป็นโซ่ · directory เก็บ start + end</td><td>ไม่มี external frag · ขยายง่าย</td><td><b>Random access ช้ามาก</b> (ไล่โซ่) · pointer เปลืองพื้นที่ · pointer พัง = ท่อนหลังหาย</td></tr>
+  <tr><td><b>Indexed</b></td><td>รวม pointer ทุกตัวไว้ใน <b>Index Block</b> · directory ชี้มาจุดเดียว</td><td><b>Random access เร็ว</b> · ไม่มี external frag</td><td>เปลืองบล็อก index (ไฟล์จิ๋วก็เสีย 1 บล็อก) · ไฟล์ใหญ่ต้อง multi-level</td></tr>
+</table>
+<div class="co exam"><div class="tt">🎯 FAT (File Allocation Table)</div><p>FAT = ดึง pointer ทั้งหมดออกจาก data block มารวมไว้ใน<b>ตารางเดียว (อยู่ใน RAM)</b> → ไล่โซ่ได้เร็วโดยไม่ต้องเปิดดิสก์ทีละบล็อก — นี่คือที่มาของชื่อ FAT filesystem</p></div>
+<div class="figrow">
+  <div class="slide"><img src="slides/s10p19.jpg" alt="contiguous"><div class="cap"><b>สไลด์ p.19</b> Contiguous Allocation</div></div>
+  <div class="slide"><img src="slides/s10p20.jpg" alt="linked"><div class="cap"><b>สไลด์ p.20</b> Linked Allocation</div></div>
+  <div class="slide"><img src="slides/s10p24.jpg" alt="FAT"><div class="cap"><b>สไลด์ p.24</b> File-Allocation Table</div></div>
+  <div class="slide"><img src="slides/s10p25.jpg" alt="indexed"><div class="cap"><b>สไลด์ p.25</b> Indexed Allocation</div></div>
+</div>
+
+<h4>J3.1 คำนวณ index / inode 🔥 (สูตรเดียวใช้ทุกโจทย์)</h4>
+<div class="fm">Entries ต่อ 1 index block = Block Size ÷ Pointer Size<small>จาก Quizizz 4: บล็อก 2KB ÷ pointer 4B = <b>512 entries</b> → ไฟล์ใหญ่สุด single-level = 512 × 2KB = 1MB</small></div>
+<p><b>UNIX Combined Scheme — inode (สไลด์ p.29, block 4KB, pointer 4B):</b> มี pointer 15 ตัว</p>
+<table class="t">
+  <tr><th>Pointer</th><th class="c">จำนวน</th><th>คำนวณ</th><th class="c">ขนาด</th></tr>
+  <tr><td><b>Direct</b> ชี้ data ตรง ๆ</td><td class="c">12</td><td>12 × 4KB</td><td class="c"><b>48 KB</b></td></tr>
+  <tr><td><b>Single indirect</b></td><td class="c">1</td><td>(4KB÷4B) × 4KB = 1024 × 4KB</td><td class="c"><b>4 MB</b></td></tr>
+  <tr><td><b>Double indirect</b></td><td class="c">1</td><td>1024² × 4KB</td><td class="c"><b>4 GB</b></td></tr>
+  <tr><td><b>Triple indirect</b></td><td class="c">1</td><td>1024³ × 4KB</td><td class="c"><b>4 TB</b></td></tr>
+  <tr class="hl"><td colspan="3">ไฟล์ใหญ่สุด ≈ 48KB + 4MB + 4GB + 4TB</td><td class="c">≈ <b>4 TB</b></td></tr>
+</table>
+<div class="co exam"><div class="tt">🎯 จุดพลาด</div><p>ลืมหา "1024 ช่องต่อบล็อก" ก่อน / ลืมบวก direct 48KB / บวกเลขผิดหลัก (4MB ≠ 4×1024KB=4096KB ก็คือ 4MB ตรงกัน แต่ double = 1024×1024×4KB = 4GB)</p></div>
+<div class="figrow">
+  <div class="slide fig1"><img src="slides/s10p29.jpg" alt="inode combined"><div class="cap"><b>สไลด์ p.29</b> Combined Scheme: UNIX (4K/block) — 15 pointers</div></div>
+  <div class="slide"><img src="slides/s10p28.jpg" alt="two-level index"><div class="cap"><b>สไลด์ p.28</b> Two-level index (512³ ในสไลด์ = block 512B)</div></div>
+</div>
+
+<h3>J4. Directory · Tree vs Acyclic Graph</h3>
+<ul>
+  <li><b>Directory</b> = symbol table แปลง "ชื่อไฟล์ → ข้อมูลไฟล์" · operations: search, create, delete, list, rename, traverse</li>
+  <li><b>Tree</b>: ไฟล์มี parent เดียว — ปลอดภัยแต่<b>แชร์ไม่ได้</b></li>
+  <li><b>Acyclic graph</b> (ไม่มีวงวน): แชร์ได้ผ่าน <b>link</b> — ปัญหา: aliasing (ไฟล์เดียวหลายชื่อ), การลบไฟล์แชร์</li>
+</ul>
+<h4>การลบไฟล์แชร์ 2 แนวทาง</h4>
+<table class="t">
+  <tr><th>แนวทาง</th><th>ทำอย่างไร</th><th>ข้อควรระวัง</th></tr>
+  <tr><td>ลบเมื่อไรก็ได้</td><td>ลบไฟล์ทันทีที่ใครสั่ง</td><td><b>Dangling pointer</b> — link ที่เหลือชี้หาอะไรที่ไม่มีแล้ว (แนวทาง symbolic link)</td></tr>
+  <tr><td>เก็บจน reference หมด</td><td>นับ <b>reference count</b>: เพิ่ม link → count+1, ลบ link → count−1, <b>count = 0 ค่อยปล่อยพื้นที่</b></td><td>ต้องตรวจว่ากราฟไม่มีวงวน (cycle) — แนวทาง hard link ของ UNIX</td></tr>
+</table>
+<div class="figrow">
+  <div class="slide"><img src="slides/s10p32.jpg" alt="tree"><div class="cap"><b>สไลด์ p.32</b> Tree-Structured Directories</div></div>
+  <div class="slide"><img src="slides/s10p33.jpg" alt="acyclic"><div class="cap"><b>สไลด์ p.33</b> Acyclic-graph Directory</div></div>
+</div>
+
+<h3>J5. Hard Link vs Symbolic (Soft) Link 🔥</h3>
+<table class="t">
+  <tr><th></th><th>Hard Link <code>ln original new</code></th><th>Symbolic Link <code>ln -s original new</code></th></tr>
+  <tr><td><b>ชี้ไปที่</b></td><td>directory entry ชี้<b>inode เดียวกัน</b>โดยตรง + เพิ่ม link count</td><td><b>ไฟล์ใหม่แยกต่างหาก</b> เก็บ "path" ของต้นทาง (shortcut)</td></tr>
+  <tr><td><b>ลบต้นฉบับแล้ว</b></td><td class="ok">ข้อมูลยังอยู่ — ปล่อยจริงเมื่อ <b>link count = 0</b></td><td class="no">กลายเป็น <b>broken/dangling link</b></td></tr>
+  <tr><td><b>ข้าม partition/FS</b></td><td class="no">❌ ห้าม</td><td class="ok">✅ ได้</td></tr>
+  <tr><td><b>ชี้ directory</b></td><td class="no">❌ ห้าม (กัน cycle)</td><td class="ok">✅ ได้</td></tr>
+</table>
+<div class="co an"><div class="tt">🏠 อุปมา</div><p>Hard link = ลงทะเบียนบ้านเพิ่มอีกชื่อ — บ้านหลังเดิม อยู่ต่อจนคนทะเบียนหมด · Soft link = กระดาษโน้ตเขียนว่า "บ้านอยู่ซอย 5" — โยนบ้านทิ้ง กระดาษก็ชี้อากาศ</p></div>
+<div class="co exam"><div class="tt">🎯 จาก Quizizz 4</div><p>• Symbolic link อีกชื่อคือ <b>soft link</b> ไม่ใช่ hard link · • Hard link จัดการด้วย <b>Reference Counter</b> ✓ · • <b>ไม่มีคำสั่ง hardln!</b> — จริงคือ <code>ln</code> (hard) / <code>ln -s</code> (symbolic)</p></div>
+<div class="figrow">
+  <div class="slide"><img src="slides/s10p42.jpg" alt="hard link"><div class="cap"><b>สไลด์ p.42</b> Hard Link</div></div>
+  <div class="slide"><img src="slides/s10p44.jpg" alt="symbolic link"><div class="cap"><b>สไลด์ p.44</b> Symbolic Link (Soft Link)</div></div>
+</div>
+
+<h3>J6. Mounting</h3>
+<ul>
+  <li><b>Mounting</b> = ติด filesystem ของอุปกรณ์ (partition/USB/network) เข้า directory tree ที่ <b>mount point</b> เช่น <code>mount /dev/sdb1 /mnt/usb</code></li>
+  <li>ก่อนถอดต้อง <code>umount</code> — ให้การเขียนค้าง ๆ เสร็จก่อน ไม่งั้นข้อมูลพัง</li>
+  <li>จาก Quizizz 4: อุปกรณ์เดียว <b>mount ได้หลาย mount point</b> (ข้อความว่า "ไม่สามารถ" = เท็จ)</li>
+</ul>
+<div class="figrow">
+  <div class="slide fig1"><img src="slides/s10p46.jpg" alt="mounting"><div class="cap"><b>สไลด์ p.46</b> File System Mounting</div></div>
+  <div class="slide"><img src="slides/s10p48.jpg" alt="how mounting works"><div class="cap"><b>สไลด์ p.48</b> How Mounting Works? (mount/umount command)</div></div>
+</div>
+
+<h3>J7. Protection — สิทธิ์ RWX 🔥</h3>
+<p>เจ้าของไฟล์คุมได้ 2 อย่าง: <b>what can be done</b> (read/write/execute) กับ <b>by whom</b> (owner/group/others)</p>
+<div class="fm">R = 2² = 4 · W = 2¹ = 2 · X = 2⁰ = 1<small>3 กลุ่ม: owner, group, other (public) — ตัวอย่างสไลด์ p.50: owner=7 (rwx), group=6 (rw-), public=1 (--x) = <b>761</b></small></div>
+<table class="t">
+  <tr><th>เลข</th><th class="c">บวกได้จาก</th><th>แปลง</th></tr>
+  <tr><td class="c">7</td><td class="c">4+2+1</td><td>rwx — ทุกสิทธิ์</td></tr>
+  <tr><td class="c">6</td><td class="c">4+2</td><td>rw-</td></tr>
+  <tr><td class="c">5</td><td class="c">4+1</td><td>r-x (ไม่ใช่ 6! จาก Quizizz)</td></tr>
+  <tr><td class="c">4</td><td class="c">4</td><td>r--</td></tr>
+  <tr><td class="c">0</td><td class="c">—</td><td>--- ไม่มีสิทธิ์</td></tr>
+</table>
+<div class="figrow">
+  <div class="slide"><img src="slides/s10p50.jpg" alt="access lists"><div class="cap"><b>สไลด์ p.50</b> Access Lists and Groups (RWX 7 6 1)</div></div>
+</div>
+
+<!-- ================= PART K: QUIZIZZ ================= -->
+<h2 class="part">K. ความรู้จาก Quizizz ในห้องเรียน (4 ชุด) — จัดเรียงตามชุด</h2>
+<p class="lead">ทุกข้อเป็นความรู้ที่ตอบโจทย์แบบเดิมได้ทันที — อ่านกล่อง "ความรู้สำคัญ" ต่อข้อ</p>
+
+<h3>K1. Quiz 1 — IPC & Unix Signal</h3>
+<div class="qz2">
+<div class="qz"><div class="qh"><span class="qn">ข้อ 2</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"Signal ใช้ส่งข้อความระหว่าง process"</span></div>
+<div class="qk"><b>ความรู้:</b> Signal = <b>event notification</b> เท่านั้น — ไม่มี payload แนบข้อมูลไม่ได้ ผู้รับรู้แค่ว่า "signal ชนิด X มา" · ส่งข้อมูลจริงใช้ Message Passing / Shared Memory</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 3</span><span class="qa">Message Passing</span></div>
+<div class="qq"><span class="q">"IPC ที่ OS จัดจังหวะการรับส่งให้"</span></div>
+<div class="qk"><b>ความรู้:</b> Message passing ให้ OS จัดทั้ง send/receive และ<b>จังหวะ</b> (blocking/non-blocking) · Shared Memory จัดเตรียมแค่พื้นที่ — <b>ซิงก์จังหวะเป็นหน้าที่ของ process เอง</b> (เช่นใช้ semaphore)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 4</span><span class="qa">SIGINT</span></div>
+<div class="qq"><span class="q">"Ctrl-C ส่ง signal อะไร"</span></div>
+<div class="qk"><b>ความรู้:</b> Ctrl-C → <b>SIGINT</b> (INT = INTerrupt) · คู่เทียบ: SIGFPE = หารศูนย์, SIGTERM = ขอจบสุภาพ (default ของ kill), SIGQUIT = Ctrl-\, SIGKILL = ฆ่าทันทีจับไม่ได้ (9)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 5</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"signal() ใช้ส่ง signal ระหว่าง process"</span></div>
+<div class="qk"><b>ความรู้:</b> <code>signal()</code> = <b>ลงทะเบียน handler</b> ("โดน X แล้วทำอะไร") · ตัวส่งคือ <code>kill(pid, sig)</code> (ส่งข้าม process) และ <code>raise(sig)</code> (ส่งให้ตัวเอง)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 6</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"1 process จัดการ signal ได้แค่ 1 ตัว"</span></div>
+<div class="qk"><b>ความรู้:</b> จัดการได้<b>หลาย signal</b> — แต่ละชนิดมี handler ของตัวเอง · ข้อจำกัดจริง: 1 ชนิด มี 1 handler (ลงทะเบียนซ้ำ = ทับตัวเดิม)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 7</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"kill() ใช้ส่งได้แค่ SIGKILL"</span></div>
+<div class="qk"><b>ความรู้:</b> System call <code>kill(pid, sig)</code> ส่งได้<b>ทุกชนิด</b> — SIGKILL แค่ 1 ตัวเลือก (ชื่อมาจากประวัติศาสตร์ ทำให้เข้าใจผิด)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 8</span><span class="qa">True</span></div>
+<div class="qq"><span class="q">"คำสั่ง kill ใน UNIX ใช้ส่ง signal ให้ process"</span></div>
+<div class="qk"><b>ความรู้:</b> หน้าที่จริงของคำสั่ง kill = <b>ส่ง signal</b> (default SIGTERM) · <code>kill -9 pid</code> = SIGKILL · ⚠️ แยกจากข้อ 7: system call ส่งได้ทุกชนิด (โจทย์ใส่ "เท่านั้น" มาหลอก)</div></div>
+</div>
+
+<h3>K2. Quiz 2 — Shared Memory & Message Passing (Pipe)</h3>
+<div class="qz2">
+<div class="qz"><div class="qh"><span class="qn">ข้อ 2</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"Message passing รองรับทิศทางเดียว"</span></div>
+<div class="qk"><b>ความรู้:</b> ทิศเดียวจริง ๆ คือ <b>pipe ธรรมดา (anonymous)</b> — สองทิศต้อง 2 pipe · Message passing แต่ละ process มีทั้ง send/receive = <b>สองทิศได้</b></div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 3</span><span class="qa">อาเรย์ int 2 ตัว</span></div>
+<div class="qq"><span class="q">"พารามิเตอร์ของ pipe()"</span></div>
+<div class="qk"><b>ความรู้:</b> <code>int pfd[2]; pipe(pfd);</code> — OS ใส่ค่า 2 ช่อง: <b>pfd[0] = ปลายอ่าน, pfd[1] = ปลายเขียน</b> (file descriptor ไม่ใช่ชื่อไฟล์ — pipe ธรรมดาไม่มีชื่อ)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 4</span><span class="qa">write(pfd[1], data, length)</span></div>
+<div class="qq"><span class="q">"ประโยคส่งข้อมูลเข้า pipe"</span></div>
+<div class="qk"><b>ความรู้:</b> pipe ใช้ system call ไฟล์มาตรฐาน: <b>write()</b> ส่ง / <b>read()</b> รับ · เขียนต้องลงปลายเขียน <b>pfd[1]</b> · จำ: "write to 1, read from 0"</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 5</span><span class="qa">dup2(pfd[1], 1)</span></div>
+<div class="qq"><span class="q">"เปลี่ยนทิศ stdout ไปปลายเขียน pipe"</span></div>
+<div class="qk"><b>ความรู้:</b> <code>dup2(oldfd, newfd)</code> = ทำให้ <b>newfd</b> ชี้ที่เดียวกับ oldfd · fd 0=stdin, 1=stdout, 2=stderr → stdout(1) ไหลเข้าปลายเขียน = <code>dup2(pfd[1],1)</code> · pattern มาตรฐาน: ฝั่งเขียน dup2(pfd[1],1) แล้ว exec / ฝั่งอ่าน dup2(pfd[0],0) · ปิดปลายที่ไม่ใช้ก่อน</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 6</span><span class="qa">shmget()</span></div>
+<div class="qq"><span class="q">"System call ขอสร้าง shared memory"</span></div>
+<div class="qk"><b>ความรู้:</b> shm<b>get</b> = get — ขอสร้าง/อ้างถึง segment ได้ <b>shmid</b> · (shmat=attach, shmdt=detach, shmctl=control/ลบ)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 7</span><span class="qa">ftok()</span></div>
+<div class="qq"><span class="q">"ฟังก์ชันสร้าง key ของ shared memory"</span></div>
+<div class="qk"><b>ความรู้:</b> <code>key_t ftok(path, id)</code> — path + id เดียวกัน → key เดียวกัน → อ้าง shm ก้อนเดียวกันได้ (นิยม path = ".")</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 8</span><span class="qa">0764</span></div>
+<div class="qq"><span class="q">"rwxrw-r-- เป็นเลขฐานแปดอะไร"</span></div>
+<div class="qk"><b>ความรู้:</b> r=4 w=2 x=1 → rwx=7, rw-=6, r--=4 → <b>0764</b> (ใช้กับ shmget flag เช่น IPC_CREAT | 0666 ด้วย)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 9</span><span class="qa">IPC_PRIVATE</span></div>
+<div class="qq"><span class="q">"shmget ที่การันตีไม่ซ้ำกับใครแน่นอน"</span></div>
+<div class="qk"><b>ความรู้:</b> <b>IPC_PRIVATE</b> = key พิเศษ OS สร้าง segment ใหม่ไม่ซ้ำใครเสมอ — นิยมใช้ parent→child (shmid ส่งต่อได้ในตระกูล) · IPC_EXCL แค่ flag กันชน ไม่การันตี</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 10</span><span class="qa">shared memory id</span></div>
+<div class="qq"><span class="q">"shmget() คืนอะไร"</span></div>
+<div class="qk"><b>ความรู้:</b> คืน <b>shmid</b> (เลขจำนวนเต็ม) — เอาไปใช้กับ shmat/shmctl/shmdt · flow: key → shmget → <b>shmid</b> → shmat → pointer</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 11</span><span class="qa">shmat()</span></div>
+<div class="qq"><span class="q">"ฟังก์ชันให้ตัวแปรอ้างถึงตำแหน่ง shared memory"</span></div>
+<div class="qk"><b>ความรู้:</b> shm<b>at</b> = attach — ผูก segment เข้า address space แล้ว<b>คืน pointer</b>: <code>shm_ptr = shmat(shmid, NULL, 0)</code></div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 12</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"ตัวแปรเก็บตำแหน่ง shm ต้องเป็น pointer ไป int เท่านั้น"</span></div>
+<div class="qk"><b>ความรู้:</b> shmat คืน <b>void*</b> — cast เป็นชนิดไหนก็ได้ (char*, struct data* ...) ข้อจำกัดเดียวคือต้องเป็น pointer</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 13</span><span class="qa">struct data *shm_ptr;</span></div>
+<div class="qq"><span class="q">"shmget(..., sizeof(struct data), ...) ตัวแปรชี้ต้องประกาศยังไง"</span></div>
+<div class="qk"><b>ความรู้:</b> จองขนาด sizeof(struct data) → pointer ต้องตรงชนิด: <code>struct data *p; p = (struct data *) shmat(shmid, NULL, 0);</code> ใช้ผ่าน <code>p->field</code></div></div>
+</div>
+<div class="co tip"><div class="tt">🟢 Shared Memory ครบวงจร (จำ 6 ขั้น)</div><pre class="code" style="margin:6px 0 0"><code>key_t key = <span class="f">ftok</span>(<span class="s">"."</span>, 'a');                    <span class="c">// 1. สร้าง key</span>
+<span class="k">int</span> shmid = <span class="f">shmget</span>(key, sizeof(<span class="k">struct</span> data), IPC_CREAT | 0666); <span class="c">// 2. สร้าง segment</span>
+<span class="k">struct</span> data *p = (<span class="k">struct</span> data *) <span class="f">shmat</span>(shmid, NULL, 0);   <span class="c">// 3. attach</span>
+<span class="c">/* 4. อ่าน/เขียนผ่าน p */</span>
+<span class="f">shmdt</span>(p);                                   <span class="c">// 5. detach</span>
+<span class="f">shmctl</span>(shmid, IPC_RMID, NULL);              <span class="c">// 6. ลบ (คนสุดท้าย)</span></code></pre></div>
+
+<h3>K3. Quiz 3 — Semaphore</h3>
+<div class="qz2">
+<div class="qz"><div class="qh"><span class="qn">ข้อ 2</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"Semaphore ที่ใช้กับ critical section คือ counting"</span></div>
+<div class="qk"><b>ความรู้:</b> CS ใช้ <b>binary semaphore (mutex)</b> เริ่ม 1: wait→CS→signal · counting (เริ่ม = จำนวน resource) ใช้กับ resource หลายหน่วย เช่น bounded buffer</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 3</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"Semaphore การันตีผ่านเงื่อนไข 3 ข้อของ CS"</span></div>
+<div class="qk"><b>ความรู้:</b> 3 เงื่อนไข = Mutual Exclusion / Progress / Bounded Waiting — semaphore การันตีได้แค่ <b>ข้อ 1</b> · progress/bounded waiting ขึ้นกับ implementation (classic อาจ starvation)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 4</span><span class="qa">2 ตัว</span></div>
+<div class="qq"><span class="q">"bounded buffer ใช้ counting semaphore กี่ตัว"</span></div>
+<div class="qk"><b>ความรู้:</b> ใช้รวม 3 ตัว: empty(n), full(0), mutex(1) — แต่<b>counting จริงมี 2</b> (empty, full) เพราะ mutex เป็น binary</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 5</span><span class="qa">empty</span></div>
+<div class="qq"><span class="q">"producer ตรวจช่องว่างด้วยตัวไหน"</span></div>
+<div class="qk"><b>ความรู้:</b> Producer: <code>wait(empty)</code> ขอช่องว่างก่อน · Consumer: <code>wait(full)</code> ก่อนอ่าน · mutex ใช้ตอนแตะ buffer จริง (ลำดับ: resource ก่อน mutex!)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 6</span><span class="qa">mutex</span></div>
+<div class="qq"><span class="q">"readers-writers คุมจำนวน reader ด้วย semaphore ไหน"</span></div>
+<div class="qk"><b>ความรู้:</b> <b>mutex</b> ครอบช่วง readcount++/-- · <b>readcount เป็น int ธรรมดา</b> ไม่ใช่ semaphore · wrt คุม writer / reader แรกล็อก-ตัวสุดท้ายปลด</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 7</span><span class="qa">resource</span></div>
+<div class="qq"><span class="q">"ตะเกียบใน Dining philosopher แทนอะไร"</span></div>
+<div class="qk"><b>ความรู้:</b> ตะเกียบ = <b>shared resource</b> (นักปราชญ์ = process) · implement ใช้ semaphore 1 ตัวต่อ 1 ตะเกียบ แต่ตัวตนของมันคือ resource</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 8</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"semaphore การันตีนักปราชญ์ทุกคนได้กิน"</span></div>
+<div class="qk"><b>ความรู้:</b> หยิบซ้ายพร้อมกัน → รอขวาเป็นวง = <b>deadlock</b> + ไม่มี bounded waiting → starvation · แก้: จำกัด ≤ 4 คน / คนนึงหยิบขวาก่อน / ใช้ Monitor</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 9</span><span class="qa">sem_post()</span></div>
+<div class="qq"><span class="q">"PThread semaphore ตัวไหน = signal()"</span></div>
+<div class="qk"><b>ความรู้:</b> PThread: <code>sem_init(&s,0,val)</code> สร้าง · <b>sem_wait = P (ลด)</b> · <b>sem_post = V (เพิ่ม/ปลุก)</b> · sem_destroy เก็บกวาด · <b>ไม่มี sem_signal ใน POSIX!</b></div></div>
+</div>
+
+<h3>K4. Quiz 4 — Introduction to File Management</h3>
+<div class="qz2">
+<div class="qz"><div class="qh"><span class="qn">ข้อ 2</span><span class="qa">True</span></div>
+<div class="qq"><span class="q">"เข้าถึงไฟล์เหมือนกันไม่ว่าอุปกรณ์อะไร"</span></div>
+<div class="qk"><b>ความรู้:</b> ระบบไฟล์ = ชั้น abstraction → open/read/write ชุดเดียวกันทุกอุปกรณ์ (<b>device independence</b>)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 3</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"Journaling = การเข้ารหัสไฟล์"</span></div>
+<div class="qk"><b>ความรู้:</b> Journaling = write-ahead log เพื่อ<b>กู้คืนหลัง crash</b> · การเข้ารหัสเป็นฟีเจอร์แยก (NTFS ใช้ <b>EFS</b>)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 4</span><span class="qa">ExFAT</span></div>
+<div class="qq"><span class="q">"ระบบไฟล์สำหรับ USB drive"</span></div>
+<div class="qk"><b>ความรู้:</b> USB/external = <b>ExFAT</b> (ใหญ่กว่า 4GB ข้าม Windows-macOS) · NTFS=Windows, ext4=Linux, APFS=Apple</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 5</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"contiguous ปัญหาคือ internal fragmentation"</span></div>
+<div class="qk"><b>ความรู้:</b> contiguous → <b>external</b> fragmentation (ต้องกันบล็อกติดกัน พื้นที่แตกเป็นหลุม) · internal = เศษในบล็อกสุดท้ายที่ไม่เต็ม</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 6</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"linked allocation เป็นการจัดสรรแบบต่อเนื่อง"</span></div>
+<div class="qk"><b>ความรู้:</b> linked = บล็อกกระจาย + pointer โซ่ = <b>non-contiguous</b> โดยนิยาม (FAT อยู่ตระกูลนี้)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 7</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"บล็อกใหญ่ → external fragmentation"</span></div>
+<div class="qk"><b>ความรู้:</b> บล็อกใหญ่ → เศษในบล็อกสุดท้ายเยอะ = <b>internal fragmentation</b> (ไฟล์ 1B ในบล็อก 4KB = เสีย ~4KB)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 8</span><span class="qa">False (ตามคีย์!)</span></div>
+<div class="qq"><span class="q">"single-level index: ขนาดไฟล์สูงสุดถูกจำกัดด้วยจำนวนช่องใน index block"</span></div>
+<div class="qk"><b>ความรู้:</b> ⚠️<b>คีย์ผู้สอน = False</b> (แม้ตามตำราน่าจะ True) — ตอบ False ตามคีย์ · ความรู้จริง: ไฟล์ใหญ่สุด = entries × block size</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 9</span><span class="qa">512</span></div>
+<div class="qq"><span class="q">"บล็อก 2KB, pointer 4B → 1 index block มีกี่ช่อง"</span></div>
+<div class="qk"><b>ความรู้:</b> entries = 2048 ÷ 4 = <b>512</b> → single-level ใหญ่สุด 512 × 2KB = 1MB · สูตรเดียวกับ inode ของ J3.1</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 10</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"Symbolic link เรียกอีกอย่างว่า hard link"</span></div>
+<div class="qk"><b>ความรู้:</b> symbolic = <b>soft link</b> (ไฟล์แยกเก็บ path) · hard link = entry ชี้ inode เดียวกัน</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 11</span><span class="qa">True</span></div>
+<div class="qq"><span class="q">"Hard link จัดการด้วย Reference Counter"</span></div>
+<div class="qk"><b>ความรู้:</b> inode เก็บ <b>link count</b> — rm แค่ลด counter ปล่อยพื้นที่เมื่อ = 0</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 12</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"คำสั่ง hardln ใช้สร้าง Hard Link"</span></div>
+<div class="qk"><b>ความรู้:</b> ไม่มี hardln! จริงคือ <code>ln target link</code> (hard) / <code>ln -s target link</code> (symbolic)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 13</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"mount อุปกรณ์เดียวกันได้แค่ 1 mount point"</span></div>
+<div class="qk"><b>ความรู้:</b> mount อุปกรณ์เดียวได้<b>หลาย mount point</b> (รองรับ bind mount) — "ไม่สามารถ" เป็นเท็จ</div></div>
+</div>
+
+<!-- ================= PART L: QUICK FORMULAS ================= -->
+<h2 class="part">L. แผ่นสูตรเร็วท้ายเล่ม (อ่าน 3 นาทีก่อนเข้าห้อง)</h2>
+<div class="two">
+<div>
+<h4>⏱️ CPU Scheduling</h4>
+<table class="t">
+<tr><td><b>TAT</b></td><td>Completion − Arrival</td></tr>
+<tr><td><b>WT</b></td><td>TAT − Burst (หา TAT ก่อนเสมอ!)</td></tr>
+<tr><td><b>RR</b></td><td>รอไม่เกิน (n−1)q · q ใหญ่=FCFS</td></tr>
+<tr><td><b>เท่ากัน</b></td><td>เลือกมาถึงก่อน (FCFS tiebreak)</td></tr>
+</table>
+<h4>🧮 Paging</h4>
+<table class="t">
+<tr><td><b>offset</b></td><td>log₂(page size) บิต</td></tr>
+<tr><td><b>page#</b></td><td>บิต address − บิต offset</td></tr>
+<tr><td><b>เพจ</b></td><td>ceil(ขนาด ÷ page size) — เริ่มนับ 0</td></tr>
+<tr><td><b>PA</b></td><td>(frame × pageSize) + offset</td></tr>
+<tr><td><b>EAT</b></td><td>2 + ε − α (ตย. ε=0.1, α=0.8 → 1.3μs)</td></tr>
+<tr><td><b>2-level</b></td><td>inner = ceil(เพจ ÷ 1024) × 4KB + 4KB</td></tr>
+</table>
+</div>
+<div>
+<h4>💾 Page Replacement (7,0,1,2,0,3,0,4,2,3,0,3,2,1,2,0,1,7,0,1 / 3 frames)</h4>
+<table class="t">
+<tr><td class="c"><b>FIFO</b></td><td class="c">15</td><td>เข้าก่อนออกก่อน · มี Belady (3f=9, 4f=10)</td></tr>
+<tr><td class="c"><b>OPT</b></td><td class="c">9</td><td>มองอนาคต ใช้จริงไม่ได้</td></tr>
+<tr><td class="c"><b>LRU</b></td><td class="c">12</td><td>มองอดีต ใช้จริงได้</td></tr>
+<tr><td><b>EAT(p)</b></td><td colspan="2">(1−p)×mat + p×service</td></tr>
+<tr><td><b>128×128</b></td><td colspan="2">row นอก = 128 · col นอก = 16,384</td></tr>
+</table>
+<h4>🏦 Banker's · 📁 File</h4>
+<table class="t">
+<tr><td><b>Need</b></td><td>Max − Allocation</td></tr>
+<tr><td><b>ให้ได้ไหม</b></td><td>Req ≤ Need และ ≤ Avail แล้ว safety ใหม่</td></tr>
+<tr><td><b>seg</b></td><td>d &lt; Limit → PA = Base + d (≥ = trap)</td></tr>
+<tr><td><b>fit</b></td><td>First=หลุมแรก Best=เหลือน้อยสุด Worst=ใหญ่สุด</td></tr>
+<tr><td><b>inode</b></td><td>entries = block÷ptr (4K/4B=1024) · 48KB+4MB+4GB+4TB</td></tr>
+<tr><td><b>rwx</b></td><td>r=4 w=2 x=1 · 761 = rwx rw- --x</td></tr>
+</table>
+</div>
+</div>
+<div class="co exam"><div class="tt">🚨 กลยุทธ์ห้องสอบ (จากรีวิวรุ่นพี่)</div><p>• ถูก/ผิด: ถูก +2 ผิด −1 ไม่ตอบ 0 — <b>ไม่แน่จริงอย่าตอบ</b> · • ทำโจทย์คำนวณ (Paging/Replacement/Scheduling) <b>ก่อนข้อทฤษฎี</b> คะแนน/นาทีสูงกว่า · • จับเวลาข้อคำนวณ ≤ 2 นาที ติดให้ข้าม · • เขียนขั้นตอนสั้น ๆ ข้างคำตอบ · • โค้ดทุกข้อ compile ผ่านหมด — ไม่มีตอบ Error!</p></div>
+
+</div>
+</body>
+</html>
