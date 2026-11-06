@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OS Open Book — ส่วน D</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#eef0ff', primaryBorderColor: '#4f46e5', primaryTextColor: '#1c2333',
+    lineColor: '#64748b', secondaryColor: '#ecfdf5', tertiaryColor: '#fff7ed',
+    fontSize: '13px', fontFamily: 'Noto Sans Thai, sans-serif'
+  },
+  flowchart: { curve: 'basis', htmlLabels: true },
+  sequence: { actorFontSize: 13, messageFontSize: 12 }
+});
+</script>
+<style>
+:root {
+  --ink: #1c2333; --soft: #4a5568; --muted: #8a94a6; --line: #e3e8f0;
+  --pri: #4f46e5; --pri-soft: #eef0ff; --pri-dark: #3730a3;
+  --red: #dc2626; --red-soft: #fef2f2; --green: #059669; --green-soft: #ecfdf5;
+  --amber: #d97706; --amber-soft: #fffbeb; --violet: #7c3aed; --violet-soft: #f5f3ff;
+  --teal: #0d9488; --teal-soft: #f0fdfa; --pink: #db2777; --pink-soft: #fdf2f8;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: #eef1f6; color: var(--ink);
+  font-family: "Noto Sans Thai", "Sarabun", system-ui, sans-serif;
+  font-size: 13.5px; line-height: 1.6;
+}
+.page { max-width: 980px; margin: 0 auto; background: #fff; padding: 26px 30px 60px; box-shadow: 0 0 24px rgba(16,24,40,.08); }
+h1 { font-size: 1.55rem; margin: 8px 0 6px; }
+h2.part {
+  break-inside: avoid; break-after: avoid;   /* ไม่บังคับขึ้นหน้าใหม่ — ไหลต่อเนื่อง ประหยัดกระดาษ (แก้หน้าว่างมากเกิน) */
+  margin: 8px -30px 14px; padding: 13px 30px;
+  background: linear-gradient(90deg, var(--pri), #0ea5e9); color: #fff;
+  font-size: 1.25rem;
+}
+h2.part:first-of-type { break-before: auto; }
+h3 { font-size: 1.06rem; margin: 22px 0 6px; padding: 5px 12px; background: var(--pri-soft); border-left: 5px solid var(--pri); break-after: avoid; }
+h4 { font-size: .95rem; margin: 15px 0 4px; color: var(--pri-dark); break-after: avoid; }
+p { margin: 6px 0; }
+.lead { color: var(--soft); }
+b, strong { color: #111827; }
+small, .small { font-size: 11.5px; color: var(--muted); }
+code {
+  font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  font-size: .86em; background: #f1f4f9; border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px;
+}
+/* ---------- code blocks (ธีมสว่าง สำหรับพิมพ์กระดาษ) ---------- */
+pre.code {
+  background: #f6f8fa; color: #1f2328; border: 1px solid #d0d7de; border-radius: 8px;
+  padding: 11px 14px; overflow-x: auto; break-inside: avoid;
+  font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  font-size: 11.3px; line-height: 1.6; margin: 9px 0;
+}
+pre.code .c { color: #57606a; font-style: italic; }
+pre.code .k { color: #cf222e; }
+pre.code .f { color: #8250df; }
+pre.code .n { color: #0550ae; }
+pre.code .s { color: #0a3069; }
+pre.code .hl { background: #fff8c5; display: inline-block; width: 100%; border-radius: 4px; box-shadow: -3px 0 0 0 #d4a72c; }
+/* ---------- tables ---------- */
+table.t { border-collapse: collapse; width: 100%; margin: 9px 0; break-inside: avoid; font-size: 12.3px; }
+table.t th { background: #f1f4f9; text-align: left; padding: 5px 9px; border: 1px solid var(--line); }
+table.t td { padding: 5px 9px; border: 1px solid var(--line); vertical-align: top; }
+table.t .c { text-align: center; }
+table.t tr.hl td { background: var(--pri-soft); font-weight: 700; }
+table.t td.ok { background: var(--green-soft); }
+table.t td.no { background: var(--red-soft); }
+/* ---------- Gantt ---------- */
+.gantt { margin: 10px 0 4px; break-inside: avoid; }
+.g-row { display: flex; }
+.g-cell {
+  height: 34px; display: flex; align-items: center; justify-content: center;
+  font-weight: 800; color: #fff; font-size: 12px; text-shadow: 0 1px 2px rgba(0,0,0,.3);
+}
+.g-scale { display: flex; }
+.g-tick { font-size: 10.5px; color: var(--muted); font-weight: 700; }
+.g1 { background: #4f46e5; } .g2 { background: #0ea5e9; } .g3 { background: #059669; }
+.g4 { background: #d97706; } .g5 { background: #db2777; } .g6 { background: #7c3aed; }
+/* ---------- slides / figures ---------- */
+.figrow { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+.slide {
+  flex: 1 1 300px; max-width: 470px; break-inside: avoid;
+  border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+  background: #fff; box-shadow: 0 1px 4px rgba(16,24,40,.08);
+}
+.slide img { display: block; width: 100%; height: auto; }
+.slide .cap {
+  font-size: 10.5px; color: var(--soft); padding: 5px 9px;
+  background: #f8fafc; border-top: 1px dashed var(--line);
+}
+.slide .cap b { color: var(--pri-dark); }
+.fig1 { max-width: 520px; }
+/* ---------- callouts ---------- */
+.co { border: 1px solid var(--line); border-left-width: 5px; border-radius: 9px; padding: 8px 13px; margin: 10px 0; break-inside: avoid; background: #fff; }
+.co .tt { font-weight: 800; font-size: .88rem; margin-bottom: 2px; }
+.co p { margin: 2px 0; }
+.co.exam { border-left-color: var(--red); } .co.exam .tt { color: var(--red); }
+.co.tip { border-left-color: var(--green); } .co.tip .tt { color: var(--green); }
+.co.an { border-left-color: var(--violet); background: var(--violet-soft); border-color: #ddd6fe; } .co.an .tt { color: var(--violet); }
+.co.note { border-left-color: #0ea5e9; } .co.note .tt { color: #0284c7; }
+.co.warn { border-left-color: var(--amber); background: var(--amber-soft); border-color: #fde68a; } .co.warn .tt { color: var(--amber); }
+/* กล่องนำเข้าบท: ความหมาย ความสำคัญ การใช้จริง */
+.intro {
+  background: #f0f9ff; border: 1.5px solid #bae6fd; border-left: 6px solid #0ea5e9;
+  border-radius: 10px; padding: 10px 15px; margin: 0 0 14px; break-inside: avoid;
+}
+.intro .it { font-weight: 800; color: #0369a1; margin-bottom: 3px; font-size: .95rem; }
+.intro p { margin: 3px 0; font-size: 12.6px; }
+/* ---------- formula ---------- */
+.fm {
+  background: var(--pri-soft); border: 1.5px dashed #a5b4fc; color: var(--pri-dark);
+  border-radius: 9px; padding: 8px 14px; margin: 9px 0; text-align: center;
+  font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 12.5px;
+}
+.fm small { display: block; font-family: "Noto Sans Thai", sans-serif; font-weight: 600; color: var(--soft); margin-top: 3px; }
+/* ---------- steps ---------- */
+ol.st { margin: 8px 0; padding-left: 0; list-style: none; counter-reset: st; }
+ol.st > li { counter-increment: st; position: relative; padding: 0 0 10px 38px; }
+ol.st > li::before {
+  content: counter(st); position: absolute; left: 0; top: 1px;
+  width: 26px; height: 26px; border-radius: 50%; background: var(--pri); color: #fff;
+  font-weight: 800; font-size: .8rem; display: flex; align-items: center; justify-content: center;
+}
+ol.st > li::after { content: ""; position: absolute; left: 12.5px; top: 30px; bottom: 2px; width: 2px; background: var(--line); }
+ol.st > li:last-child::after { display: none; }
+/* ---------- quiz (Quizizz) cards ---------- */
+.qz { border: 1px solid var(--line); border-radius: 9px; margin: 8px 0; break-inside: avoid; overflow: hidden; }
+.qz .qh {
+  display: flex; gap: 8px; align-items: baseline; padding: 5px 11px;
+  background: #f8fafc; border-bottom: 1px dashed var(--line); font-size: 12px;
+}
+.qz .qn { font-weight: 800; color: var(--pri-dark); white-space: nowrap; }
+.qz .qa { font-weight: 800; color: var(--green); white-space: nowrap; }
+.qz .qq { padding: 6px 11px 2px; }
+.qz .qq .q { color: var(--soft); }
+.qz .qk { padding: 2px 11px 7px; font-size: 12.3px; }
+.qz .qk b { color: var(--pri-dark); }
+.qz2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 760px) { .qz2 { grid-template-columns: 1fr; } }
+/* ---------- cover / toc ---------- */
+.cover { text-align: center; padding: 30px 10px 12px; }
+.cover .badge { display: inline-block; background: var(--pri); color: #fff; border-radius: 999px; padding: 4px 16px; font-weight: 800; font-size: .8rem; letter-spacing: .04em; }
+.cover h1 { font-size: 1.75rem; margin: 12px 0 4px; }
+.cover .sub { color: var(--soft); }
+.cover .meta { margin-top: 10px; font-size: 12px; color: var(--muted); }
+.toc { columns: 2; column-gap: 34px; font-size: 12.8px; margin: 12px 0; }
+.toc div { break-inside: avoid; padding: 3px 0; border-bottom: 1px dotted var(--line); }
+.toc b { color: var(--pri-dark); }
+.toc .hot { color: var(--red); font-weight: 800; }
+/* ---------- mermaid ---------- */
+.mermaid { margin: 10px auto; text-align: center; break-inside: avoid; background: #fff; }
+/* จำกัดความกว้างแผนภาพ กันยืดเต็มหน้าจนกินพื้นที่พิมพ์ (แก้หน้า 4, 6, 39-41) */
+.mermaid svg { max-width: 520px !important; width: auto; height: auto; }
+/* แผนภาพกว้างพิเศษ (2 คอลัมน์) — ใหญ่ขึ้นเพื่อให้อ่านตัวหนังสือในได้ */
+.mermaid.wide svg { max-width: 700px !important; }
+/* แผนภาพขนาดย่อ — ให้ลงช่องว่างที่เหลือของหน้า */
+.mermaid.small svg { max-width: 430px !important; }
+/* แถวสไลด์ 3 ใบ — ย่อให้แถวเดียวจบ ไม่ทิ้งการ์ดหลุดแถว */
+.figrow.fig3 .slide { flex: 1 1 220px; max-width: 236px; }
+.figrow.fig3 .slide .cap { font-size: 9.5px; }
+/* กันบรรทัดนำหน้าตาราง/กล่องถูกแยกข้ามหน้า */
+.keep { break-inside: avoid; }
+/* ---------- misc ---------- */
+.pill { display: inline-block; font-size: 10.5px; font-weight: 800; padding: 2px 10px; border-radius: 999px; background: var(--pri-soft); color: var(--pri-dark); margin-right: 5px; }
+.pill.hot { background: var(--red-soft); color: var(--red); }
+.pill.gr { background: var(--green-soft); color: var(--green); }
+.pill.vi { background: var(--violet-soft); color: var(--violet); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
+ul { margin: 5px 0; padding-left: 20px; }
+li { margin: 2.5px 0; }
+kbd { background: #e2e8f0; border-radius: 4px; padding: 0 5px; font-family: monospace; font-size: .85em; }
+/* ---------- Socrative compact tables ---------- */
+table.sqz { font-size: 10.6px; }
+table.sqz td, table.sqz th { padding: 3px 7px; vertical-align: top; }
+table.sqz td.small { font-size: 9.8px; color: var(--soft); }
+
+/* ---------- PRINT ---------- */
+@media print {
+  body { background: #fff; font-size: 11.6px; }
+  .page { box-shadow: none; max-width: none; padding: 0; }
+  @page { size: A4; margin: 11mm 10mm; }
+  h2.part { margin: 0 -10mm 12px; padding: 9px 10mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .noprint { display: none !important; }
+  .slide { box-shadow: none; }
+  pre.code, table.t, .co, .qz, .gantt, .fm { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  a { color: inherit; text-decoration: none; }
+  .qz2 { gap: 6px; }
+}
+</style>
+<style>
+.partnav { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:0 0 14px; padding:8px 11px; border:1px solid var(--line); border-radius:9px; background:#fff; font-size:12.5px; }
+.partnav a { padding:2px 9px; border-radius:999px; background:var(--pri-soft); color:var(--pri-dark); text-decoration:none; }
+.partnav a.cur { background:var(--pri); color:#fff; font-weight:700; }
+.partnav .brand { color:var(--pri-dark); font-weight:800; margin-right:4px; }
+.partnav .full { margin-left:auto; background:#f1f4f9; color:var(--ink); }
+@media print { .partnav { display:none } }
+</style></head>
+<body>
+<div class="page">
+<div class="partnav">
+  <span class="brand">📘 OS Open Book</span>
+  <a href="A-process.html">A · Process/fork</a>
+  <a href="B-thread.html">B · Thread</a>
+  <a href="C-scheduling.html">C · Scheduling</a>
+  <a href="D-race-cs.html" class="cur">D · Race/CS</a>
+  <a href="E-semaphore.html">E · Semaphore</a>
+  <a href="F-deadlock.html">F · Deadlock</a>
+  <a href="G-real-memory.html">G · Real Mem</a>
+  <a href="H-paging.html">H · Paging</a>
+  <a href="I-virtual-memory.html">I · Virtual Mem</a>
+  <a href="J-file-system.html">J · File System</a>
+  <a href="K-quizizz.html">K · Quizizz</a>
+  <a href="L-socrative.html">L · Socrative</a>
+  <a href="M-formulas.html">M · สูตรเร็ว</a>
+  <a class="full" href="openbook.html">📄 เอกสารเต็ม (ไฟล์เดียว)</a>
+</div>
+<!-- ================= PART D: RACE CONDITION / CS ================= -->
+<h2 class="part">D. Race Condition & Critical Section <span style="font-size:.8em">(OSNo06 ต้น ๆ)</span></h2>
+<div class="intro">
+  <div class="it">📖 รู้จักส่วนนี้ก่อนอ่าน</div>
+  <p><b>ความหมาย:</b> Race Condition = ปัญหาที่ 2 process แก้ข้อมูลแชร์พร้อมกันจนผลลัพธ์เพี้ยนตามใครแก้ก่อน-หลัง · Critical Section (ช่วงวิกฤต) = ช่วงโค้ดที่แตะข้อมูลแชร์ ห้ามใครเข้าพร้อมกัน</p>
+  <p><b>ความสำคัญกับข้อสอบ:</b> ไล่ timeline การแย่งตัวแปร count (S0–S5), ท่องเงื่อนไข 3 ข้อ (Mutual Exclusion (เข้าถึงได้คนเดียว) / Progress / Bounded Waiting (รอได้จำกัดจำนวนครั้ง)), อธิบาย Peterson's Solution (โซลูชันสำหรับ 2 กระบวนการ) ว่าครบ 3 ข้อยังไง — ออกทั้งถูก/ผิดและไล่ค่า</p>
+  <p><b>ใช้จริงในคอมพิวเตอร์:</b> ระบบธนาคารที่โอนเงินพร้อมกัน 2 คน, ตั๋วหนังที่นั่งสุดท้ายถูกซื้อพร้อมกัน, ตัวนับยอดวิว — ถ้าไม่ล็อก ข้อมูลเสียแบบใน timeline เลย</p>
+</div>
+
+<h3>D1. จุดเริ่ม: Bounded Buffer (บัฟเฟอร์ขนาดจำกัด) ยังไม่มี sync (Producer (ฝั่งผู้ผลิตข้อมูล)-Consumer (ฝั่งผู้บริโภคข้อมูล))</h3>
+<p>Producer-Consumer แชร์ buffer วงแหวนขนาด BUFFER_SIZE ช่อง + ตัวนับ <code>count</code> — producer เขียนแล้ว count++ / consumer อ่านแล้ว count−−</p>
+<pre class="code"><code><span class="c">/* Producer (สไลด์ p.3)                      Consumer (สไลด์ p.4) */</span>
+<span class="k">while</span> (<span class="f">true</span>) {                            <span class="k">while</span> (<span class="f">true</span>) {
+    <span class="k">while</span> (count == BUFFER_SIZE);            <span class="k">while</span> (count == 0);   <span class="c">// busy wait</span>
+    buffer[in] = nextProduced;               nextConsumed = buffer[out];
+    in = (in + 1) % BUFFER_SIZE;             out = (out + 1) % BUFFER_SIZE;
+    count++;                                 count--;
+}                                         }
+<span class="c">/* ปัญหา: ข้อมูลหาย (producer เขียนทับที่ยังไม่อ่าน) / อ่านซ้ำ — และ count ไม่ atomic */</span></code></pre>
+
+<h3>D2. Race Condition — ไล่ S0–S5 ให้เห็นตา 🔥</h3>
+<p><code>count++</code> ในระดับเครื่องแตกเป็น 3 คำสั่ง (ไม่ atomic!):</p>
+<pre class="code"><code><span class="c">/* count++: */</span>            <span class="c">/* count--: */</span>
+register1 = count;         register2 = count;
+register1 = register1 + 1; register2 = register2 - 1;
+count = register1;         count = register2;</code></pre>
+<p><b>ไทม์ไลน์จากสไลด์ p.5 (เริ่ม count = 5):</b></p>
+<table class="t">
+  <tr><th class="c">จังหวะ</th><th>ใครทำอะไร</th><th class="c">ค่าที่เกี่ยวข้อง</th></tr>
+  <tr><td class="c">S0</td><td>producer: register1 = count</td><td class="c">r1 = 5</td></tr>
+  <tr><td class="c">S1</td><td>producer: r1 = r1 + 1</td><td class="c">r1 = 6</td></tr>
+  <tr><td class="c">S2</td><td>consumer: register2 = count</td><td class="c">r2 = <b class="no" style="padding:0 4px">5</b> ⚠️ (ยังเก่า!)</td></tr>
+  <tr><td class="c">S3</td><td>consumer: r2 = r2 − 1</td><td class="c">r2 = 4</td></tr>
+  <tr><td class="c">S4</td><td>producer: count = r1</td><td class="c">count = 6</td></tr>
+  <tr><td class="c">S5</td><td>consumer: count = r2</td><td class="c">count = <b class="no" style="padding:0 4px">4</b> ❌ (ควรได้ 5)</td></tr>
+</table>
+<div class="co an"><div class="tt">💳 อุปมา</div><p>เงินในบัญชี 5,000 · คุณโอนเข้า +1,000 แฟนถอน −1,000 พร้อมกัน แอปให้ทั้งคู่เห็นยอด 5,000 พร้อมกันแล้วบันทึกทับ → เหลือ 4,000 เงินหายในอากาศ!</p></div>
+<div class="co exam"><div class="tt">📖 นิยามที่ต้องพิมพ์ได้</div><p><b>Race condition</b>: หลาย process เข้าถึง/จัดการข้อมูลร่วมกันพร้อมกัน แล้ว<b>ผลลัพธ์ขึ้นกับลำดับการเข้าถึง</b> · โค้ดช่วงที่แตะข้อมูลแชร์ = <b>critical section (critical region)</b></p></div>
+
+<h3>D3. Critical Section — เงื่อนไข 3 ข้อที่โซลูชันต้องผ่าน 🔥</h3>
+<table class="t">
+  <tr><th>เงื่อนไข</th><th>ความหมาย (พิมพ์ได้ต้องได้)</th></tr>
+  <tr><td><b>1. Mutual Exclusion</b></td><td>ถ้า Pᵢ อยู่ใน CS (ช่วงวิกฤต) → <b>ห้ามมี process อื่นอยู่ใน CS ของมันพร้อมกัน</b></td></tr>
+  <tr><td><b>2. Progress</b></td><td>ถ้า<em>ไม่มีใคร</em>อยู่ใน CS และมีคนอยากเข้า → ต้องเลือกจาก<em>คนที่อยากเข้าเท่านั้น</em> และตัดสินไม่ล่าช้าไม่สิ้นสุด (กันคนไม่สนมาขวาง / กันไม่มีใครเข้าเลย)</td></tr>
+  <tr><td><b>3. Bounded Waiting</b></td><td>มีขอบเขตว่า process หนึ่งถูก "ตัดหน้า" ได้<b>จำกัดกี่ครั้ง</b>หลังยื่นขอ (กัน starvation ของคิว CS)</td></tr>
+</table>
+<p class="small">โครงโค้ด: ENTRY SECTION → CRITICAL SECTION → EXIT SECTION → REMAINDER SECTION (วน while(true)) · สมมติ: แต่ละ process รันด้วยความเร็วไม่เป็นศูนย์ แต่<b>ไม่มีข้อสมมติเรื่องความเร็วสัมพัทธ์</b></p>
+
+<h3>D4. Peterson's Solution (2 process)</h3>
+<p>แชร์ 2 ตัวแปร: <code>int turn</code> (ตาใคร) + <code>boolean flag[2]</code> (ใครอยากเข้า) — สมมติ LOAD/STORE <b>atomic</b></p>
+<pre class="code"><code><span class="c">/* โค้ดของ Pᵢ (อีกฝั่งคือ Pⱼ) — สไลด์ p.9–10 */</span>
+<span class="k">while</span> (<span class="f">true</span>) {
+    flag[i] = TRUE;              <span class="c">// 1. ประกาศว่า "ฉันอยากเข้า!"</span>
+    turn = j;                    <span class="hl">// 2. ยกสิทธิ์ให้เพื่อนก่อน (ความสุภาพ = หัวใจ)</span>
+    <span class="k">while</span> (flag[j] &amp;&amp; turn == j); <span class="c">// 3. รอเฉพาะเมื่อ: เพื่อนอยากเข้า "และ" ถึงตาเพื่อน</span>
+
+    CRITICAL SECTION
+
+    flag[i] = FALSE;             <span class="c">// 4. ออกแล้ว — ปล่อยให้คนอื่นเข้าได้</span>
+    REMAINDER SECTION
+}</code></pre>
+<table class="t">
+  <tr><th>เงื่อนไข</th><th>Peterson ทำไม่ผ่านทำไมยังไง</th></tr>
+  <tr><td>Mutual Exclusion ✓</td><td>ทั้งคู่ตั้ง turn พร้อมกันไม่ได้ — คนที่ตั้ง turn เป็นฝ่ายอื่น<b>เป็นคนสุดท้าย</b> ต้องรอก่อน</td></tr>
+  <tr><td>Progress ✓</td><td>เงื่อนไขรอต้องเจอ flag[j] = true จริง — คนที่ไม่สนใจเข้าไม่ขวาง</td></tr>
+  <tr><td>Bounded Waiting ✓</td><td>หลังออกจาก CS อีกฝั่งได้เข้าภายใน 1 รอบ (turn สลับเสมอ)</td></tr>
+</table>
+<div class="co note"><div class="tt">📌 ในโลกจริง</div><p>Peterson เวิร์คในทฤษฎี แต่ CPU สมัยใหม่ (compiler optimization, out-of-order) อาจพัง — ใช้จริงด้วยฮาร์ดแวร์/ไลบรารี แต่<b>ออกสอบเยอะ</b>เพราะสอนหลักคิด</p></div>
+
+<h3>D5. Bakery Algorithm (n process) — จ่ายคิวร้านเบเกอรี่</h3>
+<ul>
+  <li>ก่อนเข้า CS จ่ายเลขคิว = max(number[0..n−1]) + 1 → คนถือเลข<b>น้อยสุด</b>เข้าก่อน · เลขซ้ำเทียบ <b>PID</b> มาก่อนชนะ</li>
+  <li>เทียบแบบ lexicographical: <code>(a,b) &lt; (c,d)</code> ถ้า a &lt; c หรือ (a = c และ b &lt; d) — (เลขคิว, pid)</li>
+  <li>แชร์: <code>boolean choosing[n]</code>, <code>int number[n]</code> (เริ่ม false/0)</li>
+</ul>
+<pre class="code"><code><span class="k">do</span> {
+    choosing[i] = <span class="f">true</span>;                          <span class="c">// กำลังจ่ายเลข (ยังไม่นับคิวจริง)</span>
+    number[i] = <span class="f">max</span>(number[0..n-1]) + 1;          <span class="c">// จ่ายเลขใหญ่กว่าใคร ๆ +1 (อาจซ้ำ)</span>
+    choosing[i] = <span class="f">false</span>;
+    <span class="k">for</span> (j = 0; j &lt; n; j++) {
+        <span class="k">while</span> (choosing[j]);                     <span class="c">// รอคนที่กำลังจ่ายเลขจบก่อน</span>
+        <span class="k">while</span> ((number[j] != 0) &amp;&amp; ((number[j],j) &lt; (number[i],i)));
+        <span class="c">// รอถ้า: เพื่อนถือคิวอยู่ และ (เลขน้อยกว่า หรือ เลขเท่าแต่ pid น้อยกว่า)</span>
+    }
+    CRITICAL SECTION
+    number[i] = 0;                               <span class="c">// ออก → ยกเลิกคิวตัวเอง</span>
+    REMAINDER SECTION
+} <span class="k">while</span> (<span class="f">true</span>);</code></pre>
+<p class="small">เลขคิวอาจกระโดด (1,2,3,3,3,4) — ไม่เป็นไร lexicographical จัดการเคสซ้ำ · รับประกันครบ 3 เงื่อนไขสำหรับ n process</p>
+</div>
+</body>
+</html>

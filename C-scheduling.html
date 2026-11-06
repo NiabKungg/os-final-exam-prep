@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OS Open Book — ส่วน C</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#eef0ff', primaryBorderColor: '#4f46e5', primaryTextColor: '#1c2333',
+    lineColor: '#64748b', secondaryColor: '#ecfdf5', tertiaryColor: '#fff7ed',
+    fontSize: '13px', fontFamily: 'Noto Sans Thai, sans-serif'
+  },
+  flowchart: { curve: 'basis', htmlLabels: true },
+  sequence: { actorFontSize: 13, messageFontSize: 12 }
+});
+</script>
+<style>
+:root {
+  --ink: #1c2333; --soft: #4a5568; --muted: #8a94a6; --line: #e3e8f0;
+  --pri: #4f46e5; --pri-soft: #eef0ff; --pri-dark: #3730a3;
+  --red: #dc2626; --red-soft: #fef2f2; --green: #059669; --green-soft: #ecfdf5;
+  --amber: #d97706; --amber-soft: #fffbeb; --violet: #7c3aed; --violet-soft: #f5f3ff;
+  --teal: #0d9488; --teal-soft: #f0fdfa; --pink: #db2777; --pink-soft: #fdf2f8;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: #eef1f6; color: var(--ink);
+  font-family: "Noto Sans Thai", "Sarabun", system-ui, sans-serif;
+  font-size: 13.5px; line-height: 1.6;
+}
+.page { max-width: 980px; margin: 0 auto; background: #fff; padding: 26px 30px 60px; box-shadow: 0 0 24px rgba(16,24,40,.08); }
+h1 { font-size: 1.55rem; margin: 8px 0 6px; }
+h2.part {
+  break-inside: avoid; break-after: avoid;   /* ไม่บังคับขึ้นหน้าใหม่ — ไหลต่อเนื่อง ประหยัดกระดาษ (แก้หน้าว่างมากเกิน) */
+  margin: 8px -30px 14px; padding: 13px 30px;
+  background: linear-gradient(90deg, var(--pri), #0ea5e9); color: #fff;
+  font-size: 1.25rem;
+}
+h2.part:first-of-type { break-before: auto; }
+h3 { font-size: 1.06rem; margin: 22px 0 6px; padding: 5px 12px; background: var(--pri-soft); border-left: 5px solid var(--pri); break-after: avoid; }
+h4 { font-size: .95rem; margin: 15px 0 4px; color: var(--pri-dark); break-after: avoid; }
+p { margin: 6px 0; }
+.lead { color: var(--soft); }
+b, strong { color: #111827; }
+small, .small { font-size: 11.5px; color: var(--muted); }
+code {
+  font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  font-size: .86em; background: #f1f4f9; border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px;
+}
+/* ---------- code blocks (ธีมสว่าง สำหรับพิมพ์กระดาษ) ---------- */
+pre.code {
+  background: #f6f8fa; color: #1f2328; border: 1px solid #d0d7de; border-radius: 8px;
+  padding: 11px 14px; overflow-x: auto; break-inside: avoid;
+  font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  font-size: 11.3px; line-height: 1.6; margin: 9px 0;
+}
+pre.code .c { color: #57606a; font-style: italic; }
+pre.code .k { color: #cf222e; }
+pre.code .f { color: #8250df; }
+pre.code .n { color: #0550ae; }
+pre.code .s { color: #0a3069; }
+pre.code .hl { background: #fff8c5; display: inline-block; width: 100%; border-radius: 4px; box-shadow: -3px 0 0 0 #d4a72c; }
+/* ---------- tables ---------- */
+table.t { border-collapse: collapse; width: 100%; margin: 9px 0; break-inside: avoid; font-size: 12.3px; }
+table.t th { background: #f1f4f9; text-align: left; padding: 5px 9px; border: 1px solid var(--line); }
+table.t td { padding: 5px 9px; border: 1px solid var(--line); vertical-align: top; }
+table.t .c { text-align: center; }
+table.t tr.hl td { background: var(--pri-soft); font-weight: 700; }
+table.t td.ok { background: var(--green-soft); }
+table.t td.no { background: var(--red-soft); }
+/* ---------- Gantt ---------- */
+.gantt { margin: 10px 0 4px; break-inside: avoid; }
+.g-row { display: flex; }
+.g-cell {
+  height: 34px; display: flex; align-items: center; justify-content: center;
+  font-weight: 800; color: #fff; font-size: 12px; text-shadow: 0 1px 2px rgba(0,0,0,.3);
+}
+.g-scale { display: flex; }
+.g-tick { font-size: 10.5px; color: var(--muted); font-weight: 700; }
+.g1 { background: #4f46e5; } .g2 { background: #0ea5e9; } .g3 { background: #059669; }
+.g4 { background: #d97706; } .g5 { background: #db2777; } .g6 { background: #7c3aed; }
+/* ---------- slides / figures ---------- */
+.figrow { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+.slide {
+  flex: 1 1 300px; max-width: 470px; break-inside: avoid;
+  border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+  background: #fff; box-shadow: 0 1px 4px rgba(16,24,40,.08);
+}
+.slide img { display: block; width: 100%; height: auto; }
+.slide .cap {
+  font-size: 10.5px; color: var(--soft); padding: 5px 9px;
+  background: #f8fafc; border-top: 1px dashed var(--line);
+}
+.slide .cap b { color: var(--pri-dark); }
+.fig1 { max-width: 520px; }
+/* ---------- callouts ---------- */
+.co { border: 1px solid var(--line); border-left-width: 5px; border-radius: 9px; padding: 8px 13px; margin: 10px 0; break-inside: avoid; background: #fff; }
+.co .tt { font-weight: 800; font-size: .88rem; margin-bottom: 2px; }
+.co p { margin: 2px 0; }
+.co.exam { border-left-color: var(--red); } .co.exam .tt { color: var(--red); }
+.co.tip { border-left-color: var(--green); } .co.tip .tt { color: var(--green); }
+.co.an { border-left-color: var(--violet); background: var(--violet-soft); border-color: #ddd6fe; } .co.an .tt { color: var(--violet); }
+.co.note { border-left-color: #0ea5e9; } .co.note .tt { color: #0284c7; }
+.co.warn { border-left-color: var(--amber); background: var(--amber-soft); border-color: #fde68a; } .co.warn .tt { color: var(--amber); }
+/* กล่องนำเข้าบท: ความหมาย ความสำคัญ การใช้จริง */
+.intro {
+  background: #f0f9ff; border: 1.5px solid #bae6fd; border-left: 6px solid #0ea5e9;
+  border-radius: 10px; padding: 10px 15px; margin: 0 0 14px; break-inside: avoid;
+}
+.intro .it { font-weight: 800; color: #0369a1; margin-bottom: 3px; font-size: .95rem; }
+.intro p { margin: 3px 0; font-size: 12.6px; }
+/* ---------- formula ---------- */
+.fm {
+  background: var(--pri-soft); border: 1.5px dashed #a5b4fc; color: var(--pri-dark);
+  border-radius: 9px; padding: 8px 14px; margin: 9px 0; text-align: center;
+  font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 12.5px;
+}
+.fm small { display: block; font-family: "Noto Sans Thai", sans-serif; font-weight: 600; color: var(--soft); margin-top: 3px; }
+/* ---------- steps ---------- */
+ol.st { margin: 8px 0; padding-left: 0; list-style: none; counter-reset: st; }
+ol.st > li { counter-increment: st; position: relative; padding: 0 0 10px 38px; }
+ol.st > li::before {
+  content: counter(st); position: absolute; left: 0; top: 1px;
+  width: 26px; height: 26px; border-radius: 50%; background: var(--pri); color: #fff;
+  font-weight: 800; font-size: .8rem; display: flex; align-items: center; justify-content: center;
+}
+ol.st > li::after { content: ""; position: absolute; left: 12.5px; top: 30px; bottom: 2px; width: 2px; background: var(--line); }
+ol.st > li:last-child::after { display: none; }
+/* ---------- quiz (Quizizz) cards ---------- */
+.qz { border: 1px solid var(--line); border-radius: 9px; margin: 8px 0; break-inside: avoid; overflow: hidden; }
+.qz .qh {
+  display: flex; gap: 8px; align-items: baseline; padding: 5px 11px;
+  background: #f8fafc; border-bottom: 1px dashed var(--line); font-size: 12px;
+}
+.qz .qn { font-weight: 800; color: var(--pri-dark); white-space: nowrap; }
+.qz .qa { font-weight: 800; color: var(--green); white-space: nowrap; }
+.qz .qq { padding: 6px 11px 2px; }
+.qz .qq .q { color: var(--soft); }
+.qz .qk { padding: 2px 11px 7px; font-size: 12.3px; }
+.qz .qk b { color: var(--pri-dark); }
+.qz2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 760px) { .qz2 { grid-template-columns: 1fr; } }
+/* ---------- cover / toc ---------- */
+.cover { text-align: center; padding: 30px 10px 12px; }
+.cover .badge { display: inline-block; background: var(--pri); color: #fff; border-radius: 999px; padding: 4px 16px; font-weight: 800; font-size: .8rem; letter-spacing: .04em; }
+.cover h1 { font-size: 1.75rem; margin: 12px 0 4px; }
+.cover .sub { color: var(--soft); }
+.cover .meta { margin-top: 10px; font-size: 12px; color: var(--muted); }
+.toc { columns: 2; column-gap: 34px; font-size: 12.8px; margin: 12px 0; }
+.toc div { break-inside: avoid; padding: 3px 0; border-bottom: 1px dotted var(--line); }
+.toc b { color: var(--pri-dark); }
+.toc .hot { color: var(--red); font-weight: 800; }
+/* ---------- mermaid ---------- */
+.mermaid { margin: 10px auto; text-align: center; break-inside: avoid; background: #fff; }
+/* จำกัดความกว้างแผนภาพ กันยืดเต็มหน้าจนกินพื้นที่พิมพ์ (แก้หน้า 4, 6, 39-41) */
+.mermaid svg { max-width: 520px !important; width: auto; height: auto; }
+/* แผนภาพกว้างพิเศษ (2 คอลัมน์) — ใหญ่ขึ้นเพื่อให้อ่านตัวหนังสือในได้ */
+.mermaid.wide svg { max-width: 700px !important; }
+/* แผนภาพขนาดย่อ — ให้ลงช่องว่างที่เหลือของหน้า */
+.mermaid.small svg { max-width: 430px !important; }
+/* แถวสไลด์ 3 ใบ — ย่อให้แถวเดียวจบ ไม่ทิ้งการ์ดหลุดแถว */
+.figrow.fig3 .slide { flex: 1 1 220px; max-width: 236px; }
+.figrow.fig3 .slide .cap { font-size: 9.5px; }
+/* กันบรรทัดนำหน้าตาราง/กล่องถูกแยกข้ามหน้า */
+.keep { break-inside: avoid; }
+/* ---------- misc ---------- */
+.pill { display: inline-block; font-size: 10.5px; font-weight: 800; padding: 2px 10px; border-radius: 999px; background: var(--pri-soft); color: var(--pri-dark); margin-right: 5px; }
+.pill.hot { background: var(--red-soft); color: var(--red); }
+.pill.gr { background: var(--green-soft); color: var(--green); }
+.pill.vi { background: var(--violet-soft); color: var(--violet); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
+ul { margin: 5px 0; padding-left: 20px; }
+li { margin: 2.5px 0; }
+kbd { background: #e2e8f0; border-radius: 4px; padding: 0 5px; font-family: monospace; font-size: .85em; }
+/* ---------- Socrative compact tables ---------- */
+table.sqz { font-size: 10.6px; }
+table.sqz td, table.sqz th { padding: 3px 7px; vertical-align: top; }
+table.sqz td.small { font-size: 9.8px; color: var(--soft); }
+
+/* ---------- PRINT ---------- */
+@media print {
+  body { background: #fff; font-size: 11.6px; }
+  .page { box-shadow: none; max-width: none; padding: 0; }
+  @page { size: A4; margin: 11mm 10mm; }
+  h2.part { margin: 0 -10mm 12px; padding: 9px 10mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .noprint { display: none !important; }
+  .slide { box-shadow: none; }
+  pre.code, table.t, .co, .qz, .gantt, .fm { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  a { color: inherit; text-decoration: none; }
+  .qz2 { gap: 6px; }
+}
+</style>
+<style>
+.partnav { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:0 0 14px; padding:8px 11px; border:1px solid var(--line); border-radius:9px; background:#fff; font-size:12.5px; }
+.partnav a { padding:2px 9px; border-radius:999px; background:var(--pri-soft); color:var(--pri-dark); text-decoration:none; }
+.partnav a.cur { background:var(--pri); color:#fff; font-weight:700; }
+.partnav .brand { color:var(--pri-dark); font-weight:800; margin-right:4px; }
+.partnav .full { margin-left:auto; background:#f1f4f9; color:var(--ink); }
+@media print { .partnav { display:none } }
+</style></head>
+<body>
+<div class="page">
+<div class="partnav">
+  <span class="brand">📘 OS Open Book</span>
+  <a href="A-process.html">A · Process/fork</a>
+  <a href="B-thread.html">B · Thread</a>
+  <a href="C-scheduling.html" class="cur">C · Scheduling</a>
+  <a href="D-race-cs.html">D · Race/CS</a>
+  <a href="E-semaphore.html">E · Semaphore</a>
+  <a href="F-deadlock.html">F · Deadlock</a>
+  <a href="G-real-memory.html">G · Real Mem</a>
+  <a href="H-paging.html">H · Paging</a>
+  <a href="I-virtual-memory.html">I · Virtual Mem</a>
+  <a href="J-file-system.html">J · File System</a>
+  <a href="K-quizizz.html">K · Quizizz</a>
+  <a href="L-socrative.html">L · Socrative</a>
+  <a href="M-formulas.html">M · สูตรเร็ว</a>
+  <a class="full" href="openbook.html">📄 เอกสารเต็ม (ไฟล์เดียว)</a>
+</div>
+<!-- ================= PART C: CPU SCHEDULING ================= -->
+<h2 class="part">C. CPU Scheduling — Gantt · TAT · WT <span style="font-size:.8em">(OSNo04 สไลด์ท้าย + วิดีโอ 6.x)</span></h2>
+<div class="intro">
+  <div class="it">📖 รู้จักส่วนนี้ก่อนอ่าน</div>
+  <p><b>ความหมาย:</b> CPU Scheduling = การตัดสินใจว่า process ไหนจะได้ใช้ CPU "ตัวต่อไป" เมื่อหลายงานแย่งกัน — มีหลายอัลกอริทึม เช่น FCFS (มาก่อนได้ก่อน), SJF (งานสั้นก่อน), RR (วนแบ่งเวลา)</p>
+  <p><b>ความสำคัญกับข้อสอบ:</b> โจทย์วาด Gantt (แผนภูมิช่วงเวลา) หา TAT/WT เป็นข้อคำนวณหลักประจำทุกปี — ฝึกให้ทำข้อละไม่เกิน 2 นาที ใช้เทคนิค "หา TAT ก่อนแล้วลบ BT เสมอ"</p>
+  <p><b>ใช้จริงในคอมพิวเตอร์:</b> Windows/Linux/macOS ใช้แนวคิด priority + time slice (โควตาเวลาแบบ RR) จริง ๆ ในตัวจัดคิวของเคอร์เนล — เปิด Task Manager เห็น process แย่ง CPU ด้วยกลไกพวกนี้ทั้งหมด</p>
+</div>
+
+<h3>C1. พื้นฐาน + สูตรทุกตัวที่ใช้คิดเลข</h3>
+<ul>
+  <li><b>CPU Scheduler (ตัวจัดคิว CPU)</b> เลือก process จาก ready queue ให้ใช้ CPU · <b>Non-preemptive</b> = รันจนจบ/ขอออกเอง · <b>Preemptive (ขัดจังหวะ/แย่งได้)</b> = ขัดกลางคันได้ (หมดเวลา/มีตัวสำคัญกว่ามา)</li>
+  <li><b>CPU burst</b> = ช่วงที่ process ใช้ CPU ติดกัน · I/O-bound = burst สั้นถี่ / CPU-bound = burst ยาว</li>
+</ul>
+<div class="fm">Turnaround Time (เวลารวมในระบบ): TAT = Completion − Arrival<small>เวลารวมตั้งแต่งานมาถึง → เสร็จ</small></div>
+<div class="fm">Waiting Time (เวลารอคิว): WT = TAT − Burst Time (เวลาที่ต้องใช้ CPU)<small>🟢 เทคนิคทำเร็ว: หา TAT ก่อนแล้วลบ BT เสมอ — โดยเฉพาะ preemptive ที่งานโดนแทรกหลายรอบ</small></div>
+<div class="fm">Response Time (เวลาตอบสนอง) = เวลาที่งานมาถึง → เริ่มได้ response ครั้งแรก<small>เกณฑ์วัดอื่น: CPU utilization ↑, throughput ↑, TAT ↓, WT ↓, response ↓</small></div>
+
+<h3>C2. FCFS — First-Come, First-Served (non-preemptive)</h3>
+<p><b>โจทย์ (ตรงจากสไลด์ p.34):</b> P1 (Arrival 0, Burst 24) · P2 (2, 3) · P3 (4, 3)</p>
+<div class="gantt">
+  <div class="g-row"><div class="g-cell g1" style="width:80%">P1</div><div class="g-cell g2" style="width:10%">P2</div><div class="g-cell g3" style="width:10%">P3</div></div>
+  <div class="g-scale"><span class="g-tick" style="width:80%">0</span><span class="g-tick" style="width:10%">24</span><span class="g-tick" style="width:10%">27</span><span class="g-tick">30</span></div>
+</div>
+<table class="t">
+  <tr><th>Process</th><th class="c">TAT = C − A</th><th class="c">WT = TAT − BT</th></tr>
+  <tr><td>P1</td><td class="c">24 − 0 = 24</td><td class="c">24 − 24 = <b>0</b></td></tr>
+  <tr><td>P2</td><td class="c">27 − 2 = 25</td><td class="c">25 − 3 = <b>22</b></td></tr>
+  <tr><td>P3</td><td class="c">30 − 4 = 26</td><td class="c">26 − 3 = <b>23</b></td></tr>
+  <tr class="hl"><td>เฉลี่ย</td><td class="c">25</td><td class="c">(0+22+23)/3 = <b>15</b></td></tr>
+</table>
+<div class="co exam"><div class="tt">🎯 Convoy Effect (อาการคอยตามงานใหญ่)</div><p>งานใหญ่ตัวเดียวบล็อกหน้า งานเล็กทั้งบ้านต่อแถวรอ — สไลด์ p.35 เปรียบเทียบ: ถ้างานสั้นมาก่อน (P2 มา 0, P3 มา 2, P1 มา 4) avg WT เหลือ <b>1</b> เท่านั้น!</p></div>
+<div class="figrow">
+  <div class="slide"><img src="slides/s04p34.jpg" alt="FCFS"><div class="cap"><b>สไลด์ p.34</b> FCFS</div></div>
+  <div class="slide"><img src="slides/s04p35.jpg" alt="FCFS cont"><div class="cap"><b>สไลด์ p.35</b> FCFS — สลับงานสั้นมาก่อน WT=1</div></div>
+</div>
+
+<h3>C3. SJF — Shortest Job First (non-preemptive) — OPTIMAL</h3>
+<p><b>โจทย์ (p.36):</b> P1 (0, 7) · P2 (2, 4) · P3 (4, 1) · P4 (5, 4) — เมื่อ CPU ว่าง เลือก BT สั้นสุดในคิว ณ ตอนนั้น (เท่ากันเลือกมาก่อน)</p>
+<ol class="st">
+  <li>เวลา 0: มีแค่ P1 → รันจนจบที่ 7 (non-preemptive ใครมาทีหลังรอก่อน)</li>
+  <li>เวลา 7: คิว P2(4), P3(1), P4(4) → สั้นสุด P3 → 7→8</li>
+  <li>เวลา 8: P2(4), P4(4) เท่ากัน → มาก่อนชนะ: P2 → 8→12</li>
+  <li>เวลา 12: P4 → 12→16</li>
+</ol>
+<div class="gantt">
+  <div class="g-row"><div class="g-cell g1" style="width:43.75%">P1</div><div class="g-cell g3" style="width:6.25%">P3</div><div class="g-cell g2" style="width:25%">P2</div><div class="g-cell g4" style="width:25%">P4</div></div>
+  <div class="g-scale"><span class="g-tick" style="width:43.75%">0</span><span class="g-tick" style="width:6.25%">7</span><span class="g-tick" style="width:25%">8</span><span class="g-tick" style="width:25%">12</span><span class="g-tick">16</span></div>
+</div>
+<table class="t">
+  <tr><th>Process</th><th class="c">Completion</th><th class="c">TAT</th><th class="c">WT = TAT − BT</th></tr>
+  <tr><td>P1</td><td class="c">7</td><td class="c">7</td><td class="c">7−7 = <b>0</b></td></tr>
+  <tr><td>P2</td><td class="c">12</td><td class="c">10</td><td class="c">10−4 = <b>6</b></td></tr>
+  <tr><td>P3</td><td class="c">8</td><td class="c">4</td><td class="c">4−1 = <b>3</b></td></tr>
+  <tr><td>P4</td><td class="c">16</td><td class="c">11</td><td class="c">11−4 = <b>7</b></td></tr>
+  <tr class="hl"><td>เฉลี่ย WT</td><td class="c" colspan="2">—</td><td class="c">(0+6+3+7)/4 = <b>4</b></td></tr>
+</table>
+<div class="co note"><div class="tt">📌 SJF คือ optimal</div><p>ให้ avg WT ต่ำสุดจากชุดงานหนึ่ง ๆ แต่ใช้จริงยากเพราะ OS ต้อง<b>ทำนาย</b>ความยาว CPU burst ถัดไป</p></div>
+
+<h3>C4. SRTF (งานที่เหลือสั้นสุดทำก่อน) — Shortest Remaining Time First (Preemptive SJF) 🔥</h3>
+<p>กติกา: <b>งานใหม่มาถึง → เทียบ BT ของงานใหม่ กับ Remaining Time (เวลาที่เหลือ) ของงานที่รันอยู่</b> — งานใหม่สั้นกว่า = ขัดทันที</p>
+<ol class="st">
+  <li>0–2: P1 รันไป 2 (เหลือ 5) — P2 มาถึง (BT=4) → เทียบ 4 &lt; 5 → <b>ขัด P1</b></li>
+  <li>2–4: P2 รันไป 2 (เหลือ 2) — P3 มาถึง (BT=1) → 1 &lt; 2 → <b>ขัด P2</b></li>
+  <li>4–5: P3 จบที่ 5 พอดี + P4 มาถึง (BT=4) → คิว: P1(5), P2(2), P4(4) → รัน P2 จบที่ 7</li>
+  <li>7: เหลือ P1(5), P4(4) → P4 จบที่ 11 → P1 เศษ 5 จบที่ 16</li>
+</ol>
+<div class="gantt">
+  <div class="g-row"><div class="g-cell g1" style="width:12.5%">P1</div><div class="g-cell g2" style="width:12.5%">P2</div><div class="g-cell g3" style="width:6.25%">P3</div><div class="g-cell g2" style="width:12.5%">P2</div><div class="g-cell g4" style="width:25%">P4</div><div class="g-cell g1" style="width:31.25%">P1</div></div>
+  <div class="g-scale"><span class="g-tick" style="width:12.5%">0</span><span class="g-tick" style="width:12.5%">2</span><span class="g-tick" style="width:6.25%">4</span><span class="g-tick" style="width:12.5%">5</span><span class="g-tick" style="width:25%">7</span><span class="g-tick" style="width:31.25%">11</span><span class="g-tick">16</span></div>
+</div>
+<table class="t">
+  <tr><th>Process</th><th class="c">Completion</th><th class="c">TAT = C − A</th><th class="c">WT = TAT − BT</th></tr>
+  <tr><td>P1</td><td class="c">16</td><td class="c">16</td><td class="c">16−7 = <b>9</b></td></tr>
+  <tr><td>P2</td><td class="c">7</td><td class="c">5</td><td class="c">5−4 = <b>1</b></td></tr>
+  <tr><td>P3</td><td class="c">5</td><td class="c">1</td><td class="c">1−1 = <b>0</b></td></tr>
+  <tr><td>P4</td><td class="c">11</td><td class="c">6</td><td class="c">6−4 = <b>2</b></td></tr>
+  <tr class="hl"><td>เฉลี่ย WT</td><td class="c" colspan="2">—</td><td class="c">(9+1+0+2)/4 = <b>3</b></td></tr>
+</table>
+<div class="co exam"><div class="tt">🎯 จุดหลอก SRTF</div><p>เทียบด้วย <b>Remaining</b> เสมอ ไม่ใช่ BT ดั้งเดิม! (ตอนเวลา 4 ต้องเทียบ "P2 เหลือ 2" ไม่ใช่ "P2 = 4") · SRTF overhead มากกว่า SJF เพราะ context switch บ่อย</p></div>
+<div class="figrow">
+  <div class="slide"><img src="slides/s04p38.jpg" alt="SRTF def"><div class="cap"><b>สไลด์ p.38</b> SRTF นิยาม</div></div>
+  <div class="slide"><img src="slides/s04p39.jpg" alt="SRTF example"><div class="cap"><b>สไลด์ p.39</b> SRTF example (เฉลยตรงกับตารางข้างบน)</div></div>
+</div>
+
+<h3>C5. Priority (ลำดับสิทธิ์) Scheduling (การจัดคิว)</h3>
+<ul>
+  <li>CPU ให้งาน priority สูงสุดก่อน (มีทั้ง preemptive/non-preemptive) · SJF = priority ที่ใช้ "predicted next CPU burst" เป็น priority</li>
+  <li><b>ปัญหา Starvation (การอดตาย (ไม่ได้รันเลย))</b> (งานสิทธิต่ำไม่ได้รัน) → <b>แก้ด้วย Aging</b>: ยิ่งรอนานยิ่งเพิ่ม priority</li>
+  <li><b>ทิศทางตัวเลข:</b> Unix-based → <b>เลขน้อย = สิทธิสูง</b> / Java Thread → <b>เลขมาก = สูง</b> (10 สูงสุด, default 5)</li>
+</ul>
+
+<h3>C6. Round Robin (RR) — preemptive, ตอบสนองไว</h3>
+<p>แต่ละงานรันไม่เกิน <b>Time Quantum (q)</b> หมดเวลายังไม่เสร็จ → ถูกตัดไปต่อท้ายคิว · คิวมี n งาน → ไม่มีงานรอเกิน <b>(n−1)q</b></p>
+<p><b>โจทย์ (p.41–42):</b> ข้อมูล FCFS เดิม (P1: 0,24 · P2: 2,3 · P3: 4,3) q = 4</p>
+<div class="gantt">
+  <div class="g-row"><div class="g-cell g1" style="width:13.3%">P1</div><div class="g-cell g2" style="width:10%">P2</div><div class="g-cell g3" style="width:10%">P3</div><div class="g-cell g1" style="width:66.7%">P1</div></div>
+  <div class="g-scale"><span class="g-tick" style="width:13.3%">0</span><span class="g-tick" style="width:10%">4</span><span class="g-tick" style="width:10%">7</span><span class="g-tick" style="width:66.7%">10</span><span class="g-tick">30</span></div>
+</div>
+<table class="t">
+  <tr><th>Process</th><th class="c">TAT = C − A</th><th class="c">WT = TAT − BT</th></tr>
+  <tr><td>P1</td><td class="c">30 − 0 = 30</td><td class="c">30 − 24 = <b>6</b></td></tr>
+  <tr><td>P2</td><td class="c">7 − 2 = 5</td><td class="c">5 − 3 = <b>2</b></td></tr>
+  <tr><td>P3</td><td class="c">10 − 4 = 6</td><td class="c">6 − 3 = <b>3</b></td></tr>
+  <tr class="hl"><td>เฉลี่ย WT</td><td class="c">—</td><td class="c">11/3 ≈ <b>3.67</b></td></tr>
+</table>
+<div class="two">
+<div class="co warn"><div class="tt">⚖️ ขนาด quantum</div><p>q ใหญ่มาก → RR กลายเป็น <b>FCFS</b> · q เล็กมาก → <b>context switch ถี่เกิน overhead โต</b> (ช่วง switch = pure overhead)</p></div>
+<div class="co note"><div class="tt">ไทม์ไลน์ RR ทีละจังหวะ</div><p>0–4 P1(เหลือ 20) → 4–7 P2 จบ → 7–10 P3 จบ → 10–30 P1 ตัวเดียวรันรอบละ 4 จนครบ 24</p></div>
+</div>
+<div class="figrow">
+  <div class="slide"><img src="slides/s04p41.jpg" alt="RR def"><div class="cap"><b>สไลด์ p.41</b> Round Robin</div></div>
+  <div class="slide"><img src="slides/s04p42.jpg" alt="RR example"><div class="cap"><b>สไลด์ p.42</b> Example RR q=4 (เฉลยตรงกับตาราง)</div></div>
+</div>
+
+<h3>C7. Multilevel Queue (คิวหลายชั้น) & Multilevel Feedback Queue (MLFQ)</h3>
+<ul>
+  <li><b>Multilevel Queue</b>: แยก ready queue หลายคิว (เช่น foreground=RR / background=FCFS) — <b>งานอยู่คิวไหนตลอดชีวิต ย้ายไม่ได้</b> · ระหว่างคิว: fixed priority (คิวหน้าจบก่อน — เสี่ยง starvation) หรือแบ่งเวลา (80/20)</li>
+  <li><b>MLFQ</b>: <b>งานย้ายคิวได้</b> → ทำ aging ได้ จัดกลุ่มตามพฤติกรรมได้</li>
+</ul>
+<p><b>โมเดลตัวอย่าง (p.46–47):</b> Q0 = RR q8ms → ไม่จบ ลง Q1 = RR q16ms → ยังไม่จบ ลง Q2 = FCFS จนจบ · คิวล่างได้รันเมื่อคิวบนว่างหมด</p>
+<div class="figrow">
+  <div class="slide"><img src="slides/s04p44.jpg" alt="MLQ"><div class="cap"><b>สไลด์ p.44</b> Multilevel Queue</div></div>
+  <div class="slide"><img src="slides/s04p47.jpg" alt="MLFQ example"><div class="cap"><b>สไลด์ p.47</b> Example MLFQ 3 คิว</div></div>
+</div>
+
+<div class="co exam"><div class="tt">🎯 สรุป 5 จุดพลาดของบทนี้</div><p>1) ลบ Arrival ไม่ครบ (เอาเวลาเริ่มรันตอบเป็น WT) 2) WT ใน preemptive ไล่นับมือผิด → ใช้ WT=TAT−BT 3) ตี priority ผิดฝั่ง 4) SRTF ใช้ BT ดิบแทน remaining 5) เลือก quantum ผิด</p></div>
+</div>
+</body>
+</html>

@@ -228,7 +228,7 @@ table.sqz td.small { font-size: 9.8px; color: var(--soft); }
   <div><b>J.</b> File System (ระบบไฟล์)</div>
   <div><b>K.</b> ความรู้จาก Quizizz ทั้ง 4 ชุด</div>
   <div><b>L.</b> คลังข้อสอบซ้อม Socrative (16 ชุด) 🔥</div>
-  <div><b>M.</b> แผ่นสูตรเร็วท้ายเล่ม (1 หน้า)</div>
+  <div><b>M.</b> แผ่นสูตรเร็วท้ายเล่ม + ตัวอย่างการคำนวณฉบับเต็ม</div>
 </div>
 
 <!-- ================= PART A: PROCESS ================= -->
@@ -2345,7 +2345,7 @@ public class BoundedBuffer {
 <h2 class="part">M. แผ่นสูตรเร็วท้ายเล่ม (อ่าน 3 นาทีก่อนเข้าห้อง)</h2>
 <div class="intro">
   <div class="it">📖 รู้จักส่วนนี้ก่อนอ่าน</div>
-  <p><b>ความหมาย:</b> สรุปสูตรคำนวณทุกบทมารวมใน 1 หน้า (TAT/WT, Paging, EAT, นับ fault, Banker's, inode, rwx)</p>
+  <p><b>ความหมาย:</b> สรุปสูตรคำนวณทุกบท + ตัวอย่างไล่ขั้นตอนฉบับเต็ม 7 แบบ (TAT/WT, แปลง address, EAT, นับ fault, Segmentation, Banker's, inode/rwx)</p>
   <p><b>ความสำคัญกับข้อสอบ:</b> เป็น index ระหว่างทำข้อสอบ — ตันหัวข้อไหนกลับมาเปิดหน้านี้ก่อน แล้วค่อยไล่ไปส่วนเต็มที่อยู่หน้าก่อน ๆ</p>
   <p><b>ใช้จริงในคอมพิวเตอร์:</b> สูตรพวกนี้คือสิ่งที่ OS คำนวณจริงทุกมิลลิวินาที (แปลง address ทุกครั้งที่เข้าถึง RAM) — เข้าใจสูตร = เข้าใจการทำงานเครื่อง</p>
 </div>
@@ -2388,6 +2388,115 @@ public class BoundedBuffer {
 <tr><td><b>inode</b></td><td>entries = block÷ptr (4K/4B=1024) · 48KB+4MB+4GB+4TB</td></tr>
 <tr><td><b>rwx</b></td><td>r=4 w=2 x=1 · 761 = rwx rw- --x</td></tr>
 </table>
+</div>
+</div>
+<h3 style="margin-top:18px">📝 ตัวอย่างการคำนวณฉบับเต็ม (ไล่ขั้นตอนทีละบรรทัด — ตัวเลขชุดเดียวกับตัวอย่างในส่วน F/H และที่ซ้อมใน L)</h3>
+<div class="two">
+<div>
+<div class="keep">
+<h4>⏱️ ตย.1 · TAT/WT — SJF Non-preemptive</h4>
+<table class="t">
+<tr><th>Proc</th><th>Arrival</th><th>Burst</th></tr>
+<tr><td class="c">P1</td><td class="c">0</td><td class="c">8</td></tr>
+<tr><td class="c">P2</td><td class="c">2</td><td class="c">4</td></tr>
+<tr><td class="c">P3</td><td class="c">1</td><td class="c">1</td></tr>
+</table>
+<p>ขั้น 1: t=0 คิวมีแค่ P1 → รัน 0→8 (non-preemptive ห้ามแย่ง)<br>
+ขั้น 2: t=8 คิวมี P2(4), P3(1) → เลือก burst สั้นสุด = P3 รัน 8→9<br>
+ขั้น 3: P2 รันต่อ 9→13 · Gantt: <code>P1 0–8 | P3 8–9 | P2 9–13</code></p>
+<table class="t">
+<tr><th>Proc</th><th>TAT = จบ − มาถึง</th><th>WT = TAT − Burst</th></tr>
+<tr><td class="c">P1</td><td class="c">8−0 = <b>8</b></td><td class="c">8−8 = <b>0</b></td></tr>
+<tr><td class="c">P2</td><td class="c">13−2 = <b>11</b></td><td class="c">11−4 = <b>7</b></td></tr>
+<tr><td class="c">P3</td><td class="c">9−1 = <b>8</b></td><td class="c">8−1 = <b>7</b></td></tr>
+</table>
+</div>
+</div>
+<div>
+<div class="keep">
+<h4>🧮 ตย.2 · แปลง Address (Paging)</h4>
+<p>โปรแกรม 16 B เพจละ 4 B (offset 2 บิต) · Page Table: 0→f5, 1→f6, 2→f1, 3→f2 — หา PA ของ logical <b>6</b> และ <b>2</b></p>
+<table class="t">
+<tr><td><b>ขั้น 1</b></td><td>page# = logical ÷ ขนาดเพจ (ปัดเศษทิ้ง) · offset = logical mod ขนาดเพจ</td></tr>
+<tr><td><b>ลอจิก 6</b></td><td>6 ÷ 4 = <b>page 1</b> เศษ 2 → offset 2 → PT: page 1 = frame 6 → PA = 6×4 + 2 = <b>26</b></td></tr>
+<tr><td><b>ลอจิก 2</b></td><td>2 ÷ 4 = <b>page 0</b> เศษ 2 → offset 2 → PT: page 0 = frame 5 → PA = 5×4 + 2 = <b>22</b></td></tr>
+</table>
+</div>
+</div>
+</div>
+<div class="two">
+<div>
+<div class="keep">
+<h4>⚡ ตย.3 · EAT (TLB)</h4>
+<table class="t">
+<tr><td><b>โจทย์</b></td><td>RAM 1 μs · TLB ε = 0.1 μs · hit ratio α = 0.8</td></tr>
+<tr><td><b>ขั้น 1 hit</b></td><td>α×(ε + 1) = 0.8×1.1 = 0.88 (หาเจอ → อ่าน RAM 1 ครั้ง)</td></tr>
+<tr><td><b>ขั้น 2 miss</b></td><td>(1−α)×(ε + 2) = 0.2×2.1 = 0.42 (ไม่เจอ → อ่าน RAM 2 ครั้ง)</td></tr>
+<tr><td><b>ขั้น 3 รวม</b></td><td>EAT = 0.88 + 0.42 = <b>1.3 μs</b> (ตรงสูตร 2 + ε − α = 2.1 − 0.8 ✓)</td></tr>
+<tr><td><b>กลับด้าน</b></td><td>ε=0.25 ต้องการ EAT = 1.35 → h×1.25 + (1−h)×2.25 = 1.35 → 2.25 − h = 1.35 → <b>h = 0.90</b></td></tr>
+</table>
+</div>
+</div>
+<div>
+<div class="keep">
+<h4>📐 ตย.4 · Segmentation</h4>
+<p>Segment Table (จากส่วน L12.2): seg 1 → base 6300, limit 400 · seg 2 → base 4300, limit 400</p>
+<table class="t">
+<tr><td><b>2 : 300</b></td><td>offset 300 &lt; limit 400 ✓ → PA = 4300 + 300 = <b>4600</b></td></tr>
+<tr><td><b>1 : 400</b></td><td>offset 400 ≥ limit 400 ✗ → <b>trap</b> (Addressing Error — offset ต้อง &lt; limit เท่านั้น)</td></tr>
+</table>
+</div>
+</div>
+</div>
+<div class="keep">
+<h4>💾 ตย.5 · นับ Page Fault — FIFO (ทีละสเต็ป)</h4>
+<p>เฟรม 3 ช่อง เริ่มมี [2, 0, 1] (2 เก่าสุด) · สตริงที่เหลือ <code>7 0 1 2 0 3 0 4 2 3 0</code></p>
+<table class="t">
+<tr><th>อ้าง</th><th>ผล (FIFO = ไล่เก่าสุด)</th><th>เฟรมหลังจบ</th></tr>
+<tr><td class="c">7</td><td>✚ fault — แทน 2</td><td class="c">[7,0,1]</td></tr>
+<tr><td class="c">0</td><td>✓ hit</td><td class="c">[7,0,1]</td></tr>
+<tr><td class="c">1</td><td>✓ hit</td><td class="c">[7,0,1]</td></tr>
+<tr><td class="c">2</td><td>✚ fault — แทน 0</td><td class="c">[1,7,2]</td></tr>
+<tr><td class="c">0</td><td>✚ fault — แทน 1</td><td class="c">[7,2,0]</td></tr>
+<tr><td class="c">3</td><td>✚ fault — แทน 7</td><td class="c">[2,0,3]</td></tr>
+<tr><td class="c">0</td><td>✓ hit</td><td class="c">[2,0,3]</td></tr>
+<tr><td class="c">4</td><td>✚ fault — แทน 2</td><td class="c">[0,3,4]</td></tr>
+<tr><td class="c">2</td><td>✚ fault — แทน 0</td><td class="c">[3,4,2]</td></tr>
+<tr><td class="c">3</td><td>✓ hit</td><td class="c">[3,4,2]</td></tr>
+<tr><td class="c">0</td><td>✚ fault — แทน 3</td><td class="c">[4,2,0]</td></tr>
+<tr><td><b>รวม</b></td><td><b>FIFO = 7 faults</b> · สตริงเดิม OPT = 5 (มองอนาคต) · LRU = 7 (มองอดีต)</td><td></td></tr>
+</table>
+<p style="margin-top:3px">อาร์เรย์ 128×128 (เพจละ 1 แถว, เฟรมเดียว): วนตามแถว (row-major) = <b>128</b> faults · วนตามคอลัมน์ = <b>16,384</b> faults (ทุกช่องคนละเพจ)</p>
+</div>
+<div class="two">
+<div>
+<div class="keep">
+<h4>🏦 ตย.6 · Banker's — เช็ก Safety</h4>
+<p>Available = (3,3,2) · Need = Max − Allocation → P0(7,4,3) P1(1,2,2) P2(6,0,0) P3(0,1,1) P4(4,3,1) — วนหาใคร Need ≤ Work แล้วปล่อยคืนทั้ง Allocation</p>
+<table class="t">
+<tr><th>จบก่อน</th><th>เงื่อนไข</th><th>Work ใหม่ (คืนของ)</th></tr>
+<tr><td class="c">P1</td><td class="c">(1,2,2) ≤ (3,3,2) ✓</td><td class="c">(5,3,2)</td></tr>
+<tr><td class="c">P3</td><td class="c">(0,1,1) ≤ (5,3,2) ✓</td><td class="c">(7,4,3)</td></tr>
+<tr><td class="c">P4</td><td class="c">(4,3,1) ≤ (7,4,3) ✓</td><td class="c">(7,4,5)</td></tr>
+<tr><td class="c">P2</td><td class="c">(6,0,0) ≤ (7,4,5) ✓</td><td class="c">(10,4,7)</td></tr>
+<tr><td class="c">P0</td><td class="c">(7,4,3) ≤ (10,4,7) ✓</td><td class="c">จบครบทุกตัว</td></tr>
+</table>
+<p style="margin-top:3px">Safe sequence = <code>&lt;P1, P3, P4, P2, P0&gt;</code> → ระบบ <b>Safe</b> ✓ (ถ้าวนแล้วไม่มีใครผ่านต่อ = Unsafe)</p>
+</div>
+</div>
+<div>
+<div class="keep">
+<h4>📁 ตย.7 · inode & rwx</h4>
+<table class="t">
+<tr><td><b>ขั้น 1</b></td><td>entries/บล็อก = ขนาดบล็อก ÷ ขนาด pointer = 4096 ÷ 4 = <b>1024</b></td></tr>
+<tr><td><b>Direct 12</b></td><td>12 × 4KB = <b>48 KB</b></td></tr>
+<tr><td><b>Single</b></td><td>1024 บล็อก × 4KB = <b>4 MB</b></td></tr>
+<tr><td><b>Double</b></td><td>1024 × 1024 × 4KB = 1,048,576 × 4KB = <b>4 GB</b></td></tr>
+<tr><td><b>Triple</b></td><td>1024³ × 4KB = <b>4 TB</b> → รวม 48KB + 4MB + 4GB + 4TB</td></tr>
+<tr><td><b>อีกแบบ</b></td><td>มีเฉพาะ Double, บล็อก 2KB: 512 × 512 × 2KB = 262,144 × 2KB = <b>512 MB</b></td></tr>
+<tr><td><b>rwx</b></td><td>761 → owner 7 = rwx · group 6 = rw- · other 1 = --x</td></tr>
+</table>
+</div>
 </div>
 </div>
 <div class="co exam"><div class="tt">🚨 กลยุทธ์ห้องสอบ (จากรีวิวรุ่นพี่)</div><p>• ถูก/ผิด: ถูก +2 ผิด −1 ไม่ตอบ 0 — <b>ไม่แน่จริงอย่าตอบ</b> · • ทำโจทย์คำนวณ (Paging/Replacement (การแทนที่)/Scheduling) <b>ก่อนข้อทฤษฎี</b> คะแนน/นาทีสูงกว่า · • จับเวลาข้อคำนวณ ≤ 2 นาที ติดให้ข้าม · • เขียนขั้นตอนสั้น ๆ ข้างคำตอบ · • โค้ดทุกข้อ compile ผ่านหมด — ไม่มีตอบ Error!</p></div>

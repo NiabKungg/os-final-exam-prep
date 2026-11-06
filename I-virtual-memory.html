@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OS Open Book — ส่วน I</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#eef0ff', primaryBorderColor: '#4f46e5', primaryTextColor: '#1c2333',
+    lineColor: '#64748b', secondaryColor: '#ecfdf5', tertiaryColor: '#fff7ed',
+    fontSize: '13px', fontFamily: 'Noto Sans Thai, sans-serif'
+  },
+  flowchart: { curve: 'basis', htmlLabels: true },
+  sequence: { actorFontSize: 13, messageFontSize: 12 }
+});
+</script>
+<style>
+:root {
+  --ink: #1c2333; --soft: #4a5568; --muted: #8a94a6; --line: #e3e8f0;
+  --pri: #4f46e5; --pri-soft: #eef0ff; --pri-dark: #3730a3;
+  --red: #dc2626; --red-soft: #fef2f2; --green: #059669; --green-soft: #ecfdf5;
+  --amber: #d97706; --amber-soft: #fffbeb; --violet: #7c3aed; --violet-soft: #f5f3ff;
+  --teal: #0d9488; --teal-soft: #f0fdfa; --pink: #db2777; --pink-soft: #fdf2f8;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: #eef1f6; color: var(--ink);
+  font-family: "Noto Sans Thai", "Sarabun", system-ui, sans-serif;
+  font-size: 13.5px; line-height: 1.6;
+}
+.page { max-width: 980px; margin: 0 auto; background: #fff; padding: 26px 30px 60px; box-shadow: 0 0 24px rgba(16,24,40,.08); }
+h1 { font-size: 1.55rem; margin: 8px 0 6px; }
+h2.part {
+  break-inside: avoid; break-after: avoid;   /* ไม่บังคับขึ้นหน้าใหม่ — ไหลต่อเนื่อง ประหยัดกระดาษ (แก้หน้าว่างมากเกิน) */
+  margin: 8px -30px 14px; padding: 13px 30px;
+  background: linear-gradient(90deg, var(--pri), #0ea5e9); color: #fff;
+  font-size: 1.25rem;
+}
+h2.part:first-of-type { break-before: auto; }
+h3 { font-size: 1.06rem; margin: 22px 0 6px; padding: 5px 12px; background: var(--pri-soft); border-left: 5px solid var(--pri); break-after: avoid; }
+h4 { font-size: .95rem; margin: 15px 0 4px; color: var(--pri-dark); break-after: avoid; }
+p { margin: 6px 0; }
+.lead { color: var(--soft); }
+b, strong { color: #111827; }
+small, .small { font-size: 11.5px; color: var(--muted); }
+code {
+  font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  font-size: .86em; background: #f1f4f9; border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px;
+}
+/* ---------- code blocks (ธีมสว่าง สำหรับพิมพ์กระดาษ) ---------- */
+pre.code {
+  background: #f6f8fa; color: #1f2328; border: 1px solid #d0d7de; border-radius: 8px;
+  padding: 11px 14px; overflow-x: auto; break-inside: avoid;
+  font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  font-size: 11.3px; line-height: 1.6; margin: 9px 0;
+}
+pre.code .c { color: #57606a; font-style: italic; }
+pre.code .k { color: #cf222e; }
+pre.code .f { color: #8250df; }
+pre.code .n { color: #0550ae; }
+pre.code .s { color: #0a3069; }
+pre.code .hl { background: #fff8c5; display: inline-block; width: 100%; border-radius: 4px; box-shadow: -3px 0 0 0 #d4a72c; }
+/* ---------- tables ---------- */
+table.t { border-collapse: collapse; width: 100%; margin: 9px 0; break-inside: avoid; font-size: 12.3px; }
+table.t th { background: #f1f4f9; text-align: left; padding: 5px 9px; border: 1px solid var(--line); }
+table.t td { padding: 5px 9px; border: 1px solid var(--line); vertical-align: top; }
+table.t .c { text-align: center; }
+table.t tr.hl td { background: var(--pri-soft); font-weight: 700; }
+table.t td.ok { background: var(--green-soft); }
+table.t td.no { background: var(--red-soft); }
+/* ---------- Gantt ---------- */
+.gantt { margin: 10px 0 4px; break-inside: avoid; }
+.g-row { display: flex; }
+.g-cell {
+  height: 34px; display: flex; align-items: center; justify-content: center;
+  font-weight: 800; color: #fff; font-size: 12px; text-shadow: 0 1px 2px rgba(0,0,0,.3);
+}
+.g-scale { display: flex; }
+.g-tick { font-size: 10.5px; color: var(--muted); font-weight: 700; }
+.g1 { background: #4f46e5; } .g2 { background: #0ea5e9; } .g3 { background: #059669; }
+.g4 { background: #d97706; } .g5 { background: #db2777; } .g6 { background: #7c3aed; }
+/* ---------- slides / figures ---------- */
+.figrow { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+.slide {
+  flex: 1 1 300px; max-width: 470px; break-inside: avoid;
+  border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+  background: #fff; box-shadow: 0 1px 4px rgba(16,24,40,.08);
+}
+.slide img { display: block; width: 100%; height: auto; }
+.slide .cap {
+  font-size: 10.5px; color: var(--soft); padding: 5px 9px;
+  background: #f8fafc; border-top: 1px dashed var(--line);
+}
+.slide .cap b { color: var(--pri-dark); }
+.fig1 { max-width: 520px; }
+/* ---------- callouts ---------- */
+.co { border: 1px solid var(--line); border-left-width: 5px; border-radius: 9px; padding: 8px 13px; margin: 10px 0; break-inside: avoid; background: #fff; }
+.co .tt { font-weight: 800; font-size: .88rem; margin-bottom: 2px; }
+.co p { margin: 2px 0; }
+.co.exam { border-left-color: var(--red); } .co.exam .tt { color: var(--red); }
+.co.tip { border-left-color: var(--green); } .co.tip .tt { color: var(--green); }
+.co.an { border-left-color: var(--violet); background: var(--violet-soft); border-color: #ddd6fe; } .co.an .tt { color: var(--violet); }
+.co.note { border-left-color: #0ea5e9; } .co.note .tt { color: #0284c7; }
+.co.warn { border-left-color: var(--amber); background: var(--amber-soft); border-color: #fde68a; } .co.warn .tt { color: var(--amber); }
+/* กล่องนำเข้าบท: ความหมาย ความสำคัญ การใช้จริง */
+.intro {
+  background: #f0f9ff; border: 1.5px solid #bae6fd; border-left: 6px solid #0ea5e9;
+  border-radius: 10px; padding: 10px 15px; margin: 0 0 14px; break-inside: avoid;
+}
+.intro .it { font-weight: 800; color: #0369a1; margin-bottom: 3px; font-size: .95rem; }
+.intro p { margin: 3px 0; font-size: 12.6px; }
+/* ---------- formula ---------- */
+.fm {
+  background: var(--pri-soft); border: 1.5px dashed #a5b4fc; color: var(--pri-dark);
+  border-radius: 9px; padding: 8px 14px; margin: 9px 0; text-align: center;
+  font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 12.5px;
+}
+.fm small { display: block; font-family: "Noto Sans Thai", sans-serif; font-weight: 600; color: var(--soft); margin-top: 3px; }
+/* ---------- steps ---------- */
+ol.st { margin: 8px 0; padding-left: 0; list-style: none; counter-reset: st; }
+ol.st > li { counter-increment: st; position: relative; padding: 0 0 10px 38px; }
+ol.st > li::before {
+  content: counter(st); position: absolute; left: 0; top: 1px;
+  width: 26px; height: 26px; border-radius: 50%; background: var(--pri); color: #fff;
+  font-weight: 800; font-size: .8rem; display: flex; align-items: center; justify-content: center;
+}
+ol.st > li::after { content: ""; position: absolute; left: 12.5px; top: 30px; bottom: 2px; width: 2px; background: var(--line); }
+ol.st > li:last-child::after { display: none; }
+/* ---------- quiz (Quizizz) cards ---------- */
+.qz { border: 1px solid var(--line); border-radius: 9px; margin: 8px 0; break-inside: avoid; overflow: hidden; }
+.qz .qh {
+  display: flex; gap: 8px; align-items: baseline; padding: 5px 11px;
+  background: #f8fafc; border-bottom: 1px dashed var(--line); font-size: 12px;
+}
+.qz .qn { font-weight: 800; color: var(--pri-dark); white-space: nowrap; }
+.qz .qa { font-weight: 800; color: var(--green); white-space: nowrap; }
+.qz .qq { padding: 6px 11px 2px; }
+.qz .qq .q { color: var(--soft); }
+.qz .qk { padding: 2px 11px 7px; font-size: 12.3px; }
+.qz .qk b { color: var(--pri-dark); }
+.qz2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 760px) { .qz2 { grid-template-columns: 1fr; } }
+/* ---------- cover / toc ---------- */
+.cover { text-align: center; padding: 30px 10px 12px; }
+.cover .badge { display: inline-block; background: var(--pri); color: #fff; border-radius: 999px; padding: 4px 16px; font-weight: 800; font-size: .8rem; letter-spacing: .04em; }
+.cover h1 { font-size: 1.75rem; margin: 12px 0 4px; }
+.cover .sub { color: var(--soft); }
+.cover .meta { margin-top: 10px; font-size: 12px; color: var(--muted); }
+.toc { columns: 2; column-gap: 34px; font-size: 12.8px; margin: 12px 0; }
+.toc div { break-inside: avoid; padding: 3px 0; border-bottom: 1px dotted var(--line); }
+.toc b { color: var(--pri-dark); }
+.toc .hot { color: var(--red); font-weight: 800; }
+/* ---------- mermaid ---------- */
+.mermaid { margin: 10px auto; text-align: center; break-inside: avoid; background: #fff; }
+/* จำกัดความกว้างแผนภาพ กันยืดเต็มหน้าจนกินพื้นที่พิมพ์ (แก้หน้า 4, 6, 39-41) */
+.mermaid svg { max-width: 520px !important; width: auto; height: auto; }
+/* แผนภาพกว้างพิเศษ (2 คอลัมน์) — ใหญ่ขึ้นเพื่อให้อ่านตัวหนังสือในได้ */
+.mermaid.wide svg { max-width: 700px !important; }
+/* แผนภาพขนาดย่อ — ให้ลงช่องว่างที่เหลือของหน้า */
+.mermaid.small svg { max-width: 430px !important; }
+/* แถวสไลด์ 3 ใบ — ย่อให้แถวเดียวจบ ไม่ทิ้งการ์ดหลุดแถว */
+.figrow.fig3 .slide { flex: 1 1 220px; max-width: 236px; }
+.figrow.fig3 .slide .cap { font-size: 9.5px; }
+/* กันบรรทัดนำหน้าตาราง/กล่องถูกแยกข้ามหน้า */
+.keep { break-inside: avoid; }
+/* ---------- misc ---------- */
+.pill { display: inline-block; font-size: 10.5px; font-weight: 800; padding: 2px 10px; border-radius: 999px; background: var(--pri-soft); color: var(--pri-dark); margin-right: 5px; }
+.pill.hot { background: var(--red-soft); color: var(--red); }
+.pill.gr { background: var(--green-soft); color: var(--green); }
+.pill.vi { background: var(--violet-soft); color: var(--violet); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
+ul { margin: 5px 0; padding-left: 20px; }
+li { margin: 2.5px 0; }
+kbd { background: #e2e8f0; border-radius: 4px; padding: 0 5px; font-family: monospace; font-size: .85em; }
+/* ---------- Socrative compact tables ---------- */
+table.sqz { font-size: 10.6px; }
+table.sqz td, table.sqz th { padding: 3px 7px; vertical-align: top; }
+table.sqz td.small { font-size: 9.8px; color: var(--soft); }
+
+/* ---------- PRINT ---------- */
+@media print {
+  body { background: #fff; font-size: 11.6px; }
+  .page { box-shadow: none; max-width: none; padding: 0; }
+  @page { size: A4; margin: 11mm 10mm; }
+  h2.part { margin: 0 -10mm 12px; padding: 9px 10mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .noprint { display: none !important; }
+  .slide { box-shadow: none; }
+  pre.code, table.t, .co, .qz, .gantt, .fm { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  a { color: inherit; text-decoration: none; }
+  .qz2 { gap: 6px; }
+}
+</style>
+<style>
+.partnav { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:0 0 14px; padding:8px 11px; border:1px solid var(--line); border-radius:9px; background:#fff; font-size:12.5px; }
+.partnav a { padding:2px 9px; border-radius:999px; background:var(--pri-soft); color:var(--pri-dark); text-decoration:none; }
+.partnav a.cur { background:var(--pri); color:#fff; font-weight:700; }
+.partnav .brand { color:var(--pri-dark); font-weight:800; margin-right:4px; }
+.partnav .full { margin-left:auto; background:#f1f4f9; color:var(--ink); }
+@media print { .partnav { display:none } }
+</style></head>
+<body>
+<div class="page">
+<div class="partnav">
+  <span class="brand">📘 OS Open Book</span>
+  <a href="A-process.html">A · Process/fork</a>
+  <a href="B-thread.html">B · Thread</a>
+  <a href="C-scheduling.html">C · Scheduling</a>
+  <a href="D-race-cs.html">D · Race/CS</a>
+  <a href="E-semaphore.html">E · Semaphore</a>
+  <a href="F-deadlock.html">F · Deadlock</a>
+  <a href="G-real-memory.html">G · Real Mem</a>
+  <a href="H-paging.html">H · Paging</a>
+  <a href="I-virtual-memory.html" class="cur">I · Virtual Mem</a>
+  <a href="J-file-system.html">J · File System</a>
+  <a href="K-quizizz.html">K · Quizizz</a>
+  <a href="L-socrative.html">L · Socrative</a>
+  <a href="M-formulas.html">M · สูตรเร็ว</a>
+  <a class="full" href="openbook.html">📄 เอกสารเต็ม (ไฟล์เดียว)</a>
+</div>
+<!-- ================= PART I: VIRTUAL MEMORY ================= -->
+<h2 class="part">I. Virtual Memory & Page Replacement <span style="font-size:.8em">(OSNo09)</span> 🔥🔥</h2>
+<div class="intro">
+  <div class="it">📖 รู้จักส่วนนี้ก่อนอ่าน</div>
+  <p><b>ความหมาย:</b> Virtual Memory (หน่วยความจำเสมือน) = โปรแกรมไม่ต้องอยู่ใน RAM ครบทั้งตัว โหลดเฉพาะเพจที่กำลังใช้ (demand paging) ทำให้ RAM จริงเหมือนใหญ่กว่าจริง · Page Replacement = เมื่อ RAM เต็ม ต้องเลือกเพจ "ตัวปลอด" ออก</p>
+  <p><b>ความสำคัญกับข้อสอบ:</b> นับ page fault (เพจยังไม่อยู่ใน RAM) ทั้ง FIFO (เข้าก่อน-ออกก่อน) / Optimal (ดีที่สุดเชิงทฤษฎี) / LRU (รู้ผล 15/9/12 ของ string หลัก), Belady's Anomaly (ปรากฏการณ์เพิ่ม RAM แล้ว fault เพิ่ม), Thrashing (สลับเพจหนักจนระบบแย่) — เป็นแนวคำนวณหลักอีกแนวของ Final</p>
+  <p><b>ใช้จริงในคอมพิวเตอร์:</b> เปิดเกมใหญ่กว่า RAM เครื่องได้, สลับแอปเร็วโดยไม่โหลดใหม่, ขนาด "หน่วยความจำเสมือน" ที่เห็นใน Task Manager คือกลไกนี้ — ข้อมูลที่ไม่ได้ใช้ถูกส่งไปพักบน disk</p>
+</div>
+
+<h3>I1. Demand Paging (โหลดเพจเฉพาะเมื่อถูกใช้) — ขอเมื่อไรค่อยเอามา</h3>
+<ul>
+  <li><b>Virtual memory</b> = แยก logical memory ออกจาก physical → address space ใหญ่กว่า RAM จริงก็ได้ · implement ผ่าน <b>demand paging</b> หรือ demand segmentation</li>
+  <li><b>Demand paging</b>: โหลดเพจเฉพาะเมื่อถูกเรียกใช้ — หลักขี้เกียจของ <b>lazy swapper</b> (ตัวทำงานกับเพจเรียก <b>pager</b>) · ผลดี: I/O น้อย, RAM น้อย, ตอบเร็ว, รองรับ user มาก</li>
+  <li>เพจที่ยังไม่โหลด → bit = <b>i (invalid)</b> → แปลง address เจอ i → <b>Page Fault (เพจยังไม่อยู่ใน RAM)</b> — <b>invalid ที่นี่ส่วนใหญ่ไม่ใช่ error</b> แค่ "ยังไม่มา"</li>
+</ul>
+<div class="figrow">
+  <div class="slide"><img src="slides/s09p04.jpg" alt="VM larger"><div class="cap"><b>สไลด์ p.4</b> Virtual Memory ใหญ่กว่า Physical</div></div>
+  <div class="slide"><img src="slides/s09p06.jpg" alt="valid invalid bit"><div class="cap"><b>สไลด์ p.6</b> Valid–Invalid Bit ใน page table</div></div>
+</div>
+
+<h3>I2. Page Fault — ขั้นตอนจัดการ 6 ขั้น (เรียงได้ = ได้คะแนน)</h3>
+<div class="mermaid wide">
+flowchart LR
+  subgraph L1["ระหว่างเกิด Page Fault"]
+    direction TB
+    A["CPU อ้างเพจ<br/>bit = i"] --> B["1. Trap/Interrupt<br/>เข้าสู่ OS"]
+    B --> C{"2. OS เช็ค:<br/>อ้างผิดจริงหรือ<br/>แค่ยังไม่โหลด?"}
+    C -->|"อ้างผิดจริง"| X["Abort process"]
+    C -->|"แค่ยังไม่โหลด"| D["3. หาเพจบน disk<br/>+ หา frame ว่าง"]
+  end
+  subgraph L2["เมื่อต้องจัดการต่อ"]
+    direction TB
+    E{"มี frame<br/>ว่างไหม?"}
+    E -->|"ไม่มี"| F["Page Replacement<br/>เลือกเพจออกก่อน<br/>(เพจ dirty →<br/>write back ก่อน!)"]
+    F --> G["4. อ่านเพจจาก disk<br/>เข้า frame (แพงสุด — I/O)"]
+    E -->|"มี"| G
+    G --> H["5. อัปเดต page table<br/>frame # + bit = v"]
+    H --> I["6. Restart คำสั่งเดิม<br/>คราวนี้ใช้ได้ปกติ"]
+  end
+  D --> E
+</div>
+<ol class="st">
+  <li><span class="st-title">Trap/Interrupt เข้าสู่ OS</span>MMU เจอ bit = i (invalid) → ยิง trap ขึ้น kernel mode</li>
+  <li><span class="st-title">OS ตรวจชนิดของ invalid</span>อ้างเกิน address space จริง → abort · แค่ยังไม่โหลด → ไปขั้นถัดไป</li>
+  <li><span class="st-title">หาเพจบน disk + หา frame ว่าง</span>ถ้าไม่มี frame ว่าง → ใช้ Page Replacement ก่อน</li>
+  <li><span class="st-title">อ่านเพจจาก disk เข้า frame</span>ขั้นที่แพงที่สุด (เป็น I/O ทั้งตัว)</li>
+  <li><span class="st-title">อัปเดต page table</span>ใส่ frame number + เปลี่ยน bit เป็น v (valid)</li>
+  <li><span class="st-title">Restart คำสั่งเดิม</span>CPU รัน instruction ที่พังอีกครั้ง — คราวนี้อ่านได้ปกติ</li>
+</ol>
+<div class="co warn"><div class="tt">⚠️ Dirty page</div><p>เพจที่ถูกแก้ไข (dirty (เพจที่ถูกแก้ไขข้อมูลแล้ว)/modified = 1) ต้อง<b>เขียนกลับ disk ก่อน</b> (write back (เขียนกลับลงดิสก์ก่อน)) ค่อยแทนที่ — เพจ clean (เพจที่ยังไม่ถูกแก้ไข (ดิสก์มีสำเนาแล้ว)) ทับได้เลยเพราะ disk มีสำเนา</p></div>
+
+<h3>I3. Page Replacement — นับ fault 3 อัลกอริทึม 🔥🔥</h3>
+<p><b>โจทย์หลัก (สไลด์ใช้ string เดียวกัน, 3 frames (เฟรมหลายก้อน) เริ่มว่าง):</b></p>
+<div class="fm">Reference String (ลำดับการอ้างเพจ): 7, 0, 1, 2, 0, 3, 0, 4, 2, 3, 0, 3, 2, 1, 2, 0, 1, 7, 0, 1</div>
+<table class="t">
+  <tr><th>อัลกอริทึม</th><th>มองไหน</th><th>หลักเลือก victim</th><th class="c">Faults (3 frames)</th><th>ใช้จริง?</th></tr>
+  <tr><td><b>FIFO</b></td><td class="c">คิวเข้า</td><td>เข้ามาก่อน ออกก่อน (ไม่สนว่าใครฮิต)</td><td class="c no"><b>15</b></td><td>ง่ายแต่โง่ · เจอ Belady</td></tr>
+  <tr><td><b>Optimal (OPT)</b></td><td class="c">อนาคต 👁️</td><td>ตัวที่<b>จะไม่ถูกใช้อีกนานสุด</b>ในอนาคต</td><td class="c ok"><b>9</b></td><td><b>ใช้จริงไม่ได้</b> (รู้อนาคตไม่ได้) — ไว้เทียบ benchmark</td></tr>
+  <tr><td><b>LRU</b></td><td class="c">อดีต 🔙</td><td>ตัวที่<b>ไม่ได้ใช้มานานสุด</b></td><td class="c"><b>12</b></td><td>ใช้จริงได้ (เก็บประวัติย้อนหลัง) ดีกว่า FIFO</td></tr>
+</table>
+<div class="co an"><div class="tt">👕 ตู้เสื้อผ้า 3 ชั้น</div><p>FIFO = รีดตัวใส่นานสุดก่อน · Optimal = หมอดู รีดตัวที่จะไม่ใส่อีกนานสุด · LRU = จำได้ว่าใส่ตัวไหนล่าสุดเมื่อไร รีดตัวที่ทิ้งไว้นานสุด</p></div>
+<div class="figrow">
+  <div class="slide"><img src="slides/s09p13.jpg" alt="FIFO"><div class="cap"><b>สไลด์ p.13</b> FIFO Page Replacement</div></div>
+  <div class="slide"><img src="slides/s09p16.jpg" alt="Optimal"><div class="cap"><b>สไลด์ p.16</b> Optimal Page Replacement</div></div>
+  <div class="slide"><img src="slides/s09p17.jpg" alt="LRU"><div class="cap"><b>สไลด์ p.17</b> LRU Page Replacement</div></div>
+</div>
+<p class="small">💡 เทคนิคไล่มือ: เขียน 3 ช่อง frame ใต้ string ทีละตัวอักษร · FIFO บอกตัวเลือก "เก่าสุด" ไว้ในหัว · LRU เขียนเลขกำกับ "ใช้ล่าสุดเมื่อไร" ใต้ช่อง · OPT กลับไปดูขวาของ string</p>
+
+<h3>I4. Belady's Anomaly — เพิ่ม frame แล้ว fault กลับโต! 🤯</h3>
+<p><b>String: 1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5 (FIFO):</b></p>
+<table class="t">
+  <tr><th>จำนวน frame</th><th class="c">3 frames</th><th class="c">4 frames</th></tr>
+  <tr><td>Page faults (เหตุการณ์เพจไม่อยู่ใน RAM)</td><td class="c"><b>9</b></td><td class="c no"><b>10</b> 😱</td></tr>
+</table>
+<p>เพิ่ม RAM fault กลับเพิ่ม — เกิดได้กับ <b>FIFO</b> (และ non-stack algorithm) แต่<b>ไม่เกิดกับ LRU / Optimal</b></p>
+<div class="figrow">
+  <div class="slide fig1"><img src="slides/s09p14.jpg" alt="Belady"><div class="cap"><b>สไลด์ p.14</b> FIFO Illustrating Belady's Anomaly</div></div>
+  <div class="slide"><img src="slides/s09p11.jpg" alt="replacement def"><div class="cap"><b>สไลด์ p.11</b> Page Replacement Algorithms (กราฟ fault vs frames)</div></div>
+</div>
+
+<h3>I5. EAT เมื่อมี Page Fault Rate (p)</h3>
+<div class="fm">EAT = (1 − p) × memory access time + p × page fault service time<small>ตัวเลขชวนคิด: mat = 200ns, fault service = 8ms → ที่ p = 0.001 (fault แค่ 0.1%) EAT = 0.999×200 + 0.001×8,000,000 ≈ 8,200ns = 8.2μs — ช้าขึ้น 40 เท่า! ห้ามให้ p โต</small></div>
+
+<h3>I6. Global vs Local Allocation</h3>
+<ul>
+  <li><b>Global replacement</b>: แทนที่ได้จาก <b>frame ใดก็ได้ในระบบ</b> — แย่งข้าม process ได้</li>
+  <li><b>Local replacement</b>: เลือกจาก<b>เฉพาะ frame ของตัวเอง</b> (คนละบ้านกับคนละบ้าน)</li>
+</ul>
+
+<h3>I7. Thrashing · Locality · Working Set (ชุดเพจที่ต้องมีใน RAM) 🔥</h3>
+<ul>
+  <li><b>Thrashing</b>: process มีเพจไม่พอ → สลับเพจเข้า-ออก disk ตลอดเวลา → <b>CPU utilization ดิ่ง</b> · OS เข้าใจผิดว่า "งานน้อย" เลยเพิ่ม process → thrashing (สลับเพจหนักจนระบบแย่) ยิ่งหนัก (วงจรนรก) · เกิดทั้งข้ามงานและในงานเดียว (ลูปข้ามเพจ)</li>
+  <li><b>Locality of reference</b>: โปรแกรมมักอ้างกลุ่มเพจเดิมซ้ำ ๆ ในช่วงสั้น ๆ (อยู่ในฟังก์ชัน/ลูปเดิม)</li>
+  <li><b>Working set</b>: กลุ่มเพจที่ process ต้องมีใน RAM เพื่อไม่ให้ fault ในช่วง locality นั้น — มองย้อนหลัง Δ (working-set window เช่น 10,000 instruction) · <b>WSSᵢ</b> = จำนวนเพจที่ Pᵢ อ้างใน Δ · Δ เล็กไปครอบ locality ไม่หมด / ใหญ่ไปกินหลาย locality / Δ = ∞ คือทั้งโปรแกรม</li>
+  <li><b>D = Σ WSSᵢ</b> = ความต้องการ frame รวม · ถ้า <b>D &gt; m (frame จริง) → thrashing!</b> → OS ต้อง <b>suspend บาง process</b> คืน frame ให้คนที่เหลือ</li>
+</ul>
+<div class="co an"><div class="tt">🍳 อุปมา</div><p>Working set = ของที่ต้องมีบนเคาน์เตอร์เพื่อทำเมนูให้จบ ถ้าวางไม่ครบ คุณวิ่งไปตู้เย็น (disk) ทุก 30 วินาที = ไม่มีอะไรเสร็จ → ทางแก้: ลดจำนวนเมนูที่ทำพร้อมกัน (suspend process)</p></div>
+<div class="figrow">
+  <div class="slide"><img src="slides/s09p19.jpg" alt="thrashing"><div class="cap"><b>สไลด์ p.19</b> Thrashing</div></div>
+  <div class="slide"><img src="slides/s09p22.jpg" alt="working set model"><div class="cap"><b>สไลด์ p.22</b> Working-Set Model (D = ΣWSSᵢ, D &gt; m → suspend)</div></div>
+</div>
+
+<h3>I8. โจทย์สุดคลาสสิก: Array 128×128 🔥 (สไลด์ p.24)</h3>
+<p><code>int data[128][128]</code> · <b>1 แถว = 1 เพจ</b> · เก็บแบบ <b>row-major</b> (เรียงตามแถว)</p>
+<table class="t">
+  <tr><th></th><th>ลูป</th><th>พฤติกรรม</th><th class="c">Page faults</th></tr>
+  <tr><td class="no"><b>❌ แย่</b></td><td><code>for (j...) for (i...) data[i][j]=0;</code><br>(column นอก, row ใน)</td><td>ทุกครั้งกระโดดข้ามแถว = เปลี่ยนเพจทุกครั้ง</td><td class="c no"><b>128 × 128 = 16,384</b></td></tr>
+  <tr><td class="ok"><b>✅ ดี</b></td><td><code>for (i...) for (j...) data[i][j]=0;</code><br>(row นอก, column ใน)</td><td>อยู่เพจเดียวกันทั้งแถว fault เฉพาะตอนเปลี่ยนแถว</td><td class="c ok"><b>128</b></td></tr>
+</table>
+<div class="fm">โค้ดเหมือนกัน สลับลูปเท่านั้น → fault ต่างกัน 128 เท่า (16,384 : 128)<small>บทเรียน: เขียนลูปให้เข้าถึงข้อมูลต่อเนื่องตาม row-major = locality ดี</small></div>
+
+<h4>ไล่ address จริงให้เห็นตา — ทำไมถึงต่างกันขนาดนั้น</h4>
+<p>สมมติเพจเริ่มที่ address <code>A</code> — สมาชิกติดกันในแถวห่างกัน 4 bytes แต่<b>คนละแถวห่างกัน 128 × 4 = 512 bytes = ครบ 1 เพจพอดี</b></p>
+<table class="t">
+  <tr><th></th><th>ลำดับการอ้าง address</th><th>ผลต่อเพจ</th></tr>
+  <tr><td class="ok"><b>✅ row นอก</b><br><code>data[0][0] → data[0][1] → …</code></td><td>A, A+4, A+8, … , A+508 <span class="small">(128 ตัวต่อเนื่อง)</span> → แล้วค่อยกระโดดไป A+512</td><td>เพจเดียวกันทั้งแถว → <b>fault 1 ครั้ง/แถว</b> × 128 แถว</td></tr>
+  <tr><td class="no"><b>❌ column นอก</b><br><code>data[0][0] → data[1][0] → …</code></td><td>A, A+512, A+1024, … <span class="small">(ทุกครั้งข้าม 1 เพจเต็ม)</span></td><td>เปลี่ยนเพจ<b>ทุกครั้ง</b>ที่แตะสมาชิก → 16,384 ครั้ง</td></tr>
+</table>
+<p class="small">💡 หลักเดียวกันใช้ได้กับทุกโจทย์ลักษณะนี้: ดูว่าการอ้างสมาชิกตัวถัดไป "ห่างกันกี่ bytes" — ถ้าห่างน้อยกว่าขนาดเพจ = อยู่เพจเดียวกัน (ไม่ fault) · ถ้าห่างเกินขนาดเพจ = fault</p>
+</div>
+</body>
+</html>

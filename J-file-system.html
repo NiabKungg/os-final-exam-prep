@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OS Open Book — ส่วน J</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#eef0ff', primaryBorderColor: '#4f46e5', primaryTextColor: '#1c2333',
+    lineColor: '#64748b', secondaryColor: '#ecfdf5', tertiaryColor: '#fff7ed',
+    fontSize: '13px', fontFamily: 'Noto Sans Thai, sans-serif'
+  },
+  flowchart: { curve: 'basis', htmlLabels: true },
+  sequence: { actorFontSize: 13, messageFontSize: 12 }
+});
+</script>
+<style>
+:root {
+  --ink: #1c2333; --soft: #4a5568; --muted: #8a94a6; --line: #e3e8f0;
+  --pri: #4f46e5; --pri-soft: #eef0ff; --pri-dark: #3730a3;
+  --red: #dc2626; --red-soft: #fef2f2; --green: #059669; --green-soft: #ecfdf5;
+  --amber: #d97706; --amber-soft: #fffbeb; --violet: #7c3aed; --violet-soft: #f5f3ff;
+  --teal: #0d9488; --teal-soft: #f0fdfa; --pink: #db2777; --pink-soft: #fdf2f8;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: #eef1f6; color: var(--ink);
+  font-family: "Noto Sans Thai", "Sarabun", system-ui, sans-serif;
+  font-size: 13.5px; line-height: 1.6;
+}
+.page { max-width: 980px; margin: 0 auto; background: #fff; padding: 26px 30px 60px; box-shadow: 0 0 24px rgba(16,24,40,.08); }
+h1 { font-size: 1.55rem; margin: 8px 0 6px; }
+h2.part {
+  break-inside: avoid; break-after: avoid;   /* ไม่บังคับขึ้นหน้าใหม่ — ไหลต่อเนื่อง ประหยัดกระดาษ (แก้หน้าว่างมากเกิน) */
+  margin: 8px -30px 14px; padding: 13px 30px;
+  background: linear-gradient(90deg, var(--pri), #0ea5e9); color: #fff;
+  font-size: 1.25rem;
+}
+h2.part:first-of-type { break-before: auto; }
+h3 { font-size: 1.06rem; margin: 22px 0 6px; padding: 5px 12px; background: var(--pri-soft); border-left: 5px solid var(--pri); break-after: avoid; }
+h4 { font-size: .95rem; margin: 15px 0 4px; color: var(--pri-dark); break-after: avoid; }
+p { margin: 6px 0; }
+.lead { color: var(--soft); }
+b, strong { color: #111827; }
+small, .small { font-size: 11.5px; color: var(--muted); }
+code {
+  font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  font-size: .86em; background: #f1f4f9; border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px;
+}
+/* ---------- code blocks (ธีมสว่าง สำหรับพิมพ์กระดาษ) ---------- */
+pre.code {
+  background: #f6f8fa; color: #1f2328; border: 1px solid #d0d7de; border-radius: 8px;
+  padding: 11px 14px; overflow-x: auto; break-inside: avoid;
+  font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  font-size: 11.3px; line-height: 1.6; margin: 9px 0;
+}
+pre.code .c { color: #57606a; font-style: italic; }
+pre.code .k { color: #cf222e; }
+pre.code .f { color: #8250df; }
+pre.code .n { color: #0550ae; }
+pre.code .s { color: #0a3069; }
+pre.code .hl { background: #fff8c5; display: inline-block; width: 100%; border-radius: 4px; box-shadow: -3px 0 0 0 #d4a72c; }
+/* ---------- tables ---------- */
+table.t { border-collapse: collapse; width: 100%; margin: 9px 0; break-inside: avoid; font-size: 12.3px; }
+table.t th { background: #f1f4f9; text-align: left; padding: 5px 9px; border: 1px solid var(--line); }
+table.t td { padding: 5px 9px; border: 1px solid var(--line); vertical-align: top; }
+table.t .c { text-align: center; }
+table.t tr.hl td { background: var(--pri-soft); font-weight: 700; }
+table.t td.ok { background: var(--green-soft); }
+table.t td.no { background: var(--red-soft); }
+/* ---------- Gantt ---------- */
+.gantt { margin: 10px 0 4px; break-inside: avoid; }
+.g-row { display: flex; }
+.g-cell {
+  height: 34px; display: flex; align-items: center; justify-content: center;
+  font-weight: 800; color: #fff; font-size: 12px; text-shadow: 0 1px 2px rgba(0,0,0,.3);
+}
+.g-scale { display: flex; }
+.g-tick { font-size: 10.5px; color: var(--muted); font-weight: 700; }
+.g1 { background: #4f46e5; } .g2 { background: #0ea5e9; } .g3 { background: #059669; }
+.g4 { background: #d97706; } .g5 { background: #db2777; } .g6 { background: #7c3aed; }
+/* ---------- slides / figures ---------- */
+.figrow { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+.slide {
+  flex: 1 1 300px; max-width: 470px; break-inside: avoid;
+  border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+  background: #fff; box-shadow: 0 1px 4px rgba(16,24,40,.08);
+}
+.slide img { display: block; width: 100%; height: auto; }
+.slide .cap {
+  font-size: 10.5px; color: var(--soft); padding: 5px 9px;
+  background: #f8fafc; border-top: 1px dashed var(--line);
+}
+.slide .cap b { color: var(--pri-dark); }
+.fig1 { max-width: 520px; }
+/* ---------- callouts ---------- */
+.co { border: 1px solid var(--line); border-left-width: 5px; border-radius: 9px; padding: 8px 13px; margin: 10px 0; break-inside: avoid; background: #fff; }
+.co .tt { font-weight: 800; font-size: .88rem; margin-bottom: 2px; }
+.co p { margin: 2px 0; }
+.co.exam { border-left-color: var(--red); } .co.exam .tt { color: var(--red); }
+.co.tip { border-left-color: var(--green); } .co.tip .tt { color: var(--green); }
+.co.an { border-left-color: var(--violet); background: var(--violet-soft); border-color: #ddd6fe; } .co.an .tt { color: var(--violet); }
+.co.note { border-left-color: #0ea5e9; } .co.note .tt { color: #0284c7; }
+.co.warn { border-left-color: var(--amber); background: var(--amber-soft); border-color: #fde68a; } .co.warn .tt { color: var(--amber); }
+/* กล่องนำเข้าบท: ความหมาย ความสำคัญ การใช้จริง */
+.intro {
+  background: #f0f9ff; border: 1.5px solid #bae6fd; border-left: 6px solid #0ea5e9;
+  border-radius: 10px; padding: 10px 15px; margin: 0 0 14px; break-inside: avoid;
+}
+.intro .it { font-weight: 800; color: #0369a1; margin-bottom: 3px; font-size: .95rem; }
+.intro p { margin: 3px 0; font-size: 12.6px; }
+/* ---------- formula ---------- */
+.fm {
+  background: var(--pri-soft); border: 1.5px dashed #a5b4fc; color: var(--pri-dark);
+  border-radius: 9px; padding: 8px 14px; margin: 9px 0; text-align: center;
+  font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 12.5px;
+}
+.fm small { display: block; font-family: "Noto Sans Thai", sans-serif; font-weight: 600; color: var(--soft); margin-top: 3px; }
+/* ---------- steps ---------- */
+ol.st { margin: 8px 0; padding-left: 0; list-style: none; counter-reset: st; }
+ol.st > li { counter-increment: st; position: relative; padding: 0 0 10px 38px; }
+ol.st > li::before {
+  content: counter(st); position: absolute; left: 0; top: 1px;
+  width: 26px; height: 26px; border-radius: 50%; background: var(--pri); color: #fff;
+  font-weight: 800; font-size: .8rem; display: flex; align-items: center; justify-content: center;
+}
+ol.st > li::after { content: ""; position: absolute; left: 12.5px; top: 30px; bottom: 2px; width: 2px; background: var(--line); }
+ol.st > li:last-child::after { display: none; }
+/* ---------- quiz (Quizizz) cards ---------- */
+.qz { border: 1px solid var(--line); border-radius: 9px; margin: 8px 0; break-inside: avoid; overflow: hidden; }
+.qz .qh {
+  display: flex; gap: 8px; align-items: baseline; padding: 5px 11px;
+  background: #f8fafc; border-bottom: 1px dashed var(--line); font-size: 12px;
+}
+.qz .qn { font-weight: 800; color: var(--pri-dark); white-space: nowrap; }
+.qz .qa { font-weight: 800; color: var(--green); white-space: nowrap; }
+.qz .qq { padding: 6px 11px 2px; }
+.qz .qq .q { color: var(--soft); }
+.qz .qk { padding: 2px 11px 7px; font-size: 12.3px; }
+.qz .qk b { color: var(--pri-dark); }
+.qz2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 760px) { .qz2 { grid-template-columns: 1fr; } }
+/* ---------- cover / toc ---------- */
+.cover { text-align: center; padding: 30px 10px 12px; }
+.cover .badge { display: inline-block; background: var(--pri); color: #fff; border-radius: 999px; padding: 4px 16px; font-weight: 800; font-size: .8rem; letter-spacing: .04em; }
+.cover h1 { font-size: 1.75rem; margin: 12px 0 4px; }
+.cover .sub { color: var(--soft); }
+.cover .meta { margin-top: 10px; font-size: 12px; color: var(--muted); }
+.toc { columns: 2; column-gap: 34px; font-size: 12.8px; margin: 12px 0; }
+.toc div { break-inside: avoid; padding: 3px 0; border-bottom: 1px dotted var(--line); }
+.toc b { color: var(--pri-dark); }
+.toc .hot { color: var(--red); font-weight: 800; }
+/* ---------- mermaid ---------- */
+.mermaid { margin: 10px auto; text-align: center; break-inside: avoid; background: #fff; }
+/* จำกัดความกว้างแผนภาพ กันยืดเต็มหน้าจนกินพื้นที่พิมพ์ (แก้หน้า 4, 6, 39-41) */
+.mermaid svg { max-width: 520px !important; width: auto; height: auto; }
+/* แผนภาพกว้างพิเศษ (2 คอลัมน์) — ใหญ่ขึ้นเพื่อให้อ่านตัวหนังสือในได้ */
+.mermaid.wide svg { max-width: 700px !important; }
+/* แผนภาพขนาดย่อ — ให้ลงช่องว่างที่เหลือของหน้า */
+.mermaid.small svg { max-width: 430px !important; }
+/* แถวสไลด์ 3 ใบ — ย่อให้แถวเดียวจบ ไม่ทิ้งการ์ดหลุดแถว */
+.figrow.fig3 .slide { flex: 1 1 220px; max-width: 236px; }
+.figrow.fig3 .slide .cap { font-size: 9.5px; }
+/* กันบรรทัดนำหน้าตาราง/กล่องถูกแยกข้ามหน้า */
+.keep { break-inside: avoid; }
+/* ---------- misc ---------- */
+.pill { display: inline-block; font-size: 10.5px; font-weight: 800; padding: 2px 10px; border-radius: 999px; background: var(--pri-soft); color: var(--pri-dark); margin-right: 5px; }
+.pill.hot { background: var(--red-soft); color: var(--red); }
+.pill.gr { background: var(--green-soft); color: var(--green); }
+.pill.vi { background: var(--violet-soft); color: var(--violet); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
+ul { margin: 5px 0; padding-left: 20px; }
+li { margin: 2.5px 0; }
+kbd { background: #e2e8f0; border-radius: 4px; padding: 0 5px; font-family: monospace; font-size: .85em; }
+/* ---------- Socrative compact tables ---------- */
+table.sqz { font-size: 10.6px; }
+table.sqz td, table.sqz th { padding: 3px 7px; vertical-align: top; }
+table.sqz td.small { font-size: 9.8px; color: var(--soft); }
+
+/* ---------- PRINT ---------- */
+@media print {
+  body { background: #fff; font-size: 11.6px; }
+  .page { box-shadow: none; max-width: none; padding: 0; }
+  @page { size: A4; margin: 11mm 10mm; }
+  h2.part { margin: 0 -10mm 12px; padding: 9px 10mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .noprint { display: none !important; }
+  .slide { box-shadow: none; }
+  pre.code, table.t, .co, .qz, .gantt, .fm { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  a { color: inherit; text-decoration: none; }
+  .qz2 { gap: 6px; }
+}
+</style>
+<style>
+.partnav { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:0 0 14px; padding:8px 11px; border:1px solid var(--line); border-radius:9px; background:#fff; font-size:12.5px; }
+.partnav a { padding:2px 9px; border-radius:999px; background:var(--pri-soft); color:var(--pri-dark); text-decoration:none; }
+.partnav a.cur { background:var(--pri); color:#fff; font-weight:700; }
+.partnav .brand { color:var(--pri-dark); font-weight:800; margin-right:4px; }
+.partnav .full { margin-left:auto; background:#f1f4f9; color:var(--ink); }
+@media print { .partnav { display:none } }
+</style></head>
+<body>
+<div class="page">
+<div class="partnav">
+  <span class="brand">📘 OS Open Book</span>
+  <a href="A-process.html">A · Process/fork</a>
+  <a href="B-thread.html">B · Thread</a>
+  <a href="C-scheduling.html">C · Scheduling</a>
+  <a href="D-race-cs.html">D · Race/CS</a>
+  <a href="E-semaphore.html">E · Semaphore</a>
+  <a href="F-deadlock.html">F · Deadlock</a>
+  <a href="G-real-memory.html">G · Real Mem</a>
+  <a href="H-paging.html">H · Paging</a>
+  <a href="I-virtual-memory.html">I · Virtual Mem</a>
+  <a href="J-file-system.html" class="cur">J · File System</a>
+  <a href="K-quizizz.html">K · Quizizz</a>
+  <a href="L-socrative.html">L · Socrative</a>
+  <a href="M-formulas.html">M · สูตรเร็ว</a>
+  <a class="full" href="openbook.html">📄 เอกสารเต็ม (ไฟล์เดียว)</a>
+</div>
+<!-- ================= PART J: FILE SYSTEM ================= -->
+<h2 class="part">J. File System <span style="font-size:.8em">(OSNo10)</span></h2>
+<div class="intro">
+  <div class="it">📖 รู้จักส่วนนี้ก่อนอ่าน</div>
+  <p><b>ความหมาย:</b> File System = ผู้จัดการไฟล์บนดิสก์ — ตั้งชื่อ เก็บ ดึง แก้ไข จัด metadata และกำหนดสิทธิ์การเข้าถึง โดยที่เราไม่ต้องรู้เลยว่าข้อมูลอยู่เซกเตอร์ไหนของฮาร์ดดิสก์</p>
+  <p><b>ความสำคัญกับข้อสอบ:</b> เทียบ FAT32 (ระบบไฟล์เก่า ไฟล์เกิน 4GB ไม่ได้)/NTFS (ระบบไฟล์ของ Windows)/ext4/exFAT (FAT32 ตัวใหม่ ไฟล์ใหญ่ได้)/APFS (ระบบไฟล์ของ Apple), วิธีจัดสรรบล็อก 3 แบบ, คำนวณ inode (โครงสร้างเก็บข้อมูลไฟล์ของยูนิกซ์), hard link vs symbolic link, สิทธิ์ rwx → ส่วนใหญ่ออกถูก/ผิด + โจทย์คำนวณสั้น ๆ</p>
+  <p><b>ใช้จริงในคอมพิวเตอร์:</b> เลือกฟอร์แมตแฟลช (FAT32 เก็บไฟล์เกิน 4GB ไม่ได้!), คำสั่ง chmod/ls -l ที่เจอทุกวันใน Linux, สร้าง shortcut ไฟล์ = symbolic link — ใช้ในชีวิตประจำวันจริง</p>
+</div>
+
+<h3>J1. File System รับผิดชอบอะไร</h3>
+<p>จัดการเก็บ/ดึง/จัดระเบียบข้อมูลบน storage — หน้าที่: <b>ตั้งชื่อ+โครงสร้างไฟล์ · เก็บข้อมูล · ดึง/แก้ไข · Metadata · ความปลอดภัย/สิทธิ์เข้าถึง</b> · หัวใจคือ <b>abstraction</b>: interface เข้าถึงไฟล์เหมือนกันไม่ว่าข้อมูลอยู่บน HDD/SSD/USB (device independence — จาก Quizizz 4 ข้อ 2)</p>
+
+<h3>J2. 5 ระบบไฟล์ยอดนิยม</h3>
+<table class="t">
+  <tr><th>ระบบไฟล์</th><th class="c">ไฟล์สูงสุด</th><th class="c">Volume สูงสุด</th><th class="c">Journaling (สมุดบันทึกเพื่อกู้คืนหลังพัง)</th><th>ใช้ที่ไหน</th></tr>
+  <tr><td><b>FAT32</b> (1996)</td><td class="c"><b>4 GB</b> 😅</td><td class="c">8 TB</td><td class="c">ไม่มี</td><td>USB/การ์ด — เข้ากันได้<em>ทุก</em>เครื่อง</td></tr>
+  <tr><td><b>NTFS</b> (1993)</td><td class="c">16 TB</td><td class="c">256 TB</td><td class="c">✅</td><td>Windows — สิทธิ์/เข้ารหัส (EFS)/compression/quota</td></tr>
+  <tr><td><b>ext4</b> (2008)</td><td class="c">16 TB</td><td class="c">1 EB</td><td class="c">✅</td><td>Linux หลัก (ต่อจาก ext3)</td></tr>
+  <tr><td><b>exFAT</b> (2006)</td><td class="c">16 EB</td><td class="c">128 PB</td><td class="c">ไม่มี</td><td>USB/SD ใหญ่ข้าม OS — แก้ขีดจำกัด 4GB</td></tr>
+  <tr><td><b>APFS</b> (2017)</td><td class="c">8 EB</td><td class="c">8 EB</td><td class="c">✅ + Snapshots</td><td>Apple ทั้งหมด — เข้ารหัสทั้งดิสก์</td></tr>
+</table>
+<div class="co exam"><div class="tt">🎯 จาก Quizizz 4</div><p>• USB/external drive = <b>ExFAT</b> · • <b>Journaling ≠ เข้ารหัส!</b> — journaling คือบันทึก log ก่อนเขียนจริงเพื่อ<b>กู้คืนหลัง crash</b> · เข้ารหัสของ NTFS คือ <b>EFS</b> แยกกัน · • FAT32 ไฟล์เดี่ยว<b>ตัน 4GB เด็ดขาด</b> (ฟิลด์ 32 บิต) ดิสก์ว่างเยอะก็ไม่ช่วย</p></div>
+
+<h3>J3. File (ไฟล์) Allocation Methods 🔥 (วิธีจัดสรรบล็อกให้ไฟล์)</h3>
+<table class="t">
+  <tr><th>วิธี</th><th>หลักการ</th><th>ข้อดี</th><th>ข้อเสีย</th></tr>
+  <tr><td><b>Contiguous</b></td><td>บล็อก<b>ติดกันเป็นผืน</b> · directory เก็บ start + length</td><td>อ่านเร็วมาก (ไม่ต้อง seek)</td><td><b>External fragmentation</b> + ขยายไฟล์ยาก (บล็อกถัดไปถูกจอง = ต้องย้ายทั้งไฟล์)</td></tr>
+  <tr><td><b>Linked</b></td><td>บล็อกกระจาย + pointer (ตัวชี้ตำแหน่ง) ชี้บล็อกถัดไปเป็นโซ่ · directory เก็บ start + end</td><td>ไม่มี external frag · ขยายง่าย</td><td><b>Random access ช้ามาก</b> (ไล่โซ่) · pointer เปลืองพื้นที่ · pointer พัง = ท่อนหลังหาย</td></tr>
+  <tr><td><b>Indexed</b></td><td>รวม pointer ทุกตัวไว้ใน <b>Index Block</b> · directory ชี้มาจุดเดียว</td><td><b>Random access เร็ว</b> · ไม่มี external frag</td><td>เปลืองบล็อก index (ไฟล์จิ๋วก็เสีย 1 บล็อก) · ไฟล์ใหญ่ต้อง multi-level</td></tr>
+</table>
+<div class="co exam"><div class="tt">🎯 FAT (File Allocation Table (ตาราง))</div><p>FAT = ดึง pointer ทั้งหมดออกจาก data block มารวมไว้ใน<b>ตารางเดียว (อยู่ใน RAM)</b> → ไล่โซ่ได้เร็วโดยไม่ต้องเปิดดิสก์ทีละบล็อก — นี่คือที่มาของชื่อ FAT filesystem</p></div>
+<div class="figrow">
+  <div class="slide"><img src="slides/s10p19.jpg" alt="contiguous"><div class="cap"><b>สไลด์ p.19</b> Contiguous Allocation (การจัดสรรบล็อกติดกัน)</div></div>
+  <div class="slide"><img src="slides/s10p20.jpg" alt="linked"><div class="cap"><b>สไลด์ p.20</b> Linked Allocation (การจัดสรรแบบโซ่ pointer)</div></div>
+  <div class="slide"><img src="slides/s10p24.jpg" alt="FAT"><div class="cap"><b>สไลด์ p.24</b> File-Allocation Table</div></div>
+  <div class="slide"><img src="slides/s10p25.jpg" alt="indexed"><div class="cap"><b>สไลด์ p.25</b> Indexed Allocation (การจัดสรรแบบสารบัญ)</div></div>
+</div>
+
+<h4>J3.1 คำนวณ index / inode 🔥 (สูตรเดียวใช้ทุกโจทย์)</h4>
+<div class="fm">Entries ต่อ 1 index block = Block Size ÷ Pointer Size<small>จาก Quizizz 4: บล็อก 2KB ÷ pointer 4B = <b>512 entries</b> → ไฟล์ใหญ่สุด single-level = 512 × 2KB = 1MB</small></div>
+<p><b>UNIX Combined Scheme — inode (สไลด์ p.29, block 4KB, pointer 4B):</b> มี pointer 15 ตัว</p>
+<table class="t">
+  <tr><th>Pointer</th><th class="c">จำนวน</th><th>คำนวณ</th><th class="c">ขนาด</th></tr>
+  <tr><td><b>Direct</b> ชี้ data ตรง ๆ</td><td class="c">12</td><td>12 × 4KB</td><td class="c"><b>48 KB</b></td></tr>
+  <tr><td><b>Single indirect</b></td><td class="c">1</td><td>(4KB÷4B) × 4KB = 1024 × 4KB</td><td class="c"><b>4 MB</b></td></tr>
+  <tr><td><b>Double indirect</b></td><td class="c">1</td><td>1024² × 4KB</td><td class="c"><b>4 GB</b></td></tr>
+  <tr><td><b>Triple indirect</b></td><td class="c">1</td><td>1024³ × 4KB</td><td class="c"><b>4 TB</b></td></tr>
+  <tr class="hl"><td colspan="3">ไฟล์ใหญ่สุด ≈ 48KB + 4MB + 4GB + 4TB</td><td class="c">≈ <b>4 TB</b></td></tr>
+</table>
+<div class="co exam"><div class="tt">🎯 จุดพลาด</div><p>ลืมหา "1024 ช่องต่อบล็อก" ก่อน / ลืมบวก direct 48KB / บวกเลขผิดหลัก (4MB ≠ 4×1024KB=4096KB ก็คือ 4MB ตรงกัน แต่ double = 1024×1024×4KB = 4GB)</p></div>
+<div class="figrow">
+  <div class="slide fig1"><img src="slides/s10p29.jpg" alt="inode combined"><div class="cap"><b>สไลด์ p.29</b> Combined Scheme: UNIX (4K/block) — 15 pointers (ตัวชี้ตำแหน่ง)</div></div>
+  <div class="slide"><img src="slides/s10p28.jpg" alt="two-level index"><div class="cap"><b>สไลด์ p.28</b> Two-level index (512³ ในสไลด์ = block 512B)</div></div>
+</div>
+
+<h3>J4. Directory (โฟลเดอร์/สารบัญไฟล์) · Tree vs Acyclic Graph</h3>
+<ul>
+  <li><b>Directory</b> = symbol table แปลง "ชื่อไฟล์ → ข้อมูลไฟล์" · operations: search, create, delete, list, rename, traverse</li>
+  <li><b>Tree</b>: ไฟล์มี parent เดียว — ปลอดภัยแต่<b>แชร์ไม่ได้</b></li>
+  <li><b>Acyclic graph</b> (ไม่มีวงวน): แชร์ได้ผ่าน <b>link</b> — ปัญหา: aliasing (ไฟล์เดียวหลายชื่อ), การลบไฟล์แชร์</li>
+</ul>
+<h4>การลบไฟล์แชร์ 2 แนวทาง</h4>
+<table class="t">
+  <tr><th>แนวทาง</th><th>ทำอย่างไร</th><th>ข้อควรระวัง</th></tr>
+  <tr><td>ลบเมื่อไรก็ได้</td><td>ลบไฟล์ทันทีที่ใครสั่ง</td><td><b>Dangling pointer</b> — link ที่เหลือชี้หาอะไรที่ไม่มีแล้ว (แนวทาง symbolic link)</td></tr>
+  <tr><td>เก็บจน reference หมด</td><td>นับ <b>reference count</b>: เพิ่ม link → count+1, ลบ link → count−1, <b>count = 0 ค่อยปล่อยพื้นที่</b></td><td>ต้องตรวจว่ากราฟไม่มีวงวน (cycle) — แนวทาง hard link ของ UNIX</td></tr>
+</table>
+<div class="figrow">
+  <div class="slide"><img src="slides/s10p32.jpg" alt="tree"><div class="cap"><b>สไลด์ p.32</b> Tree-Structured Directories</div></div>
+  <div class="slide"><img src="slides/s10p33.jpg" alt="acyclic"><div class="cap"><b>สไลด์ p.33</b> Acyclic-graph Directory</div></div>
+</div>
+
+<h3>J5. Hard Link (ลิงก์ชี้ inode เดียวกัน) vs Symbolic (Soft) Link (ลิงก์ (ทางเชื่อม)) 🔥</h3>
+<table class="t">
+  <tr><th></th><th>Hard Link <code>ln original new</code></th><th>Symbolic Link (ลิงก์แบบเก็บ path (shortcut)) <code>ln -s original new</code></th></tr>
+  <tr><td><b>ชี้ไปที่</b></td><td>directory entry ชี้<b>inode เดียวกัน</b>โดยตรง + เพิ่ม link count</td><td><b>ไฟล์ใหม่แยกต่างหาก</b> เก็บ "path" ของต้นทาง (shortcut)</td></tr>
+  <tr><td><b>ลบต้นฉบับแล้ว</b></td><td class="ok">ข้อมูลยังอยู่ — ปล่อยจริงเมื่อ <b>link count = 0</b></td><td class="no">กลายเป็น <b>broken/dangling link</b></td></tr>
+  <tr><td><b>ข้าม partition/FS</b></td><td class="no">❌ ห้าม</td><td class="ok">✅ ได้</td></tr>
+  <tr><td><b>ชี้ directory</b></td><td class="no">❌ ห้าม (กัน cycle)</td><td class="ok">✅ ได้</td></tr>
+</table>
+<div class="co an"><div class="tt">🏠 อุปมา</div><p>Hard link = ลงทะเบียนบ้านเพิ่มอีกชื่อ — บ้านหลังเดิม อยู่ต่อจนคนทะเบียนหมด · Soft link = กระดาษโน้ตเขียนว่า "บ้านอยู่ซอย 5" — โยนบ้านทิ้ง กระดาษก็ชี้อากาศ</p></div>
+<div class="co exam"><div class="tt">🎯 จาก Quizizz 4</div><p>• Symbolic link อีกชื่อคือ <b>soft link</b> ไม่ใช่ hard link · • Hard link จัดการด้วย <b>Reference Counter</b> ✓ · • <b>ไม่มีคำสั่ง hardln!</b> — จริงคือ <code>ln</code> (hard) / <code>ln -s</code> (symbolic)</p></div>
+<div class="figrow">
+  <div class="slide"><img src="slides/s10p42.jpg" alt="hard link"><div class="cap"><b>สไลด์ p.42</b> Hard Link</div></div>
+  <div class="slide"><img src="slides/s10p44.jpg" alt="symbolic link"><div class="cap"><b>สไลด์ p.44</b> Symbolic Link (Soft Link)</div></div>
+</div>
+
+<h3>J6. Mounting (การติดตั้งดิสก์เข้าระบบไฟล์)</h3>
+<ul>
+  <li><b>Mounting</b> = ติด filesystem ของอุปกรณ์ (partition/USB/network) เข้า directory tree ที่ <b>mount (ติดตั้งเข้าระบบไฟล์) point</b> เช่น <code>mount /dev/sdb1 /mnt/usb</code></li>
+  <li>ก่อนถอดต้อง <code>umount</code> — ให้การเขียนค้าง ๆ เสร็จก่อน ไม่งั้นข้อมูลพัง</li>
+  <li>จาก Quizizz 4: อุปกรณ์เดียว <b>mount ได้หลาย mount point</b> (ข้อความว่า "ไม่สามารถ" = เท็จ)</li>
+</ul>
+<div class="figrow">
+  <div class="slide fig1"><img src="slides/s10p46.jpg" alt="mounting"><div class="cap"><b>สไลด์ p.46</b> File System Mounting</div></div>
+  <div class="slide"><img src="slides/s10p48.jpg" alt="how mounting works"><div class="cap"><b>สไลด์ p.48</b> How Mounting Works? (mount/umount command)</div></div>
+</div>
+
+<h3>J7. Protection — สิทธิ์ RWX 🔥</h3>
+<p>เจ้าของไฟล์คุมได้ 2 อย่าง: <b>what can be done</b> (read/write/execute) กับ <b>by whom</b> (owner/group/others)</p>
+<div class="fm">R = 2² = 4 · W = 2¹ = 2 · X = 2⁰ = 1<small>3 กลุ่ม: owner, group, other (public) — ตัวอย่างสไลด์ p.50: owner=7 (rwx), group=6 (rw-), public=1 (--x) = <b>761</b></small></div>
+<table class="t">
+  <tr><th>เลข</th><th class="c">บวกได้จาก</th><th>แปลง</th></tr>
+  <tr><td class="c">7</td><td class="c">4+2+1</td><td>rwx — ทุกสิทธิ์</td></tr>
+  <tr><td class="c">6</td><td class="c">4+2</td><td>rw-</td></tr>
+  <tr><td class="c">5</td><td class="c">4+1</td><td>r-x (ไม่ใช่ 6! จาก Quizizz)</td></tr>
+  <tr><td class="c">4</td><td class="c">4</td><td>r--</td></tr>
+  <tr><td class="c">0</td><td class="c">—</td><td>--- ไม่มีสิทธิ์</td></tr>
+</table>
+<div class="figrow">
+  <div class="slide"><img src="slides/s10p50.jpg" alt="access lists"><div class="cap"><b>สไลด์ p.50</b> Access Lists and Groups (RWX 7 6 1)</div></div>
+</div>
+</div>
+</body>
+</html>

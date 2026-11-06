@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OS Open Book — ส่วน K</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#eef0ff', primaryBorderColor: '#4f46e5', primaryTextColor: '#1c2333',
+    lineColor: '#64748b', secondaryColor: '#ecfdf5', tertiaryColor: '#fff7ed',
+    fontSize: '13px', fontFamily: 'Noto Sans Thai, sans-serif'
+  },
+  flowchart: { curve: 'basis', htmlLabels: true },
+  sequence: { actorFontSize: 13, messageFontSize: 12 }
+});
+</script>
+<style>
+:root {
+  --ink: #1c2333; --soft: #4a5568; --muted: #8a94a6; --line: #e3e8f0;
+  --pri: #4f46e5; --pri-soft: #eef0ff; --pri-dark: #3730a3;
+  --red: #dc2626; --red-soft: #fef2f2; --green: #059669; --green-soft: #ecfdf5;
+  --amber: #d97706; --amber-soft: #fffbeb; --violet: #7c3aed; --violet-soft: #f5f3ff;
+  --teal: #0d9488; --teal-soft: #f0fdfa; --pink: #db2777; --pink-soft: #fdf2f8;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: #eef1f6; color: var(--ink);
+  font-family: "Noto Sans Thai", "Sarabun", system-ui, sans-serif;
+  font-size: 13.5px; line-height: 1.6;
+}
+.page { max-width: 980px; margin: 0 auto; background: #fff; padding: 26px 30px 60px; box-shadow: 0 0 24px rgba(16,24,40,.08); }
+h1 { font-size: 1.55rem; margin: 8px 0 6px; }
+h2.part {
+  break-inside: avoid; break-after: avoid;   /* ไม่บังคับขึ้นหน้าใหม่ — ไหลต่อเนื่อง ประหยัดกระดาษ (แก้หน้าว่างมากเกิน) */
+  margin: 8px -30px 14px; padding: 13px 30px;
+  background: linear-gradient(90deg, var(--pri), #0ea5e9); color: #fff;
+  font-size: 1.25rem;
+}
+h2.part:first-of-type { break-before: auto; }
+h3 { font-size: 1.06rem; margin: 22px 0 6px; padding: 5px 12px; background: var(--pri-soft); border-left: 5px solid var(--pri); break-after: avoid; }
+h4 { font-size: .95rem; margin: 15px 0 4px; color: var(--pri-dark); break-after: avoid; }
+p { margin: 6px 0; }
+.lead { color: var(--soft); }
+b, strong { color: #111827; }
+small, .small { font-size: 11.5px; color: var(--muted); }
+code {
+  font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  font-size: .86em; background: #f1f4f9; border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px;
+}
+/* ---------- code blocks (ธีมสว่าง สำหรับพิมพ์กระดาษ) ---------- */
+pre.code {
+  background: #f6f8fa; color: #1f2328; border: 1px solid #d0d7de; border-radius: 8px;
+  padding: 11px 14px; overflow-x: auto; break-inside: avoid;
+  font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  font-size: 11.3px; line-height: 1.6; margin: 9px 0;
+}
+pre.code .c { color: #57606a; font-style: italic; }
+pre.code .k { color: #cf222e; }
+pre.code .f { color: #8250df; }
+pre.code .n { color: #0550ae; }
+pre.code .s { color: #0a3069; }
+pre.code .hl { background: #fff8c5; display: inline-block; width: 100%; border-radius: 4px; box-shadow: -3px 0 0 0 #d4a72c; }
+/* ---------- tables ---------- */
+table.t { border-collapse: collapse; width: 100%; margin: 9px 0; break-inside: avoid; font-size: 12.3px; }
+table.t th { background: #f1f4f9; text-align: left; padding: 5px 9px; border: 1px solid var(--line); }
+table.t td { padding: 5px 9px; border: 1px solid var(--line); vertical-align: top; }
+table.t .c { text-align: center; }
+table.t tr.hl td { background: var(--pri-soft); font-weight: 700; }
+table.t td.ok { background: var(--green-soft); }
+table.t td.no { background: var(--red-soft); }
+/* ---------- Gantt ---------- */
+.gantt { margin: 10px 0 4px; break-inside: avoid; }
+.g-row { display: flex; }
+.g-cell {
+  height: 34px; display: flex; align-items: center; justify-content: center;
+  font-weight: 800; color: #fff; font-size: 12px; text-shadow: 0 1px 2px rgba(0,0,0,.3);
+}
+.g-scale { display: flex; }
+.g-tick { font-size: 10.5px; color: var(--muted); font-weight: 700; }
+.g1 { background: #4f46e5; } .g2 { background: #0ea5e9; } .g3 { background: #059669; }
+.g4 { background: #d97706; } .g5 { background: #db2777; } .g6 { background: #7c3aed; }
+/* ---------- slides / figures ---------- */
+.figrow { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+.slide {
+  flex: 1 1 300px; max-width: 470px; break-inside: avoid;
+  border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+  background: #fff; box-shadow: 0 1px 4px rgba(16,24,40,.08);
+}
+.slide img { display: block; width: 100%; height: auto; }
+.slide .cap {
+  font-size: 10.5px; color: var(--soft); padding: 5px 9px;
+  background: #f8fafc; border-top: 1px dashed var(--line);
+}
+.slide .cap b { color: var(--pri-dark); }
+.fig1 { max-width: 520px; }
+/* ---------- callouts ---------- */
+.co { border: 1px solid var(--line); border-left-width: 5px; border-radius: 9px; padding: 8px 13px; margin: 10px 0; break-inside: avoid; background: #fff; }
+.co .tt { font-weight: 800; font-size: .88rem; margin-bottom: 2px; }
+.co p { margin: 2px 0; }
+.co.exam { border-left-color: var(--red); } .co.exam .tt { color: var(--red); }
+.co.tip { border-left-color: var(--green); } .co.tip .tt { color: var(--green); }
+.co.an { border-left-color: var(--violet); background: var(--violet-soft); border-color: #ddd6fe; } .co.an .tt { color: var(--violet); }
+.co.note { border-left-color: #0ea5e9; } .co.note .tt { color: #0284c7; }
+.co.warn { border-left-color: var(--amber); background: var(--amber-soft); border-color: #fde68a; } .co.warn .tt { color: var(--amber); }
+/* กล่องนำเข้าบท: ความหมาย ความสำคัญ การใช้จริง */
+.intro {
+  background: #f0f9ff; border: 1.5px solid #bae6fd; border-left: 6px solid #0ea5e9;
+  border-radius: 10px; padding: 10px 15px; margin: 0 0 14px; break-inside: avoid;
+}
+.intro .it { font-weight: 800; color: #0369a1; margin-bottom: 3px; font-size: .95rem; }
+.intro p { margin: 3px 0; font-size: 12.6px; }
+/* ---------- formula ---------- */
+.fm {
+  background: var(--pri-soft); border: 1.5px dashed #a5b4fc; color: var(--pri-dark);
+  border-radius: 9px; padding: 8px 14px; margin: 9px 0; text-align: center;
+  font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 12.5px;
+}
+.fm small { display: block; font-family: "Noto Sans Thai", sans-serif; font-weight: 600; color: var(--soft); margin-top: 3px; }
+/* ---------- steps ---------- */
+ol.st { margin: 8px 0; padding-left: 0; list-style: none; counter-reset: st; }
+ol.st > li { counter-increment: st; position: relative; padding: 0 0 10px 38px; }
+ol.st > li::before {
+  content: counter(st); position: absolute; left: 0; top: 1px;
+  width: 26px; height: 26px; border-radius: 50%; background: var(--pri); color: #fff;
+  font-weight: 800; font-size: .8rem; display: flex; align-items: center; justify-content: center;
+}
+ol.st > li::after { content: ""; position: absolute; left: 12.5px; top: 30px; bottom: 2px; width: 2px; background: var(--line); }
+ol.st > li:last-child::after { display: none; }
+/* ---------- quiz (Quizizz) cards ---------- */
+.qz { border: 1px solid var(--line); border-radius: 9px; margin: 8px 0; break-inside: avoid; overflow: hidden; }
+.qz .qh {
+  display: flex; gap: 8px; align-items: baseline; padding: 5px 11px;
+  background: #f8fafc; border-bottom: 1px dashed var(--line); font-size: 12px;
+}
+.qz .qn { font-weight: 800; color: var(--pri-dark); white-space: nowrap; }
+.qz .qa { font-weight: 800; color: var(--green); white-space: nowrap; }
+.qz .qq { padding: 6px 11px 2px; }
+.qz .qq .q { color: var(--soft); }
+.qz .qk { padding: 2px 11px 7px; font-size: 12.3px; }
+.qz .qk b { color: var(--pri-dark); }
+.qz2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 760px) { .qz2 { grid-template-columns: 1fr; } }
+/* ---------- cover / toc ---------- */
+.cover { text-align: center; padding: 30px 10px 12px; }
+.cover .badge { display: inline-block; background: var(--pri); color: #fff; border-radius: 999px; padding: 4px 16px; font-weight: 800; font-size: .8rem; letter-spacing: .04em; }
+.cover h1 { font-size: 1.75rem; margin: 12px 0 4px; }
+.cover .sub { color: var(--soft); }
+.cover .meta { margin-top: 10px; font-size: 12px; color: var(--muted); }
+.toc { columns: 2; column-gap: 34px; font-size: 12.8px; margin: 12px 0; }
+.toc div { break-inside: avoid; padding: 3px 0; border-bottom: 1px dotted var(--line); }
+.toc b { color: var(--pri-dark); }
+.toc .hot { color: var(--red); font-weight: 800; }
+/* ---------- mermaid ---------- */
+.mermaid { margin: 10px auto; text-align: center; break-inside: avoid; background: #fff; }
+/* จำกัดความกว้างแผนภาพ กันยืดเต็มหน้าจนกินพื้นที่พิมพ์ (แก้หน้า 4, 6, 39-41) */
+.mermaid svg { max-width: 520px !important; width: auto; height: auto; }
+/* แผนภาพกว้างพิเศษ (2 คอลัมน์) — ใหญ่ขึ้นเพื่อให้อ่านตัวหนังสือในได้ */
+.mermaid.wide svg { max-width: 700px !important; }
+/* แผนภาพขนาดย่อ — ให้ลงช่องว่างที่เหลือของหน้า */
+.mermaid.small svg { max-width: 430px !important; }
+/* แถวสไลด์ 3 ใบ — ย่อให้แถวเดียวจบ ไม่ทิ้งการ์ดหลุดแถว */
+.figrow.fig3 .slide { flex: 1 1 220px; max-width: 236px; }
+.figrow.fig3 .slide .cap { font-size: 9.5px; }
+/* กันบรรทัดนำหน้าตาราง/กล่องถูกแยกข้ามหน้า */
+.keep { break-inside: avoid; }
+/* ---------- misc ---------- */
+.pill { display: inline-block; font-size: 10.5px; font-weight: 800; padding: 2px 10px; border-radius: 999px; background: var(--pri-soft); color: var(--pri-dark); margin-right: 5px; }
+.pill.hot { background: var(--red-soft); color: var(--red); }
+.pill.gr { background: var(--green-soft); color: var(--green); }
+.pill.vi { background: var(--violet-soft); color: var(--violet); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
+ul { margin: 5px 0; padding-left: 20px; }
+li { margin: 2.5px 0; }
+kbd { background: #e2e8f0; border-radius: 4px; padding: 0 5px; font-family: monospace; font-size: .85em; }
+/* ---------- Socrative compact tables ---------- */
+table.sqz { font-size: 10.6px; }
+table.sqz td, table.sqz th { padding: 3px 7px; vertical-align: top; }
+table.sqz td.small { font-size: 9.8px; color: var(--soft); }
+
+/* ---------- PRINT ---------- */
+@media print {
+  body { background: #fff; font-size: 11.6px; }
+  .page { box-shadow: none; max-width: none; padding: 0; }
+  @page { size: A4; margin: 11mm 10mm; }
+  h2.part { margin: 0 -10mm 12px; padding: 9px 10mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .noprint { display: none !important; }
+  .slide { box-shadow: none; }
+  pre.code, table.t, .co, .qz, .gantt, .fm { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  a { color: inherit; text-decoration: none; }
+  .qz2 { gap: 6px; }
+}
+</style>
+<style>
+.partnav { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:0 0 14px; padding:8px 11px; border:1px solid var(--line); border-radius:9px; background:#fff; font-size:12.5px; }
+.partnav a { padding:2px 9px; border-radius:999px; background:var(--pri-soft); color:var(--pri-dark); text-decoration:none; }
+.partnav a.cur { background:var(--pri); color:#fff; font-weight:700; }
+.partnav .brand { color:var(--pri-dark); font-weight:800; margin-right:4px; }
+.partnav .full { margin-left:auto; background:#f1f4f9; color:var(--ink); }
+@media print { .partnav { display:none } }
+</style></head>
+<body>
+<div class="page">
+<div class="partnav">
+  <span class="brand">📘 OS Open Book</span>
+  <a href="A-process.html">A · Process/fork</a>
+  <a href="B-thread.html">B · Thread</a>
+  <a href="C-scheduling.html">C · Scheduling</a>
+  <a href="D-race-cs.html">D · Race/CS</a>
+  <a href="E-semaphore.html">E · Semaphore</a>
+  <a href="F-deadlock.html">F · Deadlock</a>
+  <a href="G-real-memory.html">G · Real Mem</a>
+  <a href="H-paging.html">H · Paging</a>
+  <a href="I-virtual-memory.html">I · Virtual Mem</a>
+  <a href="J-file-system.html">J · File System</a>
+  <a href="K-quizizz.html" class="cur">K · Quizizz</a>
+  <a href="L-socrative.html">L · Socrative</a>
+  <a href="M-formulas.html">M · สูตรเร็ว</a>
+  <a class="full" href="openbook.html">📄 เอกสารเต็ม (ไฟล์เดียว)</a>
+</div>
+<!-- ================= PART K: QUIZIZZ ================= -->
+<h2 class="part">K. ความรู้จาก Quizizz ในห้องเรียน (4 ชุด) — จัดเรียงตามชุด</h2>
+<div class="intro">
+  <div class="it">📖 รู้จักส่วนนี้ก่อนอ่าน</div>
+  <p><b>ความหมาย:</b> ความรู้ที่สกัดจากแบบควิซในห้องเรียนจริง 4 ชุด (Signal/Pipe, Shared Memory (หน่วยความจำที่แชร์กัน), Semaphore, File Management) — ทุกข้อมี "ความรู้สำคัญ" ที่ตอบโจทย์แบบเดิมได้ทันที</p>
+  <p><b>ความสำคัญกับข้อสอบ:</b> นี่คือธนาคารข้อสอบย่อที่ตรงสไตล์อาจารย์ที่สุด — หลายข้อมีกับดักที่อาจารย์ตั้งใจหลอก (เช่น ข้อ 8 ชุด 4 มีคีย์ขัดตำรา — ต้องตอบ False ตามคีย์!) อ่านก่อนสอบคุ้มที่สุด</p>
+  <p><b>ใช้จริงในคอมพิวเตอร์:</b> ประเด็นในควิซคือข้อผิดพลาดจริงที่โปรแกรมเมอร์พลาดบ่อย เช่น เข้าใจว่า signal() ใช้ส่งสัญญาณ, ลืมปิดปลาย pipe (ท่อส่งข้อมูลทางเดียว) — รู้ไว้เขียนโค้ดจริงไม่พัง</p>
+</div>
+<p class="lead">ทุกข้อเป็นความรู้ที่ตอบโจทย์แบบเดิมได้ทันที — อ่านกล่อง "ความรู้สำคัญ" ต่อข้อ</p>
+
+<h3>K1. Quiz 1 — IPC & Unix Signal</h3>
+<div class="qz2">
+<div class="qz"><div class="qh"><span class="qn">ข้อ 2</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"Signal ใช้ส่งข้อความระหว่าง process"</span></div>
+<div class="qk"><b>ความรู้:</b> Signal = <b>event notification</b> เท่านั้น — ไม่มี payload แนบข้อมูลไม่ได้ ผู้รับรู้แค่ว่า "signal ชนิด X มา" · ส่งข้อมูลจริงใช้ Message Passing (การส่งข้อความผ่าน OS) / Shared Memory</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 3</span><span class="qa">Message Passing</span></div>
+<div class="qq"><span class="q">"IPC ที่ OS จัดจังหวะการรับส่งให้"</span></div>
+<div class="qk"><b>ความรู้:</b> Message passing ให้ OS จัดทั้ง send/receive และ<b>จังหวะ</b> (blocking/non-blocking) · Shared Memory จัดเตรียมแค่พื้นที่ — <b>ซิงก์จังหวะเป็นหน้าที่ของ process เอง</b> (เช่นใช้ semaphore)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 4</span><span class="qa">SIGINT</span></div>
+<div class="qq"><span class="q">"Ctrl-C ส่ง signal อะไร"</span></div>
+<div class="qk"><b>ความรู้:</b> Ctrl-C → <b>SIGINT</b> (INT = INTerrupt) · คู่เทียบ: SIGFPE = หารศูนย์, SIGTERM = ขอจบสุภาพ (default ของ kill (ส่งสัญญาณไปยังกระบวนการอื่น)), SIGQUIT = Ctrl-\, SIGKILL = ฆ่าทันทีจับไม่ได้ (9)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 5</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"signal() ใช้ส่ง signal ระหว่าง process"</span></div>
+<div class="qk"><b>ความรู้:</b> <code>signal()</code> = <b>ลงทะเบียน handler (ฟังก์ชันรับมือเหตุการณ์)</b> ("โดน X แล้วทำอะไร") · ตัวส่งคือ <code>kill(pid, sig)</code> (ส่งข้าม process) และ <code>raise(sig)</code> (ส่งให้ตัวเอง)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 6</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"1 process จัดการ signal ได้แค่ 1 ตัว"</span></div>
+<div class="qk"><b>ความรู้:</b> จัดการได้<b>หลาย signal</b> — แต่ละชนิดมี handler ของตัวเอง · ข้อจำกัดจริง: 1 ชนิด มี 1 handler (ลงทะเบียนซ้ำ = ทับตัวเดิม)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 7</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"kill() ใช้ส่งได้แค่ SIGKILL"</span></div>
+<div class="qk"><b>ความรู้:</b> System (ระบบ) call <code>kill(pid, sig)</code> ส่งได้<b>ทุกชนิด</b> — SIGKILL แค่ 1 ตัวเลือก (ชื่อมาจากประวัติศาสตร์ ทำให้เข้าใจผิด)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 8</span><span class="qa">True</span></div>
+<div class="qq"><span class="q">"คำสั่ง kill ใน UNIX ใช้ส่ง signal ให้ process"</span></div>
+<div class="qk"><b>ความรู้:</b> หน้าที่จริงของคำสั่ง kill = <b>ส่ง signal</b> (default SIGTERM) · <code>kill -9 pid</code> = SIGKILL · ⚠️ แยกจากข้อ 7: system call ส่งได้ทุกชนิด (โจทย์ใส่ "เท่านั้น" มาหลอก)</div></div>
+</div>
+
+<h3>K2. Quiz 2 — Shared Memory & Message Passing (Pipe)</h3>
+<div class="qz2">
+<div class="qz"><div class="qh"><span class="qn">ข้อ 2</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"Message passing รองรับทิศทางเดียว"</span></div>
+<div class="qk"><b>ความรู้:</b> ทิศเดียวจริง ๆ คือ <b>pipe ธรรมดา (anonymous)</b> — สองทิศต้อง 2 pipe · Message passing แต่ละ process มีทั้ง send/receive = <b>สองทิศได้</b></div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 3</span><span class="qa">อาเรย์ int 2 ตัว</span></div>
+<div class="qq"><span class="q">"พารามิเตอร์ของ pipe()"</span></div>
+<div class="qk"><b>ความรู้:</b> <code>int pfd[2]; pipe(pfd);</code> — OS ใส่ค่า 2 ช่อง: <b>pfd[0] = ปลายอ่าน, pfd[1] = ปลายเขียน</b> (file (ไฟล์) descriptor ไม่ใช่ชื่อไฟล์ — pipe ธรรมดาไม่มีชื่อ)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 4</span><span class="qa">write(pfd[1], data, length)</span></div>
+<div class="qq"><span class="q">"ประโยคส่งข้อมูลเข้า pipe"</span></div>
+<div class="qk"><b>ความรู้:</b> pipe ใช้ system call ไฟล์มาตรฐาน: <b>write()</b> ส่ง / <b>read()</b> รับ · เขียนต้องลงปลายเขียน <b>pfd[1]</b> · จำ: "write to 1, read from 0"</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 5</span><span class="qa">dup2(pfd[1], 1)</span></div>
+<div class="qq"><span class="q">"เปลี่ยนทิศ stdout ไปปลายเขียน pipe"</span></div>
+<div class="qk"><b>ความรู้:</b> <code>dup2(oldfd, newfd)</code> = ทำให้ <b>newfd</b> ชี้ที่เดียวกับ oldfd · fd 0=stdin, 1=stdout, 2=stderr → stdout(1) ไหลเข้าปลายเขียน = <code>dup2(pfd[1],1)</code> · pattern มาตรฐาน: ฝั่งเขียน dup2(pfd[1],1) แล้ว exec / ฝั่งอ่าน dup2(pfd[0],0) · ปิดปลายที่ไม่ใช้ก่อน</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 6</span><span class="qa">shmget()</span></div>
+<div class="qq"><span class="q">"System call ขอสร้าง shared memory"</span></div>
+<div class="qk"><b>ความรู้:</b> shm<b>get</b> = get — ขอสร้าง/อ้างถึง segment ได้ <b>shmid</b> · (shmat=attach, shmdt=detach, shmctl=control/ลบ)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 7</span><span class="qa">ftok()</span></div>
+<div class="qq"><span class="q">"ฟังก์ชันสร้าง key ของ shared memory"</span></div>
+<div class="qk"><b>ความรู้:</b> <code>key_t ftok(path, id)</code> — path + id เดียวกัน → key เดียวกัน → อ้าง shm ก้อนเดียวกันได้ (นิยม path = ".")</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 8</span><span class="qa">0764</span></div>
+<div class="qq"><span class="q">"rwxrw-r-- เป็นเลขฐานแปดอะไร"</span></div>
+<div class="qk"><b>ความรู้:</b> r=4 w=2 x=1 → rwx=7, rw-=6, r--=4 → <b>0764</b> (ใช้กับ shmget flag เช่น IPC_CREAT | 0666 ด้วย)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 9</span><span class="qa">IPC_PRIVATE</span></div>
+<div class="qq"><span class="q">"shmget ที่การันตีไม่ซ้ำกับใครแน่นอน"</span></div>
+<div class="qk"><b>ความรู้:</b> <b>IPC_PRIVATE</b> = key พิเศษ OS สร้าง segment ใหม่ไม่ซ้ำใครเสมอ — นิยมใช้ parent→child (shmid ส่งต่อได้ในตระกูล) · IPC_EXCL แค่ flag กันชน ไม่การันตี</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 10</span><span class="qa">shared memory id</span></div>
+<div class="qq"><span class="q">"shmget() คืนอะไร"</span></div>
+<div class="qk"><b>ความรู้:</b> คืน <b>shmid</b> (เลขจำนวนเต็ม) — เอาไปใช้กับ shmat/shmctl/shmdt · flow: key → shmget → <b>shmid</b> → shmat → pointer</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 11</span><span class="qa">shmat()</span></div>
+<div class="qq"><span class="q">"ฟังก์ชันให้ตัวแปรอ้างถึงตำแหน่ง shared memory"</span></div>
+<div class="qk"><b>ความรู้:</b> shm<b>at</b> = attach — ผูก segment เข้า address space แล้ว<b>คืน pointer</b>: <code>shm_ptr = shmat(shmid, NULL, 0)</code></div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 12</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"ตัวแปรเก็บตำแหน่ง shm ต้องเป็น pointer ไป int เท่านั้น"</span></div>
+<div class="qk"><b>ความรู้:</b> shmat คืน <b>void*</b> — cast เป็นชนิดไหนก็ได้ (char*, struct data* ...) ข้อจำกัดเดียวคือต้องเป็น pointer</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 13</span><span class="qa">struct data *shm_ptr;</span></div>
+<div class="qq"><span class="q">"shmget(..., sizeof(struct data), ...) ตัวแปรชี้ต้องประกาศยังไง"</span></div>
+<div class="qk"><b>ความรู้:</b> จองขนาด sizeof(struct data) → pointer ต้องตรงชนิด: <code>struct data *p; p = (struct data *) shmat(shmid, NULL, 0);</code> ใช้ผ่าน <code>p->field</code></div></div>
+</div>
+<div class="co tip"><div class="tt">🟢 Shared Memory ครบวงจร (จำ 6 ขั้น)</div><pre class="code" style="margin:6px 0 0"><code>key_t key = <span class="f">ftok</span>(<span class="s">"."</span>, 'a');                    <span class="c">// 1. สร้าง key</span>
+<span class="k">int</span> shmid = <span class="f">shmget</span>(key, sizeof(<span class="k">struct</span> data), IPC_CREAT | 0666); <span class="c">// 2. สร้าง segment</span>
+<span class="k">struct</span> data *p = (<span class="k">struct</span> data *) <span class="f">shmat</span>(shmid, NULL, 0);   <span class="c">// 3. attach</span>
+<span class="c">/* 4. อ่าน/เขียนผ่าน p */</span>
+<span class="f">shmdt</span>(p);                                   <span class="c">// 5. detach</span>
+<span class="f">shmctl</span>(shmid, IPC_RMID, NULL);              <span class="c">// 6. ลบ (คนสุดท้าย)</span></code></pre></div>
+
+<h3>K3. Quiz 3 — Semaphore</h3>
+<div class="qz2">
+<div class="qz"><div class="qh"><span class="qn">ข้อ 2</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"Semaphore ที่ใช้กับ critical section คือ counting"</span></div>
+<div class="qk"><b>ความรู้:</b> CS ใช้ <b>binary semaphore (mutex)</b> เริ่ม 1: wait→CS→signal · counting (เริ่ม = จำนวน resource) ใช้กับ resource หลายหน่วย เช่น bounded buffer</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 3</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"Semaphore การันตีผ่านเงื่อนไข 3 ข้อของ CS"</span></div>
+<div class="qk"><b>ความรู้:</b> 3 เงื่อนไข = Mutual Exclusion / Progress / Bounded Waiting — semaphore การันตีได้แค่ <b>ข้อ 1</b> · progress/bounded waiting ขึ้นกับ implementation (classic อาจ starvation)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 4</span><span class="qa">2 ตัว</span></div>
+<div class="qq"><span class="q">"bounded buffer ใช้ counting semaphore กี่ตัว"</span></div>
+<div class="qk"><b>ความรู้:</b> ใช้รวม 3 ตัว: empty(n), full(0), mutex(1) — แต่<b>counting จริงมี 2</b> (empty, full) เพราะ mutex เป็น binary</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 5</span><span class="qa">empty</span></div>
+<div class="qq"><span class="q">"producer ตรวจช่องว่างด้วยตัวไหน"</span></div>
+<div class="qk"><b>ความรู้:</b> Producer: <code>wait(empty)</code> ขอช่องว่างก่อน · Consumer: <code>wait(full)</code> ก่อนอ่าน · mutex ใช้ตอนแตะ buffer จริง (ลำดับ: resource ก่อน mutex!)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 6</span><span class="qa">mutex</span></div>
+<div class="qq"><span class="q">"readers-writers คุมจำนวน reader ด้วย semaphore ไหน"</span></div>
+<div class="qk"><b>ความรู้:</b> <b>mutex</b> ครอบช่วง readcount++/-- · <b>readcount เป็น int ธรรมดา</b> ไม่ใช่ semaphore · wrt คุม writer / reader แรกล็อก-ตัวสุดท้ายปลด</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 7</span><span class="qa">resource</span></div>
+<div class="qq"><span class="q">"ตะเกียบใน Dining philosopher แทนอะไร"</span></div>
+<div class="qk"><b>ความรู้:</b> ตะเกียบ = <b>shared resource</b> (นักปราชญ์ = process) · implement ใช้ semaphore 1 ตัวต่อ 1 ตะเกียบ แต่ตัวตนของมันคือ resource</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 8</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"semaphore การันตีนักปราชญ์ทุกคนได้กิน"</span></div>
+<div class="qk"><b>ความรู้:</b> หยิบซ้ายพร้อมกัน → รอขวาเป็นวง = <b>deadlock</b> + ไม่มี bounded waiting → starvation · แก้: จำกัด ≤ 4 คน / คนนึงหยิบขวาก่อน / ใช้ Monitor</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 9</span><span class="qa">sem_post()</span></div>
+<div class="qq"><span class="q">"PThread semaphore ตัวไหน = signal()"</span></div>
+<div class="qk"><b>ความรู้:</b> PThread: <code>sem_init(&s,0,val)</code> สร้าง · <b>sem_wait = P (ลด)</b> · <b>sem_post = V (เพิ่ม/ปลุก)</b> · sem_destroy เก็บกวาด · <b>ไม่มี sem_signal ใน POSIX!</b></div></div>
+</div>
+
+<h3>K4. Quiz 4 — Introduction to File Management</h3>
+<div class="qz2">
+<div class="qz"><div class="qh"><span class="qn">ข้อ 2</span><span class="qa">True</span></div>
+<div class="qq"><span class="q">"เข้าถึงไฟล์เหมือนกันไม่ว่าอุปกรณ์อะไร"</span></div>
+<div class="qk"><b>ความรู้:</b> ระบบไฟล์ = ชั้น abstraction → open/read/write ชุดเดียวกันทุกอุปกรณ์ (<b>device independence</b>)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 3</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"Journaling = การเข้ารหัสไฟล์"</span></div>
+<div class="qk"><b>ความรู้:</b> Journaling = write-ahead log เพื่อ<b>กู้คืนหลัง crash</b> · การเข้ารหัสเป็นฟีเจอร์แยก (NTFS ใช้ <b>EFS</b>)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 4</span><span class="qa">ExFAT</span></div>
+<div class="qq"><span class="q">"ระบบไฟล์สำหรับ USB drive"</span></div>
+<div class="qk"><b>ความรู้:</b> USB/external = <b>ExFAT</b> (ใหญ่กว่า 4GB ข้าม Windows-macOS) · NTFS=Windows, ext4=Linux, APFS=Apple</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 5</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"contiguous ปัญหาคือ internal fragmentation"</span></div>
+<div class="qk"><b>ความรู้:</b> contiguous → <b>external</b> fragmentation (ต้องกันบล็อกติดกัน พื้นที่แตกเป็นหลุม) · internal = เศษในบล็อกสุดท้ายที่ไม่เต็ม</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 6</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"linked allocation เป็นการจัดสรรแบบต่อเนื่อง"</span></div>
+<div class="qk"><b>ความรู้:</b> linked = บล็อกกระจาย + pointer โซ่ = <b>non-contiguous</b> โดยนิยาม (FAT อยู่ตระกูลนี้)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 7</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"บล็อกใหญ่ → external fragmentation"</span></div>
+<div class="qk"><b>ความรู้:</b> บล็อกใหญ่ → เศษในบล็อกสุดท้ายเยอะ = <b>internal fragmentation</b> (ไฟล์ 1B ในบล็อก 4KB = เสีย ~4KB)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 8</span><span class="qa">False (ตามคีย์!)</span></div>
+<div class="qq"><span class="q">"single-level index: ขนาดไฟล์สูงสุดถูกจำกัดด้วยจำนวนช่องใน index block"</span></div>
+<div class="qk"><b>ความรู้:</b> ⚠️<b>คีย์ผู้สอน = False</b> (แม้ตามตำราน่าจะ True) — ตอบ False ตามคีย์ · ความรู้จริง: ไฟล์ใหญ่สุด = entries × block size</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 9</span><span class="qa">512</span></div>
+<div class="qq"><span class="q">"บล็อก 2KB, pointer 4B → 1 index block มีกี่ช่อง"</span></div>
+<div class="qk"><b>ความรู้:</b> entries = 2048 ÷ 4 = <b>512</b> → single-level ใหญ่สุด 512 × 2KB = 1MB · สูตรเดียวกับ inode ของ J3.1</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 10</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"Symbolic link เรียกอีกอย่างว่า hard link"</span></div>
+<div class="qk"><b>ความรู้:</b> symbolic = <b>soft link</b> (ไฟล์แยกเก็บ path) · hard link = entry ชี้ inode เดียวกัน</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 11</span><span class="qa">True</span></div>
+<div class="qq"><span class="q">"Hard link จัดการด้วย Reference Counter"</span></div>
+<div class="qk"><b>ความรู้:</b> inode เก็บ <b>link count</b> — rm แค่ลด counter ปล่อยพื้นที่เมื่อ = 0</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 12</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"คำสั่ง hardln ใช้สร้าง Hard Link"</span></div>
+<div class="qk"><b>ความรู้:</b> ไม่มี hardln! จริงคือ <code>ln target link</code> (hard) / <code>ln -s target link</code> (symbolic)</div></div>
+<div class="qz"><div class="qh"><span class="qn">ข้อ 13</span><span class="qa">False</span></div>
+<div class="qq"><span class="q">"mount อุปกรณ์เดียวกันได้แค่ 1 mount point"</span></div>
+<div class="qk"><b>ความรู้:</b> mount อุปกรณ์เดียวได้<b>หลาย mount point</b> (รองรับ bind mount) — "ไม่สามารถ" เป็นเท็จ</div></div>
+</div>
+</div>
+</body>
+</html>

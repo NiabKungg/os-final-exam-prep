@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OS Open Book — ส่วน E</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+mermaid.initialize({
+  startOnLoad: true,
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#eef0ff', primaryBorderColor: '#4f46e5', primaryTextColor: '#1c2333',
+    lineColor: '#64748b', secondaryColor: '#ecfdf5', tertiaryColor: '#fff7ed',
+    fontSize: '13px', fontFamily: 'Noto Sans Thai, sans-serif'
+  },
+  flowchart: { curve: 'basis', htmlLabels: true },
+  sequence: { actorFontSize: 13, messageFontSize: 12 }
+});
+</script>
+<style>
+:root {
+  --ink: #1c2333; --soft: #4a5568; --muted: #8a94a6; --line: #e3e8f0;
+  --pri: #4f46e5; --pri-soft: #eef0ff; --pri-dark: #3730a3;
+  --red: #dc2626; --red-soft: #fef2f2; --green: #059669; --green-soft: #ecfdf5;
+  --amber: #d97706; --amber-soft: #fffbeb; --violet: #7c3aed; --violet-soft: #f5f3ff;
+  --teal: #0d9488; --teal-soft: #f0fdfa; --pink: #db2777; --pink-soft: #fdf2f8;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: #eef1f6; color: var(--ink);
+  font-family: "Noto Sans Thai", "Sarabun", system-ui, sans-serif;
+  font-size: 13.5px; line-height: 1.6;
+}
+.page { max-width: 980px; margin: 0 auto; background: #fff; padding: 26px 30px 60px; box-shadow: 0 0 24px rgba(16,24,40,.08); }
+h1 { font-size: 1.55rem; margin: 8px 0 6px; }
+h2.part {
+  break-inside: avoid; break-after: avoid;   /* ไม่บังคับขึ้นหน้าใหม่ — ไหลต่อเนื่อง ประหยัดกระดาษ (แก้หน้าว่างมากเกิน) */
+  margin: 8px -30px 14px; padding: 13px 30px;
+  background: linear-gradient(90deg, var(--pri), #0ea5e9); color: #fff;
+  font-size: 1.25rem;
+}
+h2.part:first-of-type { break-before: auto; }
+h3 { font-size: 1.06rem; margin: 22px 0 6px; padding: 5px 12px; background: var(--pri-soft); border-left: 5px solid var(--pri); break-after: avoid; }
+h4 { font-size: .95rem; margin: 15px 0 4px; color: var(--pri-dark); break-after: avoid; }
+p { margin: 6px 0; }
+.lead { color: var(--soft); }
+b, strong { color: #111827; }
+small, .small { font-size: 11.5px; color: var(--muted); }
+code {
+  font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  font-size: .86em; background: #f1f4f9; border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px;
+}
+/* ---------- code blocks (ธีมสว่าง สำหรับพิมพ์กระดาษ) ---------- */
+pre.code {
+  background: #f6f8fa; color: #1f2328; border: 1px solid #d0d7de; border-radius: 8px;
+  padding: 11px 14px; overflow-x: auto; break-inside: avoid;
+  font-family: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  font-size: 11.3px; line-height: 1.6; margin: 9px 0;
+}
+pre.code .c { color: #57606a; font-style: italic; }
+pre.code .k { color: #cf222e; }
+pre.code .f { color: #8250df; }
+pre.code .n { color: #0550ae; }
+pre.code .s { color: #0a3069; }
+pre.code .hl { background: #fff8c5; display: inline-block; width: 100%; border-radius: 4px; box-shadow: -3px 0 0 0 #d4a72c; }
+/* ---------- tables ---------- */
+table.t { border-collapse: collapse; width: 100%; margin: 9px 0; break-inside: avoid; font-size: 12.3px; }
+table.t th { background: #f1f4f9; text-align: left; padding: 5px 9px; border: 1px solid var(--line); }
+table.t td { padding: 5px 9px; border: 1px solid var(--line); vertical-align: top; }
+table.t .c { text-align: center; }
+table.t tr.hl td { background: var(--pri-soft); font-weight: 700; }
+table.t td.ok { background: var(--green-soft); }
+table.t td.no { background: var(--red-soft); }
+/* ---------- Gantt ---------- */
+.gantt { margin: 10px 0 4px; break-inside: avoid; }
+.g-row { display: flex; }
+.g-cell {
+  height: 34px; display: flex; align-items: center; justify-content: center;
+  font-weight: 800; color: #fff; font-size: 12px; text-shadow: 0 1px 2px rgba(0,0,0,.3);
+}
+.g-scale { display: flex; }
+.g-tick { font-size: 10.5px; color: var(--muted); font-weight: 700; }
+.g1 { background: #4f46e5; } .g2 { background: #0ea5e9; } .g3 { background: #059669; }
+.g4 { background: #d97706; } .g5 { background: #db2777; } .g6 { background: #7c3aed; }
+/* ---------- slides / figures ---------- */
+.figrow { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+.slide {
+  flex: 1 1 300px; max-width: 470px; break-inside: avoid;
+  border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+  background: #fff; box-shadow: 0 1px 4px rgba(16,24,40,.08);
+}
+.slide img { display: block; width: 100%; height: auto; }
+.slide .cap {
+  font-size: 10.5px; color: var(--soft); padding: 5px 9px;
+  background: #f8fafc; border-top: 1px dashed var(--line);
+}
+.slide .cap b { color: var(--pri-dark); }
+.fig1 { max-width: 520px; }
+/* ---------- callouts ---------- */
+.co { border: 1px solid var(--line); border-left-width: 5px; border-radius: 9px; padding: 8px 13px; margin: 10px 0; break-inside: avoid; background: #fff; }
+.co .tt { font-weight: 800; font-size: .88rem; margin-bottom: 2px; }
+.co p { margin: 2px 0; }
+.co.exam { border-left-color: var(--red); } .co.exam .tt { color: var(--red); }
+.co.tip { border-left-color: var(--green); } .co.tip .tt { color: var(--green); }
+.co.an { border-left-color: var(--violet); background: var(--violet-soft); border-color: #ddd6fe; } .co.an .tt { color: var(--violet); }
+.co.note { border-left-color: #0ea5e9; } .co.note .tt { color: #0284c7; }
+.co.warn { border-left-color: var(--amber); background: var(--amber-soft); border-color: #fde68a; } .co.warn .tt { color: var(--amber); }
+/* กล่องนำเข้าบท: ความหมาย ความสำคัญ การใช้จริง */
+.intro {
+  background: #f0f9ff; border: 1.5px solid #bae6fd; border-left: 6px solid #0ea5e9;
+  border-radius: 10px; padding: 10px 15px; margin: 0 0 14px; break-inside: avoid;
+}
+.intro .it { font-weight: 800; color: #0369a1; margin-bottom: 3px; font-size: .95rem; }
+.intro p { margin: 3px 0; font-size: 12.6px; }
+/* ---------- formula ---------- */
+.fm {
+  background: var(--pri-soft); border: 1.5px dashed #a5b4fc; color: var(--pri-dark);
+  border-radius: 9px; padding: 8px 14px; margin: 9px 0; text-align: center;
+  font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 12.5px;
+}
+.fm small { display: block; font-family: "Noto Sans Thai", sans-serif; font-weight: 600; color: var(--soft); margin-top: 3px; }
+/* ---------- steps ---------- */
+ol.st { margin: 8px 0; padding-left: 0; list-style: none; counter-reset: st; }
+ol.st > li { counter-increment: st; position: relative; padding: 0 0 10px 38px; }
+ol.st > li::before {
+  content: counter(st); position: absolute; left: 0; top: 1px;
+  width: 26px; height: 26px; border-radius: 50%; background: var(--pri); color: #fff;
+  font-weight: 800; font-size: .8rem; display: flex; align-items: center; justify-content: center;
+}
+ol.st > li::after { content: ""; position: absolute; left: 12.5px; top: 30px; bottom: 2px; width: 2px; background: var(--line); }
+ol.st > li:last-child::after { display: none; }
+/* ---------- quiz (Quizizz) cards ---------- */
+.qz { border: 1px solid var(--line); border-radius: 9px; margin: 8px 0; break-inside: avoid; overflow: hidden; }
+.qz .qh {
+  display: flex; gap: 8px; align-items: baseline; padding: 5px 11px;
+  background: #f8fafc; border-bottom: 1px dashed var(--line); font-size: 12px;
+}
+.qz .qn { font-weight: 800; color: var(--pri-dark); white-space: nowrap; }
+.qz .qa { font-weight: 800; color: var(--green); white-space: nowrap; }
+.qz .qq { padding: 6px 11px 2px; }
+.qz .qq .q { color: var(--soft); }
+.qz .qk { padding: 2px 11px 7px; font-size: 12.3px; }
+.qz .qk b { color: var(--pri-dark); }
+.qz2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 760px) { .qz2 { grid-template-columns: 1fr; } }
+/* ---------- cover / toc ---------- */
+.cover { text-align: center; padding: 30px 10px 12px; }
+.cover .badge { display: inline-block; background: var(--pri); color: #fff; border-radius: 999px; padding: 4px 16px; font-weight: 800; font-size: .8rem; letter-spacing: .04em; }
+.cover h1 { font-size: 1.75rem; margin: 12px 0 4px; }
+.cover .sub { color: var(--soft); }
+.cover .meta { margin-top: 10px; font-size: 12px; color: var(--muted); }
+.toc { columns: 2; column-gap: 34px; font-size: 12.8px; margin: 12px 0; }
+.toc div { break-inside: avoid; padding: 3px 0; border-bottom: 1px dotted var(--line); }
+.toc b { color: var(--pri-dark); }
+.toc .hot { color: var(--red); font-weight: 800; }
+/* ---------- mermaid ---------- */
+.mermaid { margin: 10px auto; text-align: center; break-inside: avoid; background: #fff; }
+/* จำกัดความกว้างแผนภาพ กันยืดเต็มหน้าจนกินพื้นที่พิมพ์ (แก้หน้า 4, 6, 39-41) */
+.mermaid svg { max-width: 520px !important; width: auto; height: auto; }
+/* แผนภาพกว้างพิเศษ (2 คอลัมน์) — ใหญ่ขึ้นเพื่อให้อ่านตัวหนังสือในได้ */
+.mermaid.wide svg { max-width: 700px !important; }
+/* แผนภาพขนาดย่อ — ให้ลงช่องว่างที่เหลือของหน้า */
+.mermaid.small svg { max-width: 430px !important; }
+/* แถวสไลด์ 3 ใบ — ย่อให้แถวเดียวจบ ไม่ทิ้งการ์ดหลุดแถว */
+.figrow.fig3 .slide { flex: 1 1 220px; max-width: 236px; }
+.figrow.fig3 .slide .cap { font-size: 9.5px; }
+/* กันบรรทัดนำหน้าตาราง/กล่องถูกแยกข้ามหน้า */
+.keep { break-inside: avoid; }
+/* ---------- misc ---------- */
+.pill { display: inline-block; font-size: 10.5px; font-weight: 800; padding: 2px 10px; border-radius: 999px; background: var(--pri-soft); color: var(--pri-dark); margin-right: 5px; }
+.pill.hot { background: var(--red-soft); color: var(--red); }
+.pill.gr { background: var(--green-soft); color: var(--green); }
+.pill.vi { background: var(--violet-soft); color: var(--violet); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 760px) { .two { grid-template-columns: 1fr; } }
+ul { margin: 5px 0; padding-left: 20px; }
+li { margin: 2.5px 0; }
+kbd { background: #e2e8f0; border-radius: 4px; padding: 0 5px; font-family: monospace; font-size: .85em; }
+/* ---------- Socrative compact tables ---------- */
+table.sqz { font-size: 10.6px; }
+table.sqz td, table.sqz th { padding: 3px 7px; vertical-align: top; }
+table.sqz td.small { font-size: 9.8px; color: var(--soft); }
+
+/* ---------- PRINT ---------- */
+@media print {
+  body { background: #fff; font-size: 11.6px; }
+  .page { box-shadow: none; max-width: none; padding: 0; }
+  @page { size: A4; margin: 11mm 10mm; }
+  h2.part { margin: 0 -10mm 12px; padding: 9px 10mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .noprint { display: none !important; }
+  .slide { box-shadow: none; }
+  pre.code, table.t, .co, .qz, .gantt, .fm { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  a { color: inherit; text-decoration: none; }
+  .qz2 { gap: 6px; }
+}
+</style>
+<style>
+.partnav { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:0 0 14px; padding:8px 11px; border:1px solid var(--line); border-radius:9px; background:#fff; font-size:12.5px; }
+.partnav a { padding:2px 9px; border-radius:999px; background:var(--pri-soft); color:var(--pri-dark); text-decoration:none; }
+.partnav a.cur { background:var(--pri); color:#fff; font-weight:700; }
+.partnav .brand { color:var(--pri-dark); font-weight:800; margin-right:4px; }
+.partnav .full { margin-left:auto; background:#f1f4f9; color:var(--ink); }
+@media print { .partnav { display:none } }
+</style></head>
+<body>
+<div class="page">
+<div class="partnav">
+  <span class="brand">📘 OS Open Book</span>
+  <a href="A-process.html">A · Process/fork</a>
+  <a href="B-thread.html">B · Thread</a>
+  <a href="C-scheduling.html">C · Scheduling</a>
+  <a href="D-race-cs.html">D · Race/CS</a>
+  <a href="E-semaphore.html" class="cur">E · Semaphore</a>
+  <a href="F-deadlock.html">F · Deadlock</a>
+  <a href="G-real-memory.html">G · Real Mem</a>
+  <a href="H-paging.html">H · Paging</a>
+  <a href="I-virtual-memory.html">I · Virtual Mem</a>
+  <a href="J-file-system.html">J · File System</a>
+  <a href="K-quizizz.html">K · Quizizz</a>
+  <a href="L-socrative.html">L · Socrative</a>
+  <a href="M-formulas.html">M · สูตรเร็ว</a>
+  <a class="full" href="openbook.html">📄 เอกสารเต็ม (ไฟล์เดียว)</a>
+</div>
+<!-- ================= PART E: SEMAPHORE / MONITOR ================= -->
+<h2 class="part">E. Semaphore · ปัญหาคลาสสิก · Monitor · Java Synchronization <span style="font-size:.8em">(OSNo06 ท้าย ๆ)</span> 🔥</h2>
+<div class="intro">
+  <div class="it">📖 รู้จักส่วนนี้ก่อนอ่าน</div>
+  <p><b>ความหมาย:</b> Semaphore (ตัวนับควบคุมคิว) = เครื่องมือที่ OS ให้มาจัดคิวเข้าถึงของแชร์อย่างปลอดภัย มีคำสั่ง wait (หยิบสิทธิ์) / signal (คืนสิทธิ์) · Monitor = กล่องควบคุมระดับสูงที่ล็อกให้อัตโนมัติ</p>
+  <p><b>ความสำคัญกับข้อสอบ:</b> โค้ด Bounded Buffer / Readers-Writers (ปัญหาคนอ่าน-คนเขียน) / Dining Philosophers (ปัญหานักปราชญ์กินข้าว) ต้องจำค่าเริ่มต้นให้แม่น (mutex=1, empty=n, full=0) + จุดหลอก "สลับลำดับ wait → deadlock (การติดตาย (รอกันตลอดกาล))" — ออกถี่มาก</p>
+  <p><b>ใช้จริงในคอมพิวเตอร์:</b> คิวงานเครื่องปรินต์, connection pool ของฐานข้อมูล, ปุ่ม like ที่คนกดพร้อมกันหลายพันคน — ระบบจริงทั้งหมดใช้ semaphore (ตัวนับควบคุมสิทธิ์เข้าถึง)/mutex คุมจังหวะ</p>
+</div>
+
+<h3>E1. Semaphore — wait / signal (อุปมาโหลหิน 🪨)</h3>
+<pre class="code"><code><span class="f">wait</span>(S) {              <span class="c">// P — "หยิบหินจากโหล"</span>
+    <span class="k">while</span> (S &lt;= 0);    <span class="c">// โหลว่าง → ยืนรอ (busy wait)</span>
+    S--;
+}
+<span class="f">signal</span>(S) {            <span class="c">// V — "คืนหินใส่โหล" แล้วปลุกคนรอ</span>
+    S++;
+}</code></pre>
+<ul>
+  <li><b>Binary semaphore</b> = ค่า 0/1 เท่านั้น อีกชื่อคือ <b>mutex lock (การล็อก)</b> → ใช้กับ critical section (เข้าได้ทีละคน)</li>
+  <li><b>Counting semaphore</b> = ค่า 0..k → ใช้กับ resource (ทรัพยากร) หลายหน่วย (k = จำนวน resource)</li>
+</ul>
+<div class="co exam"><div class="tt">🎯 กับดักจาก Quizizz ชุด 3</div><p>(1) CS ใช้ <b>binary</b> ไม่ใช่ counting (2) Semaphore การันตีได้แค่ <b>Mutual Exclusion</b> — progress/bounded waiting ขึ้นกับ implementation</p></div>
+
+<h3>E2. Implement แบบไม่มี busy waiting (waiting queue + block/wakeup)</h3>
+<pre class="code"><code><span class="c">/* แต่ละ semaphore มี waiting queue (แต่ละรายการเก็บ value + pointer รายการถัดไป) */</span>
+<span class="f">wait</span>(S) {
+    S.value--;                    <span class="c">// หยิบหินก่อนเลย</span>
+    <span class="k">if</span> (S.value &lt; 0) {            <span class="c">// ติดลบ = หินไม่พอ มีคนรอแล้ว</span>
+        เพิ่มตัวเองเข้า S.list;      <span class="c">// ต่อคิว</span>
+        <span class="f">block</span>();                  <span class="c">// หลับ — ไม่เผา CPU</span>
+    }
+}
+<span class="f">signal</span>(S) {
+    S.value++;                    <span class="c">// คืนหิน</span>
+    <span class="k">if</span> (S.value &lt;= 0) {           <span class="c">// ยังมีคนรออยู่</span>
+        หยิบ P จาก S.list;
+        <span class="f">wakeup</span>(P);                <span class="c">// ปลุก 1 คนกลับ ready queue</span>
+    }
+}
+<span class="c">/* 💡 ค่า value ติดลบ = มี process รออยู่ |value| ตัว */</span></code></pre>
+
+<h3>E3. ปัญหาคลาสสิก 1: Bounded Buffer 🔥 (semaphore 3 ตัว)</h3>
+<table class="t">
+  <tr><th>Semaphore</th><th class="c">เริ่มต้น</th><th>ชนิด</th><th>หน้าที่</th></tr>
+  <tr><td><code>mutex</code></td><td class="c"><b>1</b></td><td>binary</td><td>ล็อก buffer เข้าแตะทีละคน</td></tr>
+  <tr><td><code>empty</code></td><td class="c"><b>n</b></td><td>counting</td><td>นับช่องว่าง</td></tr>
+  <tr><td><code>full</code></td><td class="c"><b>0</b></td><td>counting</td><td>นับช่องที่มีข้อมูล</td></tr>
+</table>
+<div class="two">
+<pre class="code"><code><span class="c">/* Producer (สไลด์ p.20–21) */</span>
+<span class="k">while</span> (<span class="f">true</span>) {
+    <span class="c">// produce an item</span>
+    <span class="f">wait</span>(empty);   <span class="c">// ขอช่องว่าง</span>
+    <span class="f">wait</span>(mutex);   <span class="c">// ล็อก buffer</span>
+    <span class="c">// เขียนลง buffer</span>
+    <span class="f">signal</span>(mutex); <span class="c">// ปลดล็อก</span>
+    <span class="f">signal</span>(full);  <span class="c">// บอกว่ามีของแล้ว</span>
+}</code></pre>
+<pre class="code"><code><span class="c">/* Consumer (สไลด์ p.21) */</span>
+<span class="k">while</span> (<span class="f">true</span>) {
+    <span class="f">wait</span>(full);    <span class="c">// มีของไหม?</span>
+    <span class="f">wait</span>(mutex);
+    <span class="c">// ดึงของออกจาก buffer</span>
+    <span class="f">signal</span>(mutex);
+    <span class="f">signal</span>(empty); <span class="c">// คืนช่องว่าง</span>
+    <span class="c">// consume item</span>
+}</code></pre>
+</div>
+<div class="co exam"><div class="tt">🎯 จุดหลอก: สลับ wait → DEADLOCK</div><p>ถ้า producer เขียน <code>wait(mutex); wait(empty);</code> — buffer เต็ม → producer ครอง mutex ค้างรอ empty แต่ consumer เข้าอ่านไม่ได้เพราะ mutex ถูกครอง → รอกันตาย · <b>กฎเหล็ก: เช็ค resource (empty/full) ก่อนล็อก (mutex) เสมอ</b> · จำค่าเริ่มต้นให้แม่น: mutex=1, empty=n, full=0</p></div>
+
+<div class="keep">
+<h3>E4. ปัญหาคลาสสิก 2: Readers-Writers</h3>
+<p>กติกา: <b>Reader หลายตัวอ่านพร้อมกันได้</b> · Writer ทำงานเมื่อไรห้ามใครยุ่งเด็ดขาด · แชร์: <code>wrt=1, mutex=1, readcount=0 (int ธรรมดา)</code></p>
+</div>
+<div class="two">
+<pre class="code"><code><span class="c">/* Writer — ง่ายสุด */</span>
+<span class="f">wait</span>(wrt);
+<span class="c">// เขียนข้อมูล</span>
+<span class="f">signal</span>(wrt);</code></pre>
+<pre class="code"><code><span class="c">/* Reader — "ตัวแรกล็อก ตัวสุดท้ายปลด" */</span>
+<span class="f">wait</span>(mutex);              <span class="c">// แตะ readcount ทีละคน</span>
+readcount++;
+<span class="k">if</span> (readcount == 1)      <span class="hl">// reader แรกล็อก writer</span>
+    <span class="f">wait</span>(wrt);
+<span class="f">signal</span>(mutex);
+<span class="c">// อ่านข้อมูล (พร้อมกันได้หลายคน)</span>
+<span class="f">wait</span>(mutex);
+readcount--;
+<span class="k">if</span> (readcount == 0)      <span class="hl">// reader สุดท้ายปลดล็อก</span>
+    <span class="f">signal</span>(wrt);
+<span class="f">signal</span>(mutex);</code></pre>
+</div>
+<div class="co exam"><div class="tt">🎯 จาก Quizizz 3</div><p>semaphore ที่ควบคุมการเพิ่ม/ลดจำนวน reader คือ <b>mutex</b> (ครอบ readcount) — <b>readcount เป็น int ธรรมดา</b> ไม่ใช่ semaphore · ที่คุม writer คือ wrt</p></div>
+
+<h3>E5. ปัญหาคลาสสิก 3: Dining Philosophers (นักปราชญ์ 5 คน)</h3>
+<p>ตะเกียบ 5 อัน = <b>resource</b> ใช้ semaphore 1 ตัวต่อ 1 ตะเกียบ เริ่มทุกตัว = 1 · กินได้ต้องมีครบ 2 ข้าง (ซ้าย i, ขวา (i+1)%5)</p>
+<pre class="code"><code><span class="c">/* โค้ดนักปราชญ์ i (สไลด์ p.25–26) */</span>
+<span class="k">while</span> (<span class="f">true</span>) {
+    <span class="f">wait</span>(chopstick[i]);             <span class="c">// หยิบซ้าย</span>
+    <span class="f">wait</span>(chopstick[(i + 1) % 5]);   <span class="c">// หยิบขวา</span>
+    <span class="c">// กินข้าว 🍚</span>
+    <span class="f">signal</span>(chopstick[i]);           <span class="c">// วางซ้าย</span>
+    <span class="f">signal</span>(chopstick[(i + 1) % 5]); <span class="c">// วางขวา</span>
+    <span class="c">// คิดปรัชญา</span>
+}</code></pre>
+<div class="co exam"><div class="tt">🎯 โซลูชัน naive นี้พัง</div><p>ทุกคน<b>หิวพร้อมกัน หยิบซ้ายพร้อมกัน</b> → ไม่เหลือตะเกียบว่าง → ทุกคนรอขวาเป็นวงกลม = <b>deadlock</b> (+ ไม่มี bounded waiting → starvation ได้) · แก้: จำกัดจำนวนคนนั่ง ≤ 4 / หยิบพร้อมกันเท่านั้น / ใช้ Monitor (ล่าง)</p></div>
+
+<h3>E6. Monitor — เกราะระดับสูง + Condition (เงื่อนไข) Variables</h3>
+<ul>
+  <li>Monitor = shared data + ฟังก์ชันรวมในก้อนเดียว (คล้าย class) — <b>รับประกัน mutual exclusion อัตโนมัติ: 1 process ใน monitor ต่อ 1 เวลา</b> (ลืมล็อกไม่ได้!)</li>
+  <li><b>Condition variable x:</b> <code>x.wait()</code> = สลัดล็อก หลับไปรอในคิวของ x · <code>x.signal()</code> = ปลุก 1 ตัวในคิว x</li>
+</ul>
+<div class="co exam"><div class="tt">🎯 ต่างจาก semaphore ยังไง</div><p><b>x.signal() ถ้าไม่มีใคนรอ → สัญญาณหายไปเฉย ๆ</b> (ไม่มี counter เก็บยอด) ต่างจาก semaphore ที่ signal สะสมค่า</p></div>
+<div class="figrow">
+  <div class="slide"><img src="slides/s06p29.jpg" alt="Monitor schematic"><div class="cap"><b>สไลด์ p.29</b> Schematic view of a Monitor: คิว entry → ใน monitor มีได้ 1 คน</div></div>
+  <div class="slide"><img src="slides/s06p30.jpg" alt="Condition variables"><div class="cap"><b>สไลด์ p.30</b> Condition Variables x.wait() / x.signal()</div></div>
+</div>
+
+<h4>E6.1 แก้ Dining Philosophers ด้วย Monitor (กัน deadlock 100%)</h4>
+<pre class="code"><code><span class="f">monitor</span> DP {
+    <span class="f">enum</span> {THINKING, HUNGRY, EATING} state[5];   <span class="c">// สถานะของแต่ละคน</span>
+    condition self[5];                           <span class="c">// คิวรอของแต่ละคน</span>
+
+    <span class="f">void</span> <span class="f">pickup</span>(<span class="k">int</span> i) {
+        state[i] = HUNGRY;
+        <span class="f">test</span>(i);                                  <span class="c">// ลองดูว่ากินได้ไหม</span>
+        <span class="k">if</span> (state[i] != EATING) self[i].wait;    <span class="c">// ยังไม่ได้ → หลับรอ</span>
+    }
+    <span class="f">void</span> <span class="f">putdown</span>(<span class="k">int</span> i) {
+        state[i] = THINKING;
+        <span class="f">test</span>((i + 4) % 5);                       <span class="c">// เช็คเพื่อนบ้านซ้าย</span>
+        <span class="f">test</span>((i + 1) % 5);                       <span class="c">// เช็คเพื่อนบ้านขวา</span>
+    }
+    <span class="f">void</span> <span class="f">test</span>(<span class="k">int</span> i) {
+        <span class="c">// กินได้เมื่อ: เพื่อนซ้ายไม่กิน และ ฉันหิว และ เพื่อนขวาไม่กิน</span>
+        <span class="k">if</span> ( (state[(i + 4) % 5] != EATING) &amp;&amp;
+             (state[i] == HUNGRY) &amp;&amp;
+             (state[(i + 1) % 5] != EATING) ) {
+            state[i] = EATING;
+            self[i].signal();
+        }
+    }
+}
+<span class="c">/* ใช้: dp.pickup(i) → EAT → dp.putdown(i)
+   ไม่มีใคร "ถือตะเกียบเดี่ยวค้าง" → ไม่มี deadlock แน่นอน (แต่ starvation ยังเป็นไปได้) */</span></code></pre>
+
+<h3>E7. Java Synchronization — synchronized (ล็อกอัตโนมัติ (คีย์เวิร์ด Java)) · wait · notify (ปลุก 1 thread ที่รออยู่)</h3>
+<ul>
+  <li>ทุก object มี <b>lock</b> — เรียก <code>synchronized</code> method ต้องได้ lock ก่อน · ตกคิวไปรอใน <b>Entry Set (คิวรอเข้าล็อก)</b> · ออกจาก method = คืน lock อัตโนมัติ</li>
+  <li><code>wait()</code> ทำ 3 อย่าง: <b>(1) คืน object lock (2) สถานะ blocked (3) ย้ายเข้า Wait Set (คิวหลับรอเงื่อนไข)</b></li>
+  <li><code>notify()</code> = <b>สุ่ม</b> 1 thread จาก Wait Set → ย้ายไป Entry Set (รอแย่ง lock ใหม่ — <b>ไม่ได้รันทันที!</b> และเลือกตัวเองไม่ได้) · <code>notifyAll()</code> = ปลุก<b>ทุกตัว</b> (ปลอดภัยกว่าเมื่อ wait set มีหลายตัว)</li>
+  <li>Java 5+ มี <code>Semaphore</code> class จริง: <code>acquire()</code> ≈ wait, <code>release()</code> ≈ signal</li>
+</ul>
+<div class="two">
+<pre class="code"><code><span class="c">/* insert() ด้วย wait/notify (สไลด์ p.41) */</span>
+<span class="k">public synchronized void</span> <span class="f">insert</span>(Object item) {
+   <span class="k">while</span> (count == BUFFER_SIZE) {
+       <span class="k">try</span> { <span class="f">wait</span>(); }                  <span class="c">// เต็ม → คืนล็อก หลับรอ</span>
+       <span class="k">catch</span> (InterruptedException e) { }
+   }
+   ++count;
+   buffer[in] = item;
+   in = (in + 1) % BUFFER_SIZE;
+   <span class="f">notify</span>();                            <span class="c">// ปลุกคนที่รออยู่ 1 ตัว</span>
+}</code></pre>
+<pre class="code"><code><span class="c">/* remove() (สไลด์ p.42) */</span>
+<span class="k">public synchronized</span> Object <span class="f">remove</span>() {
+   Object item;
+   <span class="k">while</span> (count == 0) {
+       <span class="k">try</span> { <span class="f">wait</span>(); }                  <span class="c">// ว่าง → หลับรอ</span>
+       <span class="k">catch</span> (InterruptedException e) { }
+   }
+   --count;
+   item = buffer[out];
+   out = (out + 1) % BUFFER_SIZE;
+   <span class="f">notify</span>();
+   <span class="k">return</span> item;
+}</code></pre>
+</div>
+<div class="co exam"><div class="tt">🎯 ตารางแยกพวก "wait" ที่หลอกบ่อยสุด</div><table class="t" style="margin:6px 0 0">
+<tr><th>wait ของใคร</th><th>ทำอะไร</th></tr>
+<tr><td><code>wait(S)</code> ของ Semaphore</td><td>หยิบหิน — ลดค่า S</td></tr>
+<tr><td><code>wait()</code> ของ Java/Monitor</td><td>สลัด lock + หลับใน Wait Set</td></tr>
+<tr><td><code>wait()</code> ของ Process (บท A)</td><td>พ่อรอลูกจบ เก็บ exit status</td></tr>
+</table>
+<p style="margin-top:5px">แถม: <code>Thread.yield()</code> แค่ยอมออกจาก CPU — <b>ยังถือ lock ค้างอยู่!</b> (เหมือนล็อกห้องแล้วปีนหน้าต่างหนี)</p></div>
+</div>
+</body>
+</html>
